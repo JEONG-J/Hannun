@@ -24,6 +24,11 @@ public extension CGFloat {
     static let spacingXXL: CGFloat = 32
 }
 
+public extension CGFloat {
+    /// HIG 최소 터치 타깃. 라벨이 작아도 탭 영역은 이 값 아래로 내려가지 않는다.
+    static let minimumTouchTarget: CGFloat = 44
+}
+
 /// UI 스펙 코너 반경. 컨테이너 클리핑은 `ConcentricRectangle` 패턴을 함께 쓴다 —
 /// `.clipShape(.rect(corners: .concentric(minimum: .fixed(.radiusM)), isUniform: true))`.
 /// 칩·pill·토글·세그먼트는 반경 토큰이 아니라 `.capsule` 이다.

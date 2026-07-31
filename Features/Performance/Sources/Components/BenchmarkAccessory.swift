@@ -95,7 +95,7 @@ struct BenchmarkAccessory: View {
         }
         .foregroundStyle(menuLabelColor)
         .padding(.horizontal, Constants.labelHorizontalPadding)
-        .frame(minHeight: Constants.minimumTouchTarget)
+        .frame(minHeight: .minimumTouchTarget)
         .background(menuLabelBackground, in: .capsule)
     }
 
@@ -114,7 +114,6 @@ struct BenchmarkAccessory: View {
 fileprivate enum Constants {
     /// 캡슐 안쪽 가용 폭이 약 358pt 라 짧은 칩 4개가 한계다 (UI 스펙 §3.1).
     static let maximumChipCount = 4
-    static let minimumTouchTarget: CGFloat = 44
     static let labelHorizontalPadding: CGFloat = 14
     static let chevronSymbolName = "chevron.down"
     static let selectionSymbolName = "checkmark"

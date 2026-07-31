@@ -58,8 +58,8 @@ struct GranularityToggle: View {
                 .hannunFont(.pillLabel)
                 .foregroundStyle(isSelected ? Color.brand : Color.textSecondary)
                 .lineLimit(1)
-                .padding(.vertical, .spacingS)
                 .padding(.horizontal, Constants.labelHorizontalPadding)
+                .frame(minHeight: .minimumTouchTarget)
                 .background {
                     if isSelected {
                         Capsule().fill(HannunTint.brandTint)

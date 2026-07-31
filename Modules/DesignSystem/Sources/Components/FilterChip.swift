@@ -140,7 +140,7 @@ private struct ChipSurface: ViewModifier {
         content
             .foregroundStyle(accessoryLabelColor)
             .padding(.horizontal, Constants.horizontalPadding)
-            .frame(minHeight: Constants.minimumTouchTarget)
+            .frame(minHeight: .minimumTouchTarget)
             .background(accessoryBackground, in: .capsule)
     }
 
@@ -162,7 +162,6 @@ private struct ChipSurface: ViewModifier {
 
 fileprivate enum Constants {
     static let horizontalPadding: CGFloat = 14
-    static let minimumTouchTarget: CGFloat = 44
     /// 그룹 안 비선택 칩은 전부 같은 union 에 속한다.
     static let unionIdentifier = "unselectedFilterChip"
 }

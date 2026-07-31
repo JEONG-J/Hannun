@@ -51,17 +51,22 @@ public enum ChangePillContent: Equatable, Sendable {
     case amount(Money)
     /// 금액 + 수익률 병기 — `+₩1,240,000 (+0.98%)`.
     case amountWithRatio(Money, Decimal)
+    /// 손익이 아닌 금액(현재가 등). 부호를 붙이지 않고 항상 중립색으로 그린다 —
+    /// 값의 양수/음수는 오르내림을 뜻하지 않으므로 손익 색을 입히면 잘못 읽힌다.
+    case neutralAmount(Money)
 }
 
-extension ChangePillContent {
+public extension ChangePillContent {
     var direction: ChangeDirection {
         switch self {
         case .ratio(let ratio): ChangeDirection(ratio)
         case .amount(let money): ChangeDirection(money.amount)
         case .amountWithRatio(_, let ratio): ChangeDirection(ratio)
+        case .neutralAmount: .neutral
         }
     }
 
+    /// pill 에 찍히는 문구. 접근성 값처럼 pill 밖에서 같은 문장이 필요할 때도 이걸 쓴다.
     var text: String {
         switch self {
         case .ratio(let ratio):
@@ -71,6 +76,8 @@ extension ChangePillContent {
         case .amountWithRatio(let money, let ratio):
             AmountFormatter.text(for: money, showsPositiveSign: true)
                 + " (\(AmountFormatter.percentage(ratio: ratio)))"
+        case .neutralAmount(let money):
+            AmountFormatter.text(for: money)
         }
     }
 }
@@ -112,6 +119,7 @@ private struct ChangePillPreview: View {
         .amount(.krw(-820_500)),
         .amountWithRatio(.krw(1_240_000), 0.0098),
         .amountWithRatio(.usd(-1_204.35), -0.0432),
+        .neutralAmount(.krw(69_100)),
     ]
 
     // MARK: - Body

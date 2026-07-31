@@ -56,8 +56,7 @@ public struct PeriodSegment: View {
                         .hannunFont(.pillLabel)
                         .foregroundStyle(period == selection ? Color.brand : Color.textSecondary)
                         .lineLimit(1)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, .spacingS)
+                        .frame(maxWidth: .infinity, minHeight: .minimumTouchTarget)
                         .background {
                             if period == selection {
                                 Capsule().fill(HannunTint.brandTint)

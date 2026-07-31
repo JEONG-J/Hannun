@@ -29,6 +29,9 @@ public extension Color {
     /// **옅은 tint 배경**(`HannunTint`, 알파 12/18%) 위에서만이다 — 채움 위에 쓰면 글자가 사라진다.
     static let onBrand = Color("onBrand", bundle: .module)
     static let separator = Color("separator", bundle: .module)
+    /// 경고·검증 실패. 손익 색을 경고에 빌려 쓰면 "빨강 = 상승" 규칙이 무너지므로 따로 둔다.
+    /// 상승 빨강(`gain`)·하락 파랑(`loss`) 어느 쪽과도 겹치지 않는 앰버 계열이다.
+    static let warning = Color("warning", bundle: .module)
 
     // MARK: - 손익
 
@@ -63,6 +66,7 @@ private struct ColorTokenPreview: View {
         ("brand", .brand),
         ("onBrand", .onBrand),
         ("separator", .separator),
+        ("warning", .warning),
     ]
 
     private let profitLossPalette: [(name: String, color: Color)] = [

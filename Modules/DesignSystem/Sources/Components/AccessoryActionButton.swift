@@ -77,7 +77,7 @@ public struct AccessoryActionButton: View {
         .hannunFont(.pillLabel)
         .foregroundStyle(style == .primary ? Color.onBrand : Color.textPrimary)
         .padding(.horizontal, Constants.horizontalPadding)
-        .frame(minHeight: Constants.minimumTouchTarget)
+        .frame(minHeight: .minimumTouchTarget)
 
         switch style {
         case .primary:
@@ -94,10 +94,7 @@ public struct AccessoryActionButton: View {
             Image(systemName: systemImageName)
                 .hannunFont(.rowTitle)
                 .foregroundStyle(Color.onBrand)
-                .frame(
-                    width: Constants.minimumTouchTarget,
-                    height: Constants.minimumTouchTarget
-                )
+                .frame(width: .minimumTouchTarget, height: .minimumTouchTarget)
                 .hannunGlass(.accessoryPrimaryAction, in: .circle)
         }
     }
@@ -105,7 +102,6 @@ public struct AccessoryActionButton: View {
 
 fileprivate enum Constants {
     static let horizontalPadding: CGFloat = 14
-    static let minimumTouchTarget: CGFloat = 44
 }
 
 #if DEBUG

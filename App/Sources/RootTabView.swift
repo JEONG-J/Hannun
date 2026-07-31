@@ -14,7 +14,12 @@ import SwiftUI
 
 /// 4개 탭 구성. 탭별 NavigationStack 은 각 Feature 루트 View 가 소유한다.
 struct RootTabView: View {
+    // MARK: - Property
+
     @Environment(AppRouter.self) private var router
+    @Environment(\.tabAccessoryHost) private var accessoryHost
+
+    // MARK: - Body
 
     var body: some View {
         @Bindable var router = router
@@ -33,5 +38,12 @@ struct RootTabView: View {
                 JournalRootView()
             }
         }
+        // 액세서리는 TabView 에 하나만 붙고 내용은 선택된 탭으로 분기한다 (UI 스펙 §3.1).
+        // 실체는 각 Feature 가 `.tabAccessory(_:)` 로 등록한다 — 액세서리가 그 탭의
+        // 화면 상태(통화·벤치마크 선택)를 읽어야 하므로 여기서 만들 수 없다.
+        .tabViewBottomAccessory {
+            accessoryHost?.content(for: router.selectedTab)
+        }
+        .tabBarMinimizeBehavior(.onScrollDown)
     }
 }

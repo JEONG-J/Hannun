@@ -7,14 +7,17 @@
 
 import Foundation
 import HannunCore
+import HannunDomain
 
 /// 시세 캐시. KIS·업비트 모두 호출량 제한이 있어 15분 캐싱을 요구한다.
 ///
 /// 딕셔너리를 공유 가변 상태로 들고 있으므로 actor 여야 한다 —
 /// Swift 6 complete 모드에서는 `class` + 가변 딕셔너리 조합이 아예 컴파일되지 않는다.
+///
+/// 저장 시각을 아는 유일한 곳이라 신선도(`Quote.asOf`/`isStale`)도 여기서 매긴다.
 actor QuoteCache {
     private struct Entry {
-        let money: Money
+        let price: Money
         let storedAt: Date
     }
 
@@ -33,35 +36,49 @@ actor QuoteCache {
         self.now = now
     }
 
-    /// 유효 기간 안의 값만 돌려준다.
+    /// 유효 기간 안의 시세만 돌려준다.
     ///
     /// 만료된 항목을 **지우지 않는다** — 폴백은 갱신 실패 시점에 만료된 값을 다시 꺼내 쓰기
-    /// 때문이다. 여기서 버리면 `staleValue(for:)` 가 항상 nil 이 되어 폴백 자체가 죽는다.
+    /// 때문이다. 여기서 버리면 `staleQuote(for:)` 가 항상 nil 이 되어 폴백 자체가 죽는다.
     /// 키는 사용자 보유 종목 수만큼만 늘어나므로 방치해도 문제되지 않는다.
-    func value(for key: String) -> Money? {
-        guard let entry = entries[key] else { return nil }
-        guard now().timeIntervalSince(entry.storedAt) < timeToLive else { return nil }
-        return entry.money
+    func quote(for key: String) -> Quote? {
+        guard let entry = entries[key], !isExpired(entry) else { return nil }
+        return Quote(price: entry.price, asOf: entry.storedAt)
     }
 
-    /// 만료 여부를 따지지 않고 마지막으로 받아둔 값을 돌려준다.
+    /// 만료 여부를 따지지 않고 마지막으로 받아둔 시세를 돌려준다.
     /// "갱신 실패 시 마지막 캐시값 사용 + 갱신 실패 배지" 정책에 쓰인다.
-    func staleValue(for key: String) -> Money? {
-        entries[key]?.money
+    func staleQuote(for key: String) -> Quote? {
+        guard let entry = entries[key] else { return nil }
+        return Quote(price: entry.price, asOf: entry.storedAt, isStale: isExpired(entry))
     }
 
-    func store(_ money: Money, for key: String) {
-        entries[key] = Entry(money: money, storedAt: now())
-    }
-
-    func store(_ prices: [String: Money]) {
+    /// 저장한 결과를 그대로 돌려준다 — 호출부가 저장 시각을 다시 추측하지 않게 한다.
+    @discardableResult
+    func store(_ price: Money, for key: String) -> Quote {
         let storedAt = now()
-        for (key, money) in prices {
-            entries[key] = Entry(money: money, storedAt: storedAt)
+
+        entries[key] = Entry(price: price, storedAt: storedAt)
+        return Quote(price: price, asOf: storedAt)
+    }
+
+    @discardableResult
+    func store(_ prices: [String: Money]) -> [String: Quote] {
+        let storedAt = now()
+        var stored: [String: Quote] = [:]
+
+        for (key, price) in prices {
+            entries[key] = Entry(price: price, storedAt: storedAt)
+            stored[key] = Quote(price: price, asOf: storedAt)
         }
+        return stored
     }
 
     func removeAll() {
         entries.removeAll()
+    }
+
+    private func isExpired(_ entry: Entry) -> Bool {
+        now().timeIntervalSince(entry.storedAt) >= timeToLive
     }
 }

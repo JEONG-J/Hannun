@@ -63,14 +63,19 @@ enum PortfolioTestFactory {
     @MainActor
     static func listViewModel(
         repository: any HoldingRepositoryProtocol,
-        prices: [String: Money] = [:]
+        prices: [String: Money] = [:],
+        staleSymbols: Set<String> = []
     ) -> PortfolioListViewModel {
         PortfolioListViewModel(
             fetchHoldings: FetchHoldingsUseCase(
                 holdingRepository: repository,
-                marketDataService: FixedPriceMarketDataService(prices: prices)
+                marketDataService: FixedPriceMarketDataService(
+                    prices: prices,
+                    staleSymbols: staleSymbols
+                )
             ),
             deleteHolding: DeleteHoldingUseCase(holdingRepository: repository),
+            exchangeRateService: FixedExchangeRateService(),
             errorHandler: ErrorHandler()
         )
     }

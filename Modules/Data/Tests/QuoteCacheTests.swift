@@ -32,7 +32,11 @@ struct QuoteCacheTests {
         let cache = QuoteCache(timeToLive: 60, now: TestClock().now)
         await cache.store(.krw(95_000_000), for: "KRW-BTC")
 
-        #expect(await cache.value(for: "KRW-BTC") == .krw(95_000_000))
+        let quote = await cache.quote(for: "KRW-BTC")
+
+        #expect(quote?.price == .krw(95_000_000))
+        #expect(quote?.isStale == false)
+        #expect(quote?.asOf == Date(timeIntervalSince1970: 0))
     }
 
     @Test("유효 기간이 지나면 nil 을 돌려준다")
@@ -43,36 +47,51 @@ struct QuoteCacheTests {
 
         clock.advance(by: 61)
 
-        #expect(await cache.value(for: "KRW-BTC") == nil)
+        #expect(await cache.quote(for: "KRW-BTC") == nil)
     }
 
-    @Test("만료된 뒤에도 마지막 값은 staleValue 로 남는다")
+    @Test("만료된 뒤에도 마지막 값은 stale 표시와 함께 남는다")
     func keepsStaleValueAfterExpiry() async {
         let clock = TestClock()
         let cache = QuoteCache(timeToLive: 60, now: clock.now)
         await cache.store(.krw(95_000_000), for: "KRW-BTC")
 
         clock.advance(by: 61)
-        _ = await cache.value(for: "KRW-BTC")
+        _ = await cache.quote(for: "KRW-BTC")
 
-        // value(for:) 가 만료 항목을 지우더라도 폴백용 값은 살아 있어야 한다.
-        #expect(await cache.staleValue(for: "KRW-BTC") == .krw(95_000_000))
+        // quote(for:) 가 만료 항목을 걸러내도 폴백용 값은 살아 있어야 한다.
+        let stale = await cache.staleQuote(for: "KRW-BTC")
+
+        #expect(stale?.price == .krw(95_000_000))
+        #expect(stale?.isStale == true)
+        #expect(stale?.asOf == Date(timeIntervalSince1970: 0))
+    }
+
+    @Test("유효 기간 안이면 staleQuote 도 stale 이 아니다")
+    func doesNotMarkFreshValueStale() async {
+        let cache = QuoteCache(timeToLive: 60, now: TestClock().now)
+        await cache.store(.krw(95_000_000), for: "KRW-BTC")
+
+        #expect(await cache.staleQuote(for: "KRW-BTC")?.isStale == false)
     }
 
     @Test("저장한 적 없는 키는 nil 이다")
     func missesUnknownKey() async {
         let cache = QuoteCache(timeToLive: 60, now: TestClock().now)
 
-        #expect(await cache.value(for: "KRW-DOGE") == nil)
-        #expect(await cache.staleValue(for: "KRW-DOGE") == nil)
+        #expect(await cache.quote(for: "KRW-DOGE") == nil)
+        #expect(await cache.staleQuote(for: "KRW-DOGE") == nil)
     }
 
     @Test("배치 저장은 모든 항목을 같은 시각으로 기록한다")
     func storesBatch() async {
         let cache = QuoteCache(timeToLive: 60, now: TestClock().now)
-        await cache.store(["KRW-BTC": .krw(95_000_000), "KRW-ETH": .krw(5_000_000)])
+        let stored = await cache.store(
+            ["KRW-BTC": .krw(95_000_000), "KRW-ETH": .krw(5_000_000)]
+        )
 
-        #expect(await cache.value(for: "KRW-BTC") == .krw(95_000_000))
-        #expect(await cache.value(for: "KRW-ETH") == .krw(5_000_000))
+        #expect(stored["KRW-BTC"]?.asOf == stored["KRW-ETH"]?.asOf)
+        #expect(await cache.quote(for: "KRW-BTC")?.price == .krw(95_000_000))
+        #expect(await cache.quote(for: "KRW-ETH")?.price == .krw(5_000_000))
     }
 }

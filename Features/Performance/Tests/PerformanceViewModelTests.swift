@@ -321,6 +321,7 @@ struct PerformanceViewModelTests {
             calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase(result: ytd),
             fetchNetWorthTrendUseCase: StubFetchNetWorthTrendUseCase(result: trend),
             compareBenchmarkUseCase: StubCompareBenchmarkUseCase(result: comparison),
+            exchangeRateService: StubExchangeRateService(),
             calendar: Self.calendar,
             now: { PerformanceSampleData.now }
         )

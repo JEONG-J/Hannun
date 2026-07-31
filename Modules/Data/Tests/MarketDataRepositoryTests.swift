@@ -127,14 +127,14 @@ struct MarketDataRepositoryTests {
         }
         defer { StubURLProtocol.tearDown(session) }
 
-        let prices = try await repository.currentPrices(
+        let quotes = try await repository.currentQuotes(
             symbols: ["KRW-BTC", "005930", "NAS:AAPL"]
         )
 
-        #expect(prices.count == 3)
-        #expect(prices["KRW-BTC"] == .krw(95_000_000))
-        #expect(prices["005930"] == .krw(70_800))
-        #expect(prices["NAS:AAPL"] == .usd(Decimal(string: "228.52")!))
+        #expect(quotes.count == 3)
+        #expect(quotes["KRW-BTC"]?.price == .krw(95_000_000))
+        #expect(quotes["005930"]?.price == .krw(70_800))
+        #expect(quotes["NAS:AAPL"]?.price == .usd(Decimal(string: "228.52")!))
     }
 
     @Test("KIS 가 막혀도 업비트 결과는 그대로 살린다")
@@ -147,10 +147,10 @@ struct MarketDataRepositoryTests {
         }
         defer { StubURLProtocol.tearDown(session) }
 
-        let prices = try await repository.currentPrices(symbols: ["KRW-BTC", "005930"])
+        let quotes = try await repository.currentQuotes(symbols: ["KRW-BTC", "005930"])
 
-        #expect(prices["KRW-BTC"] == .krw(95_000_000))
-        #expect(prices["005930"] == nil)
+        #expect(quotes["KRW-BTC"]?.price == .krw(95_000_000))
+        #expect(quotes["005930"] == nil)
     }
 
     @Test("유효한 캐시가 있으면 네트워크를 타지 않는다")
@@ -213,6 +213,33 @@ struct MarketDataRepositoryTests {
         #expect(try await repository.currentPrice(symbol: "005930") == .krw(70_800))
     }
 
+    @Test("일부 종목만 실패하면 그 종목에만 stale 표시가 붙는다")
+    func marksOnlyFailedSymbolsStale() async throws {
+        let clock = TestClock()
+        let shouldKoreaInvestmentFail = Mutex(false)
+        let (repository, session) = makeRepository(
+            cache: QuoteCache(timeToLive: 900, now: clock.now)
+        ) { request in
+            if request.url?.host()?.contains("upbit") == true { return .json(Self.tickerJSON) }
+            guard shouldKoreaInvestmentFail.withLock({ $0 }) else {
+                return .json(Self.domesticJSON)
+            }
+            return .json(#"{"msg1":"서비스 점검 중입니다."}"#, statusCode: 500)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        _ = try await repository.currentQuotes(symbols: ["KRW-BTC", "005930"])
+
+        clock.advance(by: 901)
+        shouldKoreaInvestmentFail.withLock { $0 = true }
+
+        let quotes = try await repository.currentQuotes(symbols: ["KRW-BTC", "005930"])
+
+        #expect(quotes["KRW-BTC"]?.isStale == false)
+        #expect(quotes["005930"]?.isStale == true)
+        #expect(quotes["005930"]?.price == .krw(70_800))
+    }
+
     @Test("캐시도 없이 갱신에 실패하면 에러를 올린다")
     func propagatesErrorWithoutCache() async throws {
         let (repository, session) = makeRepository(cache: QuoteCache()) { _ in
@@ -269,10 +296,10 @@ struct MarketDataRepositoryTests {
         }
         defer { StubURLProtocol.tearDown(session) }
 
-        let prices = try await repository.currentPrices(symbols: ["KRW-BTC", "KRW-ETH"])
+        let quotes = try await repository.currentQuotes(symbols: ["KRW-BTC", "KRW-ETH"])
 
-        #expect(prices["KRW-BTC"] == .krw(95_000_000))
-        #expect(prices["KRW-ETH"] == .krw(5_000_000))
+        #expect(quotes["KRW-BTC"]?.price == .krw(95_000_000))
+        #expect(quotes["KRW-ETH"]?.price == .krw(5_000_000))
     }
 
     @Test("빈 목록은 네트워크를 타지 않는다")
@@ -284,7 +311,7 @@ struct MarketDataRepositoryTests {
         }
         defer { StubURLProtocol.tearDown(session) }
 
-        #expect(try await repository.currentPrices(symbols: []).isEmpty)
+        #expect(try await repository.currentQuotes(symbols: []).isEmpty)
         #expect(requestCount.withLock { $0 } == 0)
     }
 }

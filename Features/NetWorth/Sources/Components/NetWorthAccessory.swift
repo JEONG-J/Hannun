@@ -61,7 +61,7 @@ struct NetWorthAccessory: View {
             }
 
         case let .stale(since):
-            StaleBadge(minutesElapsed: minutesElapsed(since: since))
+            staleBadge(since: since)
                 .padding(.leading, .spacingS)
         }
     }
@@ -82,6 +82,17 @@ struct NetWorthAccessory: View {
         date.formatted(date: .omitted, time: .shortened)
     }
 
+    /// 시세를 한 번도 받지 못한 종목만 낡았다면 "몇 분 전"을 말할 근거가 없다.
+    /// 이럴 때 0분으로 적으면 방금 받은 값처럼 읽히므로 문구를 따로 쓴다.
+    @ViewBuilder
+    private func staleBadge(since date: Date?) -> some View {
+        if let date {
+            StaleBadge(minutesElapsed: minutesElapsed(since: date))
+        } else {
+            StaleBadge(message: Constants.unavailableQuoteMessage)
+        }
+    }
+
     private func minutesElapsed(since date: Date) -> Int {
         max(0, Int(Date.now.timeIntervalSince(date) / Constants.secondsPerMinute))
     }
@@ -90,6 +101,7 @@ struct NetWorthAccessory: View {
 fileprivate enum Constants {
     static let refreshSymbolName = "arrow.clockwise"
     static let pendingCaption = "시세 불러오는 중"
+    static let unavailableQuoteMessage = "갱신 실패 · 시세 없는 종목 포함"
     static let secondsPerMinute: TimeInterval = 60
 
     static func expandedCaption(at time: String) -> String { "\(time) 시세 기준" }

@@ -22,6 +22,9 @@ public struct HoldingValuation: Identifiable, Equatable, Sendable {
     /// 매입원가. 평단가가 없는 현금은 nil.
     public let costBasis: Money?
 
+    /// 이 평가에 쓰인 가격이 언제 것인지 (NW-1 갱신 실패 배지의 근거).
+    public let priceFreshness: PriceFreshness
+
     public var id: UUID { holding.id }
 
     public var profit: Money? {
@@ -41,12 +44,14 @@ public struct HoldingValuation: Identifiable, Equatable, Sendable {
         holding: HoldingRecord,
         currentPrice: Money?,
         marketValue: Money,
-        costBasis: Money?
+        costBasis: Money?,
+        priceFreshness: PriceFreshness
     ) {
         self.holding = holding
         self.currentPrice = currentPrice
         self.marketValue = marketValue
         self.costBasis = costBasis
+        self.priceFreshness = priceFreshness
     }
 }
 
@@ -59,8 +64,8 @@ struct HoldingValuator {
     let baseCurrency: Currency
     let exchangeRate: ExchangeRate
 
-    /// 티커 → 현재가. 조회하지 못한 종목은 빠져 있다.
-    let prices: [String: Money]
+    /// 티커 → 시세. 조회하지 못한 종목은 빠져 있다.
+    let quotes: [String: Quote]
 
     // MARK: - Function
 
@@ -71,7 +76,8 @@ struct HoldingValuator {
                 holding: holding,
                 currentPrice: nil,
                 marketValue: exchangeRate.convert(balance, to: baseCurrency),
-                costBasis: nil
+                costBasis: nil,
+                priceFreshness: .notApplicable
             )
         }
 
@@ -88,16 +94,17 @@ struct HoldingValuator {
             holding: holding,
             currentPrice: exchangeRate.convert(unitPrice, to: baseCurrency),
             marketValue: exchangeRate.convert(marketValue, to: baseCurrency),
-            costBasis: costBasis.map { exchangeRate.convert($0, to: baseCurrency) }
+            costBasis: costBasis.map { exchangeRate.convert($0, to: baseCurrency) },
+            priceFreshness: quotes[holding.ticker]?.freshness ?? .unavailable
         )
     }
 
     /// 시세 → 수동 입력가 → 평단가 순으로 내려간다.
     ///
     /// 시세 조회가 실패해도 마지막으로 알고 있는 값을 쓰라는 정책의 계산 쪽 절반이다.
-    /// 평단가마저 없으면 0 이 되고, 화면은 갱신 실패 배지로 그 사실을 알린다.
+    /// 평단가마저 없으면 0 이 되고, 화면은 `priceFreshness` 를 보고 갱신 실패 배지를 띄운다.
     private func unitPrice(for holding: HoldingRecord) -> Money {
-        if let fetched = prices[holding.ticker] { return fetched }
+        if let fetched = quotes[holding.ticker] { return fetched.price }
         if let manual = holding.manualPrice {
             return Money(amount: manual, currency: holding.currency)
         }

@@ -34,6 +34,7 @@ final class PerformanceViewModel {
     private let calculateYTDReturnUseCase: any CalculateYTDReturnUseCaseProtocol
     private let fetchNetWorthTrendUseCase: any FetchNetWorthTrendUseCaseProtocol
     private let compareBenchmarkUseCase: any CompareBenchmarkUseCaseProtocol
+    private let exchangeRateService: any ExchangeRateServiceProtocol
     private let calendar: Calendar
     private let now: () -> Date
 
@@ -74,12 +75,14 @@ final class PerformanceViewModel {
         calculateYTDReturnUseCase: any CalculateYTDReturnUseCaseProtocol,
         fetchNetWorthTrendUseCase: any FetchNetWorthTrendUseCaseProtocol,
         compareBenchmarkUseCase: any CompareBenchmarkUseCaseProtocol,
+        exchangeRateService: any ExchangeRateServiceProtocol,
         calendar: Calendar = .current,
         now: @escaping () -> Date = { Date() }
     ) {
         self.calculateYTDReturnUseCase = calculateYTDReturnUseCase
         self.fetchNetWorthTrendUseCase = fetchNetWorthTrendUseCase
         self.compareBenchmarkUseCase = compareBenchmarkUseCase
+        self.exchangeRateService = exchangeRateService
         self.calendar = calendar
         self.now = now
     }
@@ -94,7 +97,8 @@ final class PerformanceViewModel {
             ),
             compareBenchmarkUseCase: container.resolve(
                 (any CompareBenchmarkUseCaseProtocol).self
-            )
+            ),
+            exchangeRateService: container.resolve((any ExchangeRateServiceProtocol).self)
         )
     }
 
@@ -171,7 +175,7 @@ final class PerformanceViewModel {
             let ytdReturn = try await calculateYTDReturnUseCase.execute(
                 asOf: now(),
                 baseCurrency: Constants.baseCurrency,
-                exchangeRate: Constants.assumedExchangeRate
+                exchangeRate: await exchangeRateService.currentRate()
             )
             summaryState = .loaded(PerformanceSummary(ytdReturn))
             isSummaryStale = false
@@ -185,6 +189,7 @@ final class PerformanceViewModel {
 
         let range = Self.dateRange(for: period, now: now(), calendar: calendar)
         let indices = BenchmarkIndex.allCases
+        let exchangeRate = await exchangeRateService.currentRate()
 
         do {
             let sampledPoints = try await fetchNetWorthTrendUseCase.execute(
@@ -198,7 +203,7 @@ final class PerformanceViewModel {
                 to: range.end,
                 indices: indices,
                 baseCurrency: Constants.baseCurrency,
-                exchangeRate: Constants.assumedExchangeRate
+                exchangeRate: exchangeRate
             )
 
             trendState = .loaded(
@@ -233,8 +238,4 @@ fileprivate enum Constants {
     static let baseCurrency: Currency = .krw
     static let initialPeriod: ChartPeriod = .yearToDate
     static let initialGranularity: TrendGranularity = .daily
-
-    /// 환율 조회 UseCase 가 아직 없다. 성과 탭은 원화 기준이라 환산이 개입하는 지점은
-    /// 외화 입출금뿐이므로 고정값으로 두고, 조회 경로가 생기면 이 상수만 걷어낸다.
-    static let assumedExchangeRate = ExchangeRate(krwPerUSD: 1_300)
 }

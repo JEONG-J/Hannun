@@ -254,4 +254,30 @@ struct PortfolioListViewModelTests {
         #expect(viewModel.didLastRefreshFail)
         #expect(viewModel.valuations.value?.count == 3)
     }
+
+    @Test("조회에 성공해도 낡은 시세가 섞여 있으면 갱신 실패 배지를 띄운다")
+    func flagsStaleQuotesAfterSuccessfulLoad() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices,
+            staleSymbols: ["AAPL"]
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.didLastRefreshFail == false)
+        #expect(viewModel.hasStaleQuotes)
+    }
+
+    @Test("모든 시세가 최신이면 갱신 실패 배지를 띄우지 않는다")
+    func hidesStaleBadgeWhenEveryQuoteIsCurrent() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.hasStaleQuotes == false)
+    }
 }

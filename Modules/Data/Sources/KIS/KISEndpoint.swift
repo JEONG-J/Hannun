@@ -34,6 +34,10 @@ enum KISEndpoint: Endpoint {
     /// 해외 주식·ETF 현재가
     case overseasQuote(exchange: KISExchange, ticker: String)
 
+    /// 원/달러 환율. 기간을 받는 이유는 이 API 가 기간별 시세이기 때문이다 —
+    /// 주말·공휴일에는 당일 고시가 없어 며칠을 함께 요청해야 값이 비지 않는다.
+    case exchangeRate(from: Date, to: Date)
+
     /// 실전투자 도메인. 모의투자는 `https://openapivts.koreainvestment.com:29443` 이고
     /// `tr_id` 앞 글자도 함께 바뀌므로, 지원하게 되면 host 와 `tr_id` 를 같이 분기해야 한다.
     private static let host = URL(string: "https://openapi.koreainvestment.com:9443")!
@@ -45,13 +49,16 @@ enum KISEndpoint: Endpoint {
         case .issueToken: "/oauth2/tokenP"
         case .domesticQuote: "/uapi/domestic-stock/v1/quotations/inquire-price"
         case .overseasQuote: "/uapi/overseas-price/v1/quotations/price"
+        // 확인 필요: 환율 전용 엔드포인트가 따로 없어 해외지수 기간별 시세 API 를 쓴다.
+        // 계좌번호를 요구하는 잔고 계열 환율(`CTRP6504R`)은 앱이 앱키만 갖고 있어 쓸 수 없다.
+        case .exchangeRate: "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice"
         }
     }
 
     var method: HTTPMethod {
         switch self {
         case .issueToken: .post
-        case .domesticQuote, .overseasQuote: .get
+        case .domesticQuote, .overseasQuote, .exchangeRate: .get
         }
     }
 
@@ -73,6 +80,17 @@ enum KISEndpoint: Endpoint {
                 URLQueryItem(name: "AUTH", value: ""),
                 URLQueryItem(name: "EXCD", value: exchange.rawValue),
                 URLQueryItem(name: "SYMB", value: ticker),
+            ]
+
+        case let .exchangeRate(from, to):
+            // 확인 필요: `X` 는 환율 시장 분류 코드, `FX@KRW` 는 원/달러 종목 코드,
+            // `D` 는 일봉이다. 실키로 검증하지 않았다.
+            [
+                URLQueryItem(name: "FID_COND_MRKT_DIV_CODE", value: "X"),
+                URLQueryItem(name: "FID_INPUT_ISCD", value: "FX@KRW"),
+                URLQueryItem(name: "FID_INPUT_DATE_1", value: Self.requestDate(from)),
+                URLQueryItem(name: "FID_INPUT_DATE_2", value: Self.requestDate(to)),
+                URLQueryItem(name: "FID_PERIOD_DIV_CODE", value: "D"),
             ]
         }
     }
@@ -96,7 +114,7 @@ enum KISEndpoint: Endpoint {
                 KISTokenRequestBody(appKey: appKey, appSecret: appSecret)
             )
 
-        case .domesticQuote, .overseasQuote:
+        case .domesticQuote, .overseasQuote, .exchangeRate:
             nil
         }
     }
@@ -104,9 +122,28 @@ enum KISEndpoint: Endpoint {
     var authentication: EndpointAuthentication {
         switch self {
         case .issueToken: .none
-        case .domesticQuote, .overseasQuote: .kisAccessToken
+        case .domesticQuote, .overseasQuote, .exchangeRate: .kisAccessToken
         }
     }
+
+    /// KIS 는 날짜를 한국 시간 기준 `yyyyMMdd` 로 받는다.
+    ///
+    /// `DateFormatter` 는 `Sendable` 이 아니라 전역 상수로 둘 수 없고, 요청마다 새로 만들면
+    /// 로캘·역법 설정이 기기 설정을 따라가 흔들린다. 그래서 컴포넌트를 직접 조립한다.
+    private static func requestDate(_ date: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = seoulTimeZone
+
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(
+            format: "%04d%02d%02d",
+            parts.year ?? 0,
+            parts.month ?? 0,
+            parts.day ?? 0
+        )
+    }
+
+    private static let seoulTimeZone = TimeZone(identifier: "Asia/Seoul") ?? .current
 
     /// KIS 는 경로가 같아도 `tr_id` 로 거래 종류를 가른다. 그래서 헤더 분기가 곧 엔드포인트 분기다.
     ///
@@ -117,6 +154,7 @@ enum KISEndpoint: Endpoint {
         case .issueToken: nil
         case .domesticQuote: "FHKST01010100"
         case .overseasQuote: "HHDFS00000300"
+        case .exchangeRate: "FHKST03030100"
         }
     }
 }

@@ -36,6 +36,7 @@ struct PortfolioListView: View {
             initialValue: PortfolioListViewModel(
                 fetchHoldings: container.resolve((any FetchHoldingsUseCaseProtocol).self),
                 deleteHolding: container.resolve((any DeleteHoldingUseCaseProtocol).self),
+                exchangeRateService: container.resolve((any ExchangeRateServiceProtocol).self),
                 errorHandler: errorHandler
             )
         )
@@ -113,7 +114,7 @@ struct PortfolioListView: View {
             )
             .padding(.horizontal, .spacingL)
 
-            if viewModel.didLastRefreshFail {
+            if viewModel.hasStaleQuotes {
                 StaleBadge(message: Constants.staleMessage)
                     .padding(.horizontal, .spacingL)
             }

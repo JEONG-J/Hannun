@@ -21,11 +21,18 @@ struct KISResponseEnvelope<Output: Decodable & Sendable>: Decodable, Sendable {
     let message: String?
     let output: Output?
 
+    /// 응답 키 `output1`.
+    ///
+    /// 현재가 계열은 본문을 `output` 하나로 주지만, 기간별 시세 계열은 요약(`output1`)과
+    /// 시계열(`output2`)로 나눠 준다. 요약만 필요한 호출이 있어 같은 봉투로 받는다.
+    let primaryOutput: Output?
+
     private enum CodingKeys: String, CodingKey {
         case returnCode = "rt_cd"
         case messageCode = "msg_cd"
         case message = "msg1"
         case output
+        case primaryOutput = "output1"
     }
 
     /// 성공 응답의 본문을 꺼낸다. 실패면 서버가 준 사유를 그대로 올린다.
@@ -33,7 +40,7 @@ struct KISResponseEnvelope<Output: Decodable & Sendable>: Decodable, Sendable {
         guard returnCode == Self.successReturnCode else {
             throw AppError.network(serverMessage ?? "시세를 조회하지 못했습니다.")
         }
-        guard let output else {
+        guard let output = output ?? primaryOutput else {
             throw AppError.decoding("KIS 응답에 output 이 없습니다.")
         }
         return output

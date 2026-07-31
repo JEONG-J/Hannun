@@ -7,11 +7,11 @@
 
 import HannunCore
 
-/// 평가금액을 환산할 기준 통화와 환율.
+/// 평가금액을 환산할 기준 통화.
 ///
-/// 환율을 내려주는 UseCase 가 아직 없어 상수를 쓴다. 조회 계층이 붙기 전까지 해외 자산의
-/// 원화 평가금액은 이 값에 묶인다.
+/// 포트폴리오 탭에는 아직 통화 토글이 없어 원화로 고정한다. 환율은 상수가 아니라
+/// `ExchangeRateServiceProtocol` 로 주입받는다 — 탭마다 다른 환율을 쓰면 같은 자산이
+/// 화면마다 다른 금액으로 보인다.
 enum ValuationSettings {
     static let baseCurrency: Currency = .krw
-    static let exchangeRate = ExchangeRate(krwPerUSD: 1_380)
 }

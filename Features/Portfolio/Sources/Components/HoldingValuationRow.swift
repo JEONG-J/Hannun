@@ -103,14 +103,16 @@ private struct HoldingValuationRowPreview: View {
         ),
         currentPrice: .krw(69_100),
         marketValue: .krw(6_910_000),
-        costBasis: .krw(6_130_000)
+        costBasis: .krw(6_130_000),
+        priceFreshness: .fresh(asOf: .now)
     )
 
     private let cash = HoldingValuation(
         holding: HoldingRecord(category: .cash, name: "원화 예수금", quantity: 12_845_000),
         currentPrice: nil,
         marketValue: .krw(12_845_000),
-        costBasis: nil
+        costBasis: nil,
+        priceFreshness: .notApplicable
     )
 
     // MARK: - Body

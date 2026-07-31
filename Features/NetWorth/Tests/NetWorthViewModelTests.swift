@@ -77,6 +77,47 @@ struct NetWorthViewModelTests {
         #expect(viewModel.freshness == .unknown)
     }
 
+    @Test("모든 시세가 최신이면 갱신 시각을 그대로 쓴다")
+    @MainActor
+    func reportsFreshWhenEveryQuoteIsCurrent() async {
+        let viewModel = makeViewModel(holdings: SampleFixtures.mixedHoldings)
+
+        await viewModel.load()
+
+        #expect(viewModel.freshness == .fresh(SampleFixtures.refreshedAt))
+    }
+
+    @Test("일부 종목만 낡은 시세여도 낡은 쪽 시각으로 stale 을 표시한다")
+    @MainActor
+    func marksStaleWhenAnyQuoteIsStale() async {
+        let viewModel = makeViewModel(
+            holdings: SampleFixtures.mixedHoldings,
+            marketData: FixedPriceMarketDataService(
+                prices: SampleFixtures.prices,
+                staleSymbols: ["005930"],
+                asOf: SampleFixtures.quotedAt
+            )
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.summary.value?.total == .krw(9_500_000))
+        #expect(viewModel.freshness == .stale(since: SampleFixtures.quotedAt))
+    }
+
+    @Test("시세를 한 번도 받지 못한 종목이 있으면 기준 시각 없이 stale 이다")
+    @MainActor
+    func marksStaleWithoutDateWhenQuoteNeverArrived() async {
+        let viewModel = makeViewModel(
+            holdings: SampleFixtures.mixedHoldings,
+            marketData: FixedPriceMarketDataService(asOf: SampleFixtures.quotedAt)
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.freshness == .stale(since: nil))
+    }
+
     // MARK: - NW-2 기준 통화
 
     @Test("기준 통화를 바꾸면 다시 불러오기 전에 즉시 재환산한다")
@@ -195,7 +236,10 @@ private enum SampleFixtures {
     /// 시세 조회 시각을 고정해 `freshness` 비교를 결정적으로 만든다.
     static let refreshedAt = SampleRecords.day(2026, 8, 1)
 
-    static let exchangeRate = ExchangeRate(krwPerUSD: 1_300)
+    /// 시세를 받아온 시각. 낡은 시세 배지가 가리키는 기준 시각이기도 하다.
+    static let quotedAt = SampleRecords.day(2026, 7, 31)
+
+    static let exchangeRateService = FixedExchangeRateService(krwPerUSD: 1_300)
 
     static let weightTolerance = Decimal(string: "0.0001") ?? .zero
 
@@ -227,7 +271,8 @@ private enum SampleFixtures {
 private func makeViewModel(
     holdings: [HoldingRecord] = [],
     marketData: FixedPriceMarketDataService = FixedPriceMarketDataService(
-        prices: SampleFixtures.prices
+        prices: SampleFixtures.prices,
+        asOf: SampleFixtures.quotedAt
     ),
     fetchNetWorth: (any FetchNetWorthUseCaseProtocol)? = nil,
     fetchTrend: any FetchNetWorthTrendUseCaseProtocol = StubTrendUseCase(points: [])
@@ -244,7 +289,7 @@ private func makeViewModel(
         fetchNetWorth: netWorth,
         fetchCategoryBreakdown: FetchCategoryBreakdownUseCase(fetchNetWorthUseCase: netWorth),
         fetchTrend: fetchTrend,
-        exchangeRate: SampleFixtures.exchangeRate,
+        exchangeRateService: SampleFixtures.exchangeRateService,
         calendar: SampleRecords.utcCalendar,
         now: { SampleFixtures.refreshedAt }
     )

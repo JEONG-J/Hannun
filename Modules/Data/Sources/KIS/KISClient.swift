@@ -24,6 +24,9 @@ struct KISClient: Sendable {
     private let client: NetworkClient
     private let maxConcurrentRequests: Int
 
+    /// 환율 조회 하한. 연휴가 길어도 직전 고시가 구간 안에 들어오도록 일주일을 잡는다.
+    private static let exchangeRateLookback: TimeInterval = 60 * 60 * 24 * 7
+
     // MARK: - Function
 
     /// - Parameter maxConcurrentRequests: KIS 는 계정당 초당 호출 수 제한이 있어 보유 종목
@@ -113,6 +116,21 @@ struct KISClient: Sendable {
             throw firstFailure
         }
         return prices
+    }
+
+    /// 원/달러 환율을 조회한다.
+    ///
+    /// - Parameter asOf: 조회 기준일. 기간별 시세 API 라 하한을 함께 보내야 하는데, 주말·연휴에는
+    ///   당일 고시가 없어 며칠을 거슬러 잡는다.
+    func exchangeRate(asOf date: Date = Date()) async throws -> ExchangeRate {
+        let response = try await client.send(
+            KISEndpoint.exchangeRate(
+                from: date.addingTimeInterval(-Self.exchangeRateLookback),
+                to: date
+            ),
+            as: KISResponseEnvelope<KISExchangeRateDTO>.self
+        )
+        return try response.requireOutput().toDomain()
     }
 
     private func outcome(symbol: String, target: KISQuoteTarget) async -> QuoteOutcome {

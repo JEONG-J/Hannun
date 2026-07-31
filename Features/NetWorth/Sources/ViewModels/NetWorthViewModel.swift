@@ -17,7 +17,10 @@ enum QuoteFreshness: Equatable, Sendable {
     /// 마지막 갱신이 성공했다.
     case fresh(Date)
     /// 갱신에 실패해 그 이전 값을 그대로 쓰고 있다.
-    case stale(since: Date)
+    ///
+    /// 시세를 한 번도 받지 못한 종목(수동 입력가로 평가한 종목)이 섞여 있으면 기준 시각을
+    /// 말할 수 없어 `since` 가 nil 이다.
+    case stale(since: Date?)
 }
 
 @MainActor
@@ -31,16 +34,16 @@ final class NetWorthViewModel {
     /// 기준 통화 (NW-2). 바뀌는 즉시 들고 있던 금액을 재환산한다 — 다시 불러올 때까지
     /// 이전 통화 숫자가 남아 있으면 토글이 먹지 않은 것처럼 보인다.
     ///
-    /// 환율 조회 창구가 아직 없어 여기 쓰이는 환율은 고정값이다. 창구가 생기면
-    /// 마지막으로 성공한 환율이 이 자리에 들어온다.
+    /// 재환산에는 **마지막으로 불러올 때 쓴 환율**을 그대로 쓴다. 여기서 새로 조회하면
+    /// 토글 한 번에 네트워크가 붙고, 화면에 있는 금액과 다른 환율로 계산될 수도 있다.
     var baseCurrency: Currency {
         get { storedBaseCurrency }
         set {
             guard newValue != storedBaseCurrency else { return }
 
             storedBaseCurrency = newValue
-            if let current = summary.value {
-                summary = .loaded(current.converted(to: newValue, using: exchangeRate))
+            if let current = summary.value, let latestExchangeRate {
+                summary = .loaded(current.converted(to: newValue, using: latestExchangeRate))
             }
         }
     }
@@ -55,9 +58,12 @@ final class NetWorthViewModel {
     private let fetchNetWorth: any FetchNetWorthUseCaseProtocol
     private let fetchCategoryBreakdown: any FetchCategoryBreakdownUseCaseProtocol
     private let fetchTrend: any FetchNetWorthTrendUseCaseProtocol
-    private let exchangeRate: ExchangeRate
+    private let exchangeRateService: any ExchangeRateServiceProtocol
     private let calendar: Calendar
     private let now: @Sendable () -> Date
+
+    /// 마지막으로 불러올 때 쓴 환율. 통화 토글이 같은 값으로 되돌아올 수 있게 남겨 둔다.
+    private var latestExchangeRate: ExchangeRate?
 
     // MARK: - Function
 
@@ -65,7 +71,7 @@ final class NetWorthViewModel {
         fetchNetWorth: any FetchNetWorthUseCaseProtocol,
         fetchCategoryBreakdown: any FetchCategoryBreakdownUseCaseProtocol,
         fetchTrend: any FetchNetWorthTrendUseCaseProtocol,
-        exchangeRate: ExchangeRate,
+        exchangeRateService: any ExchangeRateServiceProtocol,
         baseCurrency: Currency = .krw,
         calendar: Calendar = .current,
         now: @escaping @Sendable () -> Date = Date.init
@@ -73,7 +79,7 @@ final class NetWorthViewModel {
         self.fetchNetWorth = fetchNetWorth
         self.fetchCategoryBreakdown = fetchCategoryBreakdown
         self.fetchTrend = fetchTrend
-        self.exchangeRate = exchangeRate
+        self.exchangeRateService = exchangeRateService
         self.storedBaseCurrency = baseCurrency
         self.calendar = calendar
         self.now = now
@@ -86,7 +92,7 @@ final class NetWorthViewModel {
                 (any FetchCategoryBreakdownUseCaseProtocol).self
             ),
             fetchTrend: container.resolve((any FetchNetWorthTrendUseCaseProtocol).self),
-            exchangeRate: Constants.fallbackExchangeRate
+            exchangeRateService: container.resolve((any ExchangeRateServiceProtocol).self)
         )
     }
 
@@ -96,6 +102,9 @@ final class NetWorthViewModel {
     /// 비면 방금 재환산해 둔 금액이 도로 사라진다.
     func load() async {
         if summary.value == nil { summary = .loading }
+
+        let exchangeRate = await exchangeRateService.currentRate()
+        latestExchangeRate = exchangeRate
 
         do {
             let netWorth = try await fetchNetWorth.execute(
@@ -116,10 +125,24 @@ final class NetWorthViewModel {
                     dailyChange: await dailyChange(against: netWorth.total, asOf: refreshedAt)
                 )
             )
-            freshness = .fresh(refreshedAt)
+            freshness = quoteFreshness(of: netWorth.valuations, refreshedAt: refreshedAt)
         } catch {
             degrade(on: error)
         }
+    }
+
+    /// 조회에 성공해도 종목마다 시세 사정이 다르다. 하나라도 낡은 값으로 평가했으면 배지를 띄운다.
+    ///
+    /// 기준 시각은 낡은 종목 중 **가장 오래된 것**이다 — "몇 분 전 기준"은 가장 불리한 종목을
+    /// 말해야 사용자가 숫자를 과신하지 않는다.
+    private func quoteFreshness(
+        of valuations: [HoldingValuation],
+        refreshedAt: Date
+    ) -> QuoteFreshness {
+        let staleValuations = valuations.filter { $0.priceFreshness.isStale }
+        guard !staleValuations.isEmpty else { return .fresh(refreshedAt) }
+
+        return .stale(since: staleValuations.compactMap(\.priceFreshness.staleSince).min())
     }
 
     /// 갱신에 실패해도 마지막으로 성공한 값을 그대로 둔다 — 빈 화면 대신 배지로 알린다.
@@ -128,8 +151,10 @@ final class NetWorthViewModel {
         switch freshness {
         case .unknown:
             summary = .failed(error as? AppError ?? .unknown(String(describing: error)))
-        case let .fresh(lastSuccess), let .stale(lastSuccess):
+        case let .fresh(lastSuccess):
             freshness = .stale(since: lastSuccess)
+        case .stale:
+            break
         }
     }
 
@@ -166,6 +191,4 @@ final class NetWorthViewModel {
 fileprivate enum Constants {
     /// 주말·공휴일에는 스냅샷이 없어 직전 기록까지 거슬러 본다.
     static let previousSnapshotLookbackDays = 7
-    /// 환율 조회 창구가 없는 동안 쓰는 고정 환율. 창구가 생기면 이 상수는 사라진다.
-    static let fallbackExchangeRate = ExchangeRate(krwPerUSD: 1_300)
 }

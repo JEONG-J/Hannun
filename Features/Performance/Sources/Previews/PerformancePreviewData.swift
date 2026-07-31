@@ -86,6 +86,22 @@ struct StubCompareBenchmarkUseCase: CompareBenchmarkUseCaseProtocol {
     }
 }
 
+/// 환율을 고정해 프리뷰·테스트의 원화 환산 결과를 결정적으로 만든다.
+struct StubExchangeRateService: ExchangeRateServiceProtocol {
+
+    // MARK: - Property
+
+    private let rate: ExchangeRate
+
+    // MARK: - Function
+
+    init(krwPerUSD: Decimal = 1_380) {
+        rate = ExchangeRate(krwPerUSD: krwPerUSD)
+    }
+
+    func currentRate() async -> ExchangeRate { rate }
+}
+
 /// 프리뷰용 표본. 2026년 1월 1일부터 26일 간격 8개 시점이다.
 enum PerformanceSampleData {
 
@@ -151,6 +167,7 @@ extension PerformanceViewModel {
             compareBenchmarkUseCase: StubCompareBenchmarkUseCase { _, _, _ in
                 PerformanceSampleData.comparison
             },
+            exchangeRateService: StubExchangeRateService(),
             now: { PerformanceSampleData.now }
         )
         viewModel.selectBenchmark(.sp500)

@@ -47,7 +47,7 @@ public struct FetchHoldingsUseCase: FetchHoldingsUseCaseProtocol {
         let valuator = HoldingValuator(
             baseCurrency: baseCurrency,
             exchangeRate: exchangeRate,
-            prices: await prices(for: holdings)
+            quotes: await quotes(for: holdings)
         )
         return holdings.map(valuator.valuation(for:))
     }
@@ -55,8 +55,9 @@ public struct FetchHoldingsUseCase: FetchHoldingsUseCaseProtocol {
     /// 시세 조회 실패를 빈 시세로 흡수한다.
     ///
     /// 수동 입력가·평단가 폴백이 뒤를 받치므로 화면 전체를 실패 상태로 떨어뜨리지 않는다.
-    /// 갱신에 실패했다는 사실은 시세 계층의 캐시 신선도가 따로 알린다.
-    private func prices(for holdings: [HoldingRecord]) async -> [String: Money] {
+    /// 대신 결과에서 빠진 종목은 `PriceFreshness.unavailable`, 캐시로 버틴 종목은 `.stale`
+    /// 로 남아 **어느 종목이 낡았는지 종목 단위로** 화면에 전달된다.
+    private func quotes(for holdings: [HoldingRecord]) async -> [String: Quote] {
         let symbols = Set(
             holdings
                 .filter { $0.category != .cash && !$0.ticker.isEmpty }
@@ -64,6 +65,6 @@ public struct FetchHoldingsUseCase: FetchHoldingsUseCaseProtocol {
         )
         guard !symbols.isEmpty else { return [:] }
 
-        return (try? await marketDataService.currentPrices(symbols: Array(symbols))) ?? [:]
+        return (try? await marketDataService.currentQuotes(symbols: Array(symbols))) ?? [:]
     }
 }

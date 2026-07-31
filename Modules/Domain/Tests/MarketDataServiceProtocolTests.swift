@@ -5,6 +5,7 @@
 //  Created by euijjang97 on 7/31/26.
 //
 
+import Foundation
 import HannunCore
 import Testing
 @testable import HannunDomain
@@ -20,8 +21,10 @@ private struct StubMarketDataService: MarketDataServiceProtocol {
         return price
     }
 
-    func currentPrices(symbols: [String]) async throws -> [String: Money] {
-        prices.filter { symbols.contains($0.key) }
+    func currentQuotes(symbols: [String]) async throws -> [String: Quote] {
+        prices
+            .filter { symbols.contains($0.key) }
+            .mapValues { Quote(price: $0, asOf: Date(timeIntervalSince1970: 0)) }
     }
 }
 
@@ -39,10 +42,10 @@ struct MarketDataServiceProtocolTests {
 
     @Test("조회하지 못한 심볼은 결과에서 빠진다")
     func batchOmitsUnknownSymbols() async throws {
-        let prices = try await service.currentPrices(symbols: ["005930", "없는종목"])
+        let quotes = try await service.currentQuotes(symbols: ["005930", "없는종목"])
 
-        #expect(prices.count == 1)
-        #expect(prices["005930"] == .krw(70_000))
-        #expect(prices["없는종목"] == nil)
+        #expect(quotes.count == 1)
+        #expect(quotes["005930"]?.price == .krw(70_000))
+        #expect(quotes["없는종목"] == nil)
     }
 }

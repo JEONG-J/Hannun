@@ -65,6 +65,30 @@ struct KISEndpointTests {
         #expect(endpoint.authentication == .kisAccessToken)
     }
 
+    @Test("환율 조회는 원/달러 종목코드와 한국 시간 기준 날짜 구간을 싣는다")
+    func exchangeRateCarriesSeoulDateRange() throws {
+        // from 은 UTC 로 7/26 15:30 이지만 한국 시간으로는 이미 7/27 이다 (시간대 처리 확인).
+        let endpoint = KISEndpoint.exchangeRate(
+            from: Date(timeIntervalSince1970: 1_785_079_800),
+            to: Date(timeIntervalSince1970: 1_785_628_800)
+        )
+        let request = try endpoint.makeRequest()
+        let url = try #require(request.url)
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+
+        #expect(components.path == "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice")
+        #expect(queryValue(components, "FID_COND_MRKT_DIV_CODE") == "X")
+        #expect(queryValue(components, "FID_INPUT_ISCD") == "FX@KRW")
+        #expect(queryValue(components, "FID_INPUT_DATE_1") == "20260727")
+        #expect(queryValue(components, "FID_INPUT_DATE_2") == "20260802")
+        #expect(queryValue(components, "FID_PERIOD_DIV_CODE") == "D")
+
+        #expect(request.httpMethod == "GET")
+        #expect(request.httpBody == nil)
+        #expect(request.value(forHTTPHeaderField: "tr_id") == "FHKST03030100")
+        #expect(endpoint.authentication == .kisAccessToken)
+    }
+
     @Test("국내와 해외는 서로 다른 tr_id 를 쓴다")
     func transactionIDDiffersPerEndpoint() throws {
         let domestic = try KISEndpoint.domesticQuote(code: "069500").makeRequest()

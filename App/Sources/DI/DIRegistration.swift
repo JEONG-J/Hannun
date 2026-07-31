@@ -59,6 +59,9 @@ enum DIRegistration {
         container.register((any MarketDataServiceProtocol).self) {
             MarketDataRepository()
         }
+        container.register((any ExchangeRateServiceProtocol).self) {
+            ExchangeRateRepository()
+        }
     }
 
     /// 팩토리는 컨테이너보다 오래 살 수 없으므로 `unowned` 로 잡아 순환 참조를 만들지 않는다.

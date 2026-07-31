@@ -44,6 +44,7 @@ final class PortfolioListViewModel {
 
     private let fetchHoldings: any FetchHoldingsUseCaseProtocol
     private let deleteHolding: any DeleteHoldingUseCaseProtocol
+    private let exchangeRateService: any ExchangeRateServiceProtocol
     private let errorHandler: ErrorHandler
 
     private(set) var valuations: Loadable<[HoldingValuation]> = .idle
@@ -107,15 +108,26 @@ final class PortfolioListViewModel {
         valuations.value?.isEmpty == false
     }
 
+    /// 갱신 실패 배지를 띄울지.
+    ///
+    /// 조회가 통째로 실패한 경우뿐 아니라, 성공했더라도 낡은 시세로 평가한 종목이 섞여 있으면
+    /// 참이다 — 시세는 종목마다 따로 실패하므로 목록 전체가 최신이라고 말할 수 없다.
+    var hasStaleQuotes: Bool {
+        if didLastRefreshFail { return true }
+        return valuations.value?.contains { $0.priceFreshness.isStale } ?? false
+    }
+
     // MARK: - Function
 
     init(
         fetchHoldings: any FetchHoldingsUseCaseProtocol,
         deleteHolding: any DeleteHoldingUseCaseProtocol,
+        exchangeRateService: any ExchangeRateServiceProtocol,
         errorHandler: ErrorHandler
     ) {
         self.fetchHoldings = fetchHoldings
         self.deleteHolding = deleteHolding
+        self.exchangeRateService = exchangeRateService
         self.errorHandler = errorHandler
     }
 
@@ -190,11 +202,13 @@ final class PortfolioListViewModel {
     }
 
     private func reload() async {
+        let exchangeRate = await exchangeRateService.currentRate()
+
         do {
             let loaded = try await fetchHoldings.execute(
                 category: nil,
                 baseCurrency: ValuationSettings.baseCurrency,
-                exchangeRate: ValuationSettings.exchangeRate
+                exchangeRate: exchangeRate
             )
 
             valuations = .loaded(loaded)

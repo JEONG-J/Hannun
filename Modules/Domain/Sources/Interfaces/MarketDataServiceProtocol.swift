@@ -13,8 +13,8 @@ import HannunCore
 public protocol MarketDataServiceProtocol: Sendable {
     func currentPrice(symbol: String) async throws -> Money
 
-    /// 여러 종목의 현재가를 한 번에 조회한다.
+    /// 여러 종목의 시세를 한 번에 조회한다.
     /// 외부 API 가 배치 조회를 지원하므로 호출량 제한을 아끼려면 이쪽을 쓴다.
-    /// 조회하지 못한 심볼은 결과에서 빠진다.
-    func currentPrices(symbols: [String]) async throws -> [String: Money]
+    /// 조회하지 못한 심볼은 결과에서 빠지고, 캐시로 버틴 심볼은 `isStale` 로 그 사실을 알린다.
+    func currentQuotes(symbols: [String]) async throws -> [String: Quote]
 }

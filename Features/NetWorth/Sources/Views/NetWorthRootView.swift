@@ -6,18 +6,23 @@
 //
 
 import HannunCore
-import HannunDesignSystem
-import HannunDomain
 import SwiftUI
 
-/// 순자산 탭 루트. 기능 명세 NW-1~4 는 여기부터 구현한다.
+/// 순자산 탭 루트 (NW-1 ~ NW-4).
+///
+/// 앱 셸이 인자 없이 만들기 때문에 컨테이너를 환경에서 꺼내 안쪽 화면에 넘긴다 —
+/// ViewModel 소유는 컨테이너를 인자로 받는 `NetWorthScreen` 이 맡는다.
 public struct NetWorthRootView: View {
+
+    // MARK: - Property
+
+    @Environment(DIContainer.self) private var container
+
+    // MARK: - Body
+
     public init() {}
 
     public var body: some View {
-        NavigationStack {
-            ContentUnavailableView("순자산", systemImage: "square.dashed")
-                .navigationTitle("순자산")
-        }
+        NetWorthScreen(container: container)
     }
 }

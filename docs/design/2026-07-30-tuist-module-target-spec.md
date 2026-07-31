@@ -104,7 +104,7 @@ L1   HannunCore         ─→ (없음)
 
 ```swift
 // HannunCore
-public enum AssetCategory: String, CaseIterable, Sendable { case cash, domesticStock, foreignStock, etf, crypto }
+public enum AssetCategory: String, CaseIterable, Sendable { case cash, domesticStock, overseasStock, etf, crypto }
 public enum Currency: String, Sendable { case krw, usd }
 public struct Money: Equatable, Sendable { public let amount: Decimal; public let currency: Currency }
 

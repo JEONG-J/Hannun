@@ -45,6 +45,8 @@ let project = Project(
                 .project(target: "JournalFeature", path: .relativeToRoot("Features/Journal")),
                 // 구현체를 아는 유일한 지점
                 .project(target: "HannunData", path: .relativeToRoot("Modules/Data")),
+                // 등록할 Protocol 메타타입 참조
+                .project(target: "HannunDomain", path: .relativeToRoot("Modules/Domain")),
                 // DIContainer·ErrorHandler 직접 사용
                 .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
             ]

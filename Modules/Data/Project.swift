@@ -22,6 +22,7 @@ let project = moduleProject(
     includesTests: true,
     testDependencies: [
         .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
+        .project(target: "HannunDomain", path: .relativeToRoot("Modules/Domain")),
         .project(target: "HannunTestSupport", path: .relativeToRoot("Modules/TestSupport")),
     ]
 )

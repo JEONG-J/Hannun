@@ -6,18 +6,54 @@
 //
 
 import HannunCore
-import HannunDesignSystem
-import HannunDomain
 import SwiftUI
 
-/// 투자 성과 탭 루트. 기능 명세 PM-1~4 는 여기부터 구현한다.
+/// 투자 성과 탭 루트 (PM-1 ~ PM-4).
 public struct PerformanceRootView: View {
+
+    // MARK: - Property
+
+    @Environment(DIContainer.self) private var container
+
+    // MARK: - Body
+
     public init() {}
 
     public var body: some View {
-        NavigationStack {
-            ContentUnavailableView("투자 성과", systemImage: "square.dashed")
-                .navigationTitle("투자 성과")
-        }
+        PerformanceScreen(container: container)
     }
+}
+
+/// ViewModel 을 소유하는 실제 화면.
+///
+/// 루트와 나눠 놓은 이유는 컨테이너 주입 시점 때문이다. 앱 셸이 `PerformanceRootView()` 를
+/// 인자 없이 만들어서 `init` 에서는 컨테이너를 볼 수 없고, `@Environment` 는 body 에서야 읽힌다.
+/// 그 값을 `init` 으로 받는 자식을 하나 두면 ViewModel 을 `@State` 로 한 번만 만들 수 있다.
+private struct PerformanceScreen: View {
+
+    // MARK: - Property
+
+    @State private var viewModel: PerformanceViewModel
+
+    // MARK: - Body
+
+    init(container: DIContainer) {
+        _viewModel = State(initialValue: PerformanceViewModel(container: container))
+    }
+
+    var body: some View {
+        NavigationStack {
+            PerformanceContentView(viewModel: viewModel)
+                .navigationTitle(Constants.navigationTitle)
+        }
+        // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
+        .tabAccessory(.performance) {
+            BenchmarkAccessory(viewModel: viewModel)
+        }
+        .task { await viewModel.loadIfNeeded() }
+    }
+}
+
+fileprivate enum Constants {
+    static let navigationTitle = "투자 성과"
 }

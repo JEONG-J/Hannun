@@ -12,5 +12,10 @@ import ProjectDescriptionHelpers
 let project = featureProject(
     name: "PerformanceFeature",
     bundleIdSuffix: "performance",
-    includesTests: true
+    includesTests: true,
+    testDependencies: [
+        .project(target: "HannunDomain", path: .relativeToRoot("Modules/Domain")),
+        .project(target: "HannunDesignSystem", path: .relativeToRoot("Modules/DesignSystem")),
+        .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
+    ]
 )

@@ -49,10 +49,20 @@ Glass는 "콘텐츠 위에 떠 있는 기능 레이어"에만 쓴다. 콘텐츠 
 | 탭바·내비게이션 바 | 시스템 기본 glass 그대로 사용 (커스텀 배경 금지) |
 | 탭바 하단 액세서리 | 캡슐 **컨테이너에만** glass. 내부 컨트롤은 불투명 (§3.1) |
 | 컨트롤 레이어 | 필터 칩, 세그먼트, sheet 하단 버튼에 glass 적용 |
-| 칩 그룹 | `GlassEffectContainer` + `glassEffectUnion` 필수 (오프스크린 렌더링 절감) |
+| 칩 그룹 | `GlassEffectContainer` + `glassEffectUnion` 필수 (오프스크린 렌더링 절감). **선택된 칩은 union 밖에 둔다** — 아래 참고 |
 | 차트 영역 | **glass 금지** — 도넛/라인 차트 배경은 불투명 서피스. 가독성·성능 모두 이유 |
 | 고밀도 숫자 영역 | **glass 금지** — 종목 리스트, 금액 표, 총자산 숫자 뒤에 glass를 깔지 않는다 |
 | List/Table | glass 적용 불가 (design-system.md 성능 규칙) |
+
+> **union 과 tint 는 같이 못 쓴다 (iOS 26.5 시뮬레이터 실측).** `glassEffectUnion` 은 참여 뷰의
+> glass 를 하나의 레이어로 병합하면서 재질 파라미터도 합친다. 선택된 칩을 union 에 넣으면 그 칩의
+> `tint` 가 이웃으로 번지는 정도가 아니라 **아예 사라져서**, 무채색 유리 위에 `onBrand` 라벨만
+> 남아 어느 칩이 선택됐는지 읽을 수 없다. 그래서 **비선택 칩만 union 으로 묶고 선택 칩은 밖에 둔다.**
+> union 의 목적인 오프스크린 렌더링 절감은 대상이 n-1 개라 사실상 그대로다.
+>
+> 대가는 하나 있다 — union 을 쓰는 이상 비선택 칩들의 개별 캡슐 경계는 사라지고 하나의 트랙이 되며,
+> 선택 칩이 그 위에 얹힌 모양이 된다. 개별 캡슐 외형이 더 중요하다면 union 을 빼는 쪽을 택한다.
+> 구현: `Modules/DesignSystem/Sources/Components/FilterChip.swift`
 
 ## 2. 디자인 토큰
 

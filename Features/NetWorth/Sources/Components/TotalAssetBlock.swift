@@ -35,6 +35,26 @@ struct TotalAssetBlock: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Constants.accessibilityLabel)
+        .accessibilityValue(accessibilityValue)
     }
+
+    // MARK: - Function
+
+    /// 자식을 합치면 `AmountText` 가 쪼개 그린 조각들이 토막난 채 읽힌다.
+    /// 화면에 찍히는 것과 같은 규칙으로 만든 한 문장을 대신 얹는다.
+    private var accessibilityValue: String {
+        let amount = AmountFormatter.text(for: total)
+        guard let change else { return amount }
+
+        let pill = ChangePillContent.amountWithRatio(change.amount, change.ratio)
+        return amount + Constants.valueSeparator + Constants.changePrefix + pill.text
+    }
+}
+
+fileprivate enum Constants {
+    static let accessibilityLabel = "총자산"
+    static let valueSeparator = ", "
+    static let changePrefix = "전일 대비 "
 }

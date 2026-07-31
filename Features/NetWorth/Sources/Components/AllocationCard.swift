@@ -43,7 +43,7 @@ struct AllocationCard: View {
                 slices: breakdown.map {
                     DonutChartSlice(
                         category: $0.category,
-                        name: $0.category.name,
+                        name: $0.category.title,
                         amount: $0.amount
                     )
                 },

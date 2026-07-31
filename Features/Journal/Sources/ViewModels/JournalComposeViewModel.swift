@@ -95,7 +95,7 @@ final class JournalComposeViewModel {
             )
             holdingTagsState = .loaded(valuations.map(\.holding))
         } catch {
-            holdingTagsState = .failed(.inline(error))
+            holdingTagsState = .failed(AppError(narrowing: error))
         }
     }
 
@@ -129,7 +129,7 @@ final class JournalComposeViewModel {
             try await saveJournal.execute(record)
             saveState = .loaded(record)
         } catch {
-            saveState = .failed(.inline(error))
+            saveState = .failed(AppError(narrowing: error))
         }
     }
 

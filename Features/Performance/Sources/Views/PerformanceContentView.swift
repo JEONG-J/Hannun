@@ -153,7 +153,7 @@ struct PerformanceContentView: View {
     }
 
     private func plotPoint(_ point: BenchmarkPoint) -> TrendPoint {
-        TrendPoint(date: point.date, value: ReturnRate.plotValue(point.rate))
+        TrendPoint(date: point.date, value: AmountFormatter.percentPlotValue(ratio: point.rate))
     }
 }
 

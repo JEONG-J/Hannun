@@ -7,6 +7,7 @@
 
 import Foundation
 import HannunCore
+import HannunDesignSystem
 import HannunDomain
 import Testing
 
@@ -77,8 +78,8 @@ struct PerformanceTrendTests {
     }
 }
 
-@Suite("ReturnRate")
-struct ReturnRateTests {
+@Suite("수익률 플롯 값")
+struct ReturnRatePlotValueTests {
 
     /// `Decimal` 부동소수 리터럴은 `Double` 을 거쳐 들어와 끝자리가 흔들린다
     /// (`0.094` → `9.399999999999997`). 화면은 소수 2자리까지만 쓰므로 그 자리까지만 본다.
@@ -87,7 +88,8 @@ struct ReturnRateTests {
         arguments: zip([Decimal(0.094), -0.0312, 0], [9.4, -3.12, 0])
     )
     func plotValueUsesPercentScale(rate: Decimal, expected: Double) {
-        #expect(abs(ReturnRate.plotValue(rate) - expected) < Constants.plotTolerance)
+        let plotted = AmountFormatter.percentPlotValue(ratio: rate)
+        #expect(abs(plotted - expected) < Constants.plotTolerance)
     }
 }
 

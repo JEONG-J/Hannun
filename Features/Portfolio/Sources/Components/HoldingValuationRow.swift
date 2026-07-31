@@ -37,28 +37,21 @@ struct HoldingValuationRow: View {
         )
     }
 
+    /// 스펙이 정한 서브라인은 "수량 · 평단가" 고정이다. 지표 순환은 pill 안에서만 일어난다 —
+    /// 탭할 때마다 좌우 두 곳이 같이 바뀌면 어느 쪽이 바뀐 건지 읽히지 않는다.
     private var subline: String? {
         guard holding.category != .cash else { return nil }
 
-        let quantity = AmountFormatting.quantity(
+        let quantity = AmountFormatter.quantity(
             holding.quantity,
-            unit: AssetCategoryText.quantityUnit(for: holding.category)
+            unit: holding.category.quantityUnit
         )
 
-        guard let priceText else { return quantity }
-        return quantity + Constants.separator + priceText
-    }
-
-    /// 지표 순환에 따라 평단가와 현재가를 갈아 끼운다.
-    private var priceText: String? {
-        switch metric {
-        case .currentPrice:
-            guard let price = valuation.currentPrice else { return nil }
-            return Constants.currentPriceLabel + AmountFormatting.text(for: price)
-        case .returnRate, .profit:
-            guard let price = averageUnitPrice else { return nil }
-            return Constants.averagePriceLabel + AmountFormatting.text(for: price)
-        }
+        guard let averageUnitPrice else { return quantity }
+        return quantity
+            + Constants.separator
+            + Constants.averagePriceLabel
+            + AmountFormatter.text(for: averageUnitPrice)
     }
 
     /// 기준 통화로 환산한 평단가. 원가를 수량으로 되나눠 현재가와 통화를 맞춘다.
@@ -67,6 +60,8 @@ struct HoldingValuationRow: View {
         return Money(amount: costBasis.amount / holding.quantity, currency: costBasis.currency)
     }
 
+    /// 고를 지표가 비어 있으면 수익률로 되돌린다 — pill 이 사라지면 탭 자리도 같이 사라져
+    /// 다음 지표로 넘어갈 방법이 없어진다.
     private var change: ChangePillContent? {
         guard let returnRate = valuation.returnRate else { return nil }
 
@@ -74,7 +69,10 @@ struct HoldingValuationRow: View {
         case .profit:
             guard let profit = valuation.profit else { return .ratio(returnRate) }
             return .amount(profit)
-        case .returnRate, .currentPrice:
+        case .currentPrice:
+            guard let price = valuation.currentPrice else { return .ratio(returnRate) }
+            return .neutralAmount(price)
+        case .returnRate:
             return .ratio(returnRate)
         }
     }
@@ -83,7 +81,6 @@ struct HoldingValuationRow: View {
 fileprivate enum Constants {
     static let separator = " · "
     static let averagePriceLabel = "평단 "
-    static let currentPriceLabel = "현재 "
 }
 
 #if DEBUG

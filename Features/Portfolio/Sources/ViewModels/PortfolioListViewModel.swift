@@ -82,7 +82,7 @@ final class PortfolioListViewModel {
 
     var summaryTitle: String {
         guard let selectedCategory else { return Constants.totalSummaryTitle }
-        return AssetCategoryText.title(for: selectedCategory) + Constants.summaryTitleSuffix
+        return selectedCategory.title + Constants.summaryTitleSuffix
     }
 
     /// 평단가가 있는 종목만 모아 계산한 수익금. 현금뿐이면 nil.
@@ -221,7 +221,7 @@ final class PortfolioListViewModel {
                 return
             }
 
-            valuations = .failed(error as? AppError ?? .unknown(String(describing: error)))
+            valuations = .failed(AppError(narrowing: error))
         }
     }
 

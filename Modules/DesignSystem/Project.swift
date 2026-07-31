@@ -18,5 +18,9 @@ let project = moduleProject(
     resources: ["Resources/**"],
     dependencies: [
         .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
+    ],
+    includesTests: true,
+    testDependencies: [
+        .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
     ]
 )

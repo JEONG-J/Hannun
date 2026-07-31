@@ -99,7 +99,7 @@ final class JournalListViewModel {
             let entries = try await fetchJournal.execute(holdingID: selectedHoldingID)
             entriesState = .loaded(entries)
         } catch {
-            entriesState = .failed(.inline(error))
+            entriesState = .failed(AppError(narrowing: error))
         }
     }
 
@@ -113,7 +113,7 @@ final class JournalListViewModel {
             )
             holdingTagsState = .loaded(valuations.map(\.holding))
         } catch {
-            holdingTagsState = .failed(.inline(error))
+            holdingTagsState = .failed(AppError(narrowing: error))
         }
     }
 }

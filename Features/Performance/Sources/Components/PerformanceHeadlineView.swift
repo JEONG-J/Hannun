@@ -31,7 +31,7 @@ struct PerformanceHeadlineView: View {
                 .hannunFont(.caption)
                 .foregroundStyle(Color.textSecondary)
 
-            Text(ReturnRate.text(headline.rate))
+            Text(AmountFormatter.percentage(ratio: headline.rate))
                 .hannunFont(.displayAmount, tabularFigures: true)
                 .foregroundStyle(ChangeDirection(headline.rate).color)
                 .contentTransition(.numericText())

@@ -222,7 +222,7 @@ struct HoldingEditorView: View {
             HStack(spacing: .spacingM) {
                 CategoryDot(category)
 
-                Text(AssetCategoryText.title(for: category))
+                Text(category.title)
                     .hannunFont(.rowTitle)
                     .foregroundStyle(Color.textPrimary)
 

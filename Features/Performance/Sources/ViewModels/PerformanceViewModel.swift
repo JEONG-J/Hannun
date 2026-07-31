@@ -226,7 +226,7 @@ final class PerformanceViewModel {
         markingStale isStale: inout Bool
     ) -> Loadable<Value> {
         guard let cached = state.value else {
-            return .failed(error as? AppError ?? .unknown(String(describing: error)))
+            return .failed(AppError(narrowing: error))
         }
 
         isStale = true

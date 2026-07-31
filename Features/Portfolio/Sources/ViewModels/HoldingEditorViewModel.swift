@@ -79,11 +79,11 @@ final class HoldingEditorViewModel {
 
     /// 편집 중인 종목의 평가 기준 통화. 현금은 이 통화로 잔액을 그대로 읽는다.
     var quantityFieldTitle: String {
-        AssetCategoryText.quantityFieldTitle(for: category)
+        category.quantityFieldTitle
     }
 
     var quantityUnit: String? {
-        isCash ? currency.rawValue : AssetCategoryText.quantityUnit(for: category)
+        isCash ? currency.rawValue : category.quantityUnit
     }
 
     private var trimmedName: String {

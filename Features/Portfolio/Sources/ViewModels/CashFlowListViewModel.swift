@@ -113,7 +113,7 @@ final class CashFlowListViewModel {
         do {
             events = .loaded(try await manageCashFlow.fetchAll())
         } catch {
-            events = .failed(error as? AppError ?? .unknown(String(describing: error)))
+            events = .failed(AppError(narrowing: error))
         }
     }
 }

@@ -150,7 +150,7 @@ final class NetWorthViewModel {
     private func degrade(on error: any Error) {
         switch freshness {
         case .unknown:
-            summary = .failed(error as? AppError ?? .unknown(String(describing: error)))
+            summary = .failed(AppError(narrowing: error))
         case let .fresh(lastSuccess):
             freshness = .stale(since: lastSuccess)
         case .stale:

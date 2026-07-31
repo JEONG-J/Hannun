@@ -135,7 +135,7 @@ struct PortfolioListView: View {
 
             ForEach(AssetCategory.allCases, id: \.self) { category in
                 FilterChip(
-                    AssetCategoryText.title(for: category),
+                    category.title,
                     isSelected: viewModel.selectedCategory == category,
                     tint: category.color
                 ) {
@@ -158,7 +158,7 @@ struct PortfolioListView: View {
                 } header: {
                     CategorySectionHeader(
                         category: section.category,
-                        title: AssetCategoryText.title(for: section.category),
+                        title: section.category.title,
                         subtotal: section.subtotal,
                         isExpanded: expansion(for: section.category)
                     )

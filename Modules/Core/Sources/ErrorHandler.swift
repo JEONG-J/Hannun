@@ -54,10 +54,7 @@ public final class ErrorHandler {
 
     /// AppError 가 아닌 에러도 여기서 한 번에 Core 타입으로 좁힌다.
     public func handle(_ error: any Error, context: ErrorContext) {
-        presentedError = PresentedError(
-            error: error as? AppError ?? .unknown(String(describing: error)),
-            context: context
-        )
+        presentedError = PresentedError(error: AppError(narrowing: error), context: context)
     }
 
     public func dismiss() {

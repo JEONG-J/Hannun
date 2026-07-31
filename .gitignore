@@ -22,3 +22,6 @@ App/Config/Hannun.release.xcconfig
 xcuserdata/
 *.xcuserstate
 *.moved-aside
+
+# 에이전트 작업용 worktree (세션 임시 산출물)
+.claude/worktrees/

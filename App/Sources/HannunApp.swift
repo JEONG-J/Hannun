@@ -24,6 +24,7 @@ struct HannunApp: App {
         WindowGroup {
             RootTabView()
                 .environment(router)
+                .environment(\.appRouter, router)
                 .environment(container)
                 .environment(errorHandler)
                 .errorAlert(errorHandler)

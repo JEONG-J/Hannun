@@ -108,8 +108,7 @@ struct JournalComposeView: View {
     private func failureLabel(_ failure: AppError) -> some View {
         Label(failure.userMessage, systemImage: Constants.failureSymbolName)
             .hannunFont(.caption)
-            // 팔레트에 경고 전용 토큰이 없다. `gain` 이 앱의 유일한 빨강이라 이를 빌려 쓴다.
-            .foregroundStyle(Color.gain)
+            .foregroundStyle(Color.warning)
     }
 
     private var contentField: some View {
@@ -172,7 +171,7 @@ struct JournalComposeView: View {
                 Task { await viewModel.save() }
             }
             .hannunButtonStyle(.sheetPrimary)
-            .disabled(viewModel.isSaving)
+            .disabled(viewModel.isSaving || !viewModel.canSave)
         }
     }
 }

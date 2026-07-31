@@ -17,21 +17,32 @@ View ←→ ViewModel(@Observable) → UseCase(Protocol) → Repository → Data
 
 ### Feature 폴더 구조
 
+**Feature 는 Presentation 만 담는다.** Domain/Data 는 Feature 안이 아니라 `Modules/` 의 공유
+모듈에 있다 — 엔티티 5종이 단일 SwiftData 스키마로 묶이고 네 탭이 서로의 엔티티를 교차 참조하기
+때문이다. 근거는 `docs/design/2026-07-30-tuist-module-target-spec.md` §10.1, 타깃 구성은 같은 문서
+§2·§4 를 본다.
+
 ```
 Features/{Feature}/
-├── Presentation/
+├── Project.swift        # featureProject(...) 호출 한 줄
+├── Sources/             # 아래 4개 폴더는 필요해질 때 만든다
 │   ├── Views/           # SwiftUI View
-│   ├── ViewModels/      # @Observable ViewModel
-│   ├── Components/      # Feature 전용 컴포넌트
-│   └── Router/          # Feature Router
-├── Domain/
-│   ├── UseCases/        # Protocol + Implementations/
-│   ├── Models/          # Entity
-│   └── Interfaces/      # Repository Protocol
-└── Data/
-    ├── Repositories/    # Repository 구현체
-    └── DataSources/     # API, Local Storage
+│   ├── ViewModels/      # @Observable ViewModel (Loadable 상태 보유)
+│   ├── Components/      # Feature 전용 컴포넌트 (재사용되면 DesignSystem으로 승격)
+│   └── Router/          # Feature 내부 화면 전환
+└── Tests/               # 테스트 타깃이 있는 Feature 만 — Portfolio · Performance
+
+Modules/
+├── Core/                # 공유 커널 — Money·Loadable·AppError·DIContainer·AppRoute
+├── DesignSystem/        # 디자인 토큰·Glass 헬퍼·공통 컴포넌트
+├── Domain/Sources/{Entities,Interfaces,UseCases}   # 엔티티·Repository 프로토콜·UseCase
+├── Data/Sources/        # Repository 구현체·네트워크·캐시
+└── TestSupport/         # 테스트 타깃 전용 fake·fixture
 ```
+
+UseCase 를 Feature 가 아니라 `Modules/Domain` 에 두는 이유도 같다. `FetchHoldingsUseCase` 는
+포트폴리오·순자산 두 탭이, 환율 환산은 세 탭이 쓴다 — Feature 안에 두면 첫 공유 시점에
+Feature ↔ Feature 의존이 생긴다. 소유권은 `UseCases/{탭}` 폴더로 표현한다.
 
 ### 계층 원칙
 

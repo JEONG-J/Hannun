@@ -775,9 +775,10 @@ App/Config/Hannun.release.xcconfig
    `Endpoint`·`NetworkClient`·DTO는 전부 `internal` 이고, `public` 인 것은 Repository 구현체뿐이다.
 
 또한 `docs/claude/architecture.md` §Feature 폴더 구조는 `Features/{Feature}/{Presentation,Domain,Data}`
-로 되어 있는데, 이 프로젝트에서는 Domain/Data가 공유 모듈이므로(§10.1) 실제 구조는
-`Features/{Feature}/Sources/{Views,ViewModels,Components,Router}` 다. architecture.md를 수정하거나
-"Hannun에서는 §4.3을 따른다"는 주석을 달아야 한다.
+로 되어 있었는데, 이 프로젝트에서는 Domain/Data가 공유 모듈이므로(§10.1) 실제 구조는
+`Features/{Feature}/Sources/{Views,ViewModels,Components,Router}` 다 —
+**architecture.md를 §4.3의 실제 구조로 고쳐 반영 완료**다. Feature 가 Presentation 만 담는 이유와
+UseCase 가 `Modules/Domain` 에 있는 이유도 그쪽에 함께 적었다.
 
 ## 9. 구현 시 주의사항
 
@@ -797,8 +798,9 @@ public extension Color {
 
 ### 9.2 SwiftData + CloudKit 스키마 제약 (엔티티 설계에 영향)
 
-CloudKit 동기화를 켜면 SwiftData 스키마에 다음 제약이 강제된다. 설계 문서 §4 엔티티 표를 그대로
-구현하면 런타임에 스키마 검증 실패로 크래시한다.
+CloudKit 동기화를 켜면 SwiftData 스키마에 다음 제약이 강제된다. "필수값"을 모델 제약으로 옮기면
+런타임에 스키마 검증 실패로 크래시하므로, 설계 문서 §4 엔티티 표는 이 제약에 맞춰
+**모델 기본값 + 계층 검증**으로 다시 쓰였다(§11-④).
 
 | 제약 | 영향받는 필드 |
 |---|---|
@@ -996,8 +998,9 @@ actor KISTokenProvider: RequestAuthorizing {
 
 ### 10.1 왜 Feature별 Domain/Data 타깃을 만들지 않았나
 
-`docs/claude/architecture.md` 는 Feature마다 Presentation/Domain/Data 3계층을 두는 구조를 기술한다.
-이를 타깃으로 옮기면 12개 Feature 타깃 + 공유 모듈이 되는데, 이 앱에서는 다음 이유로 성립하지 않는다.
+`docs/claude/architecture.md` 는 원래 Feature마다 Presentation/Domain/Data 3계층을 두는 구조를
+기술했다(지금은 §4.3 의 실제 구조로 갱신됐다 — §8). 이를 타깃으로 옮기면 12개 Feature 타깃 +
+공유 모듈이 되는데, 이 앱에서는 다음 이유로 성립하지 않는다.
 
 1. **단일 SwiftData 스키마.** 엔티티 5종은 하나의 `ModelContainer`/schema에 등록된다. Feature별
    Domain 타깃으로 쪼개면 스키마 정의가 4개 타깃에 흩어지고, 컨테이너를 만드는 App 타깃이 전부를
@@ -1138,8 +1141,12 @@ UI 스펙·CLAUDE.md·매니페스트가 한 값으로 정렬됐고, iOS 17 유�
 문서에 반영했다 — `enforceExplicitDependencies` 는 deprecated 라 `tuist inspect dependencies`
 로 대체(§5.6), 리소스 glob은 `Resources/**` 가 아니라 존재하는 디렉터리만 지정해야 한다.
 
-④ **CloudKit 스키마 제약 반영.** §9.2 제약에 맞춰 설계 문서 §4 엔티티 표의 "필수/null" 표기를
-"모델 기본값 + 계층 검증"으로 다시 적을 필요가 있다.
+④ **CloudKit 스키마 제약 반영 — 해결됨.** §9.2 제약에 맞춰 설계 문서 §4 엔티티 표를
+"필수/null" 대신 **모델 기본값 + 계층 검증**으로 다시 적었다. 필수 입력·중복 방지 규칙을 어느
+계층이 판정하는지(ViewModel 인라인 검증 / UseCase 최종 관문)를 같은 절에 표로 두었고,
+`@Attribute(.unique)` 를 어떤 엔티티에도 쓰지 않는다는 점과 그 대안(저장 직전 조회 후 갱신/삽입
+판정), 관계의 양방향·optional 선언을 §9.2 와 같은 용어로 명시했다. `docs/claude/architecture.md`
+의 Feature 폴더 구조 수정도 함께 마쳤다(§8).
 
 ⑤ **네트워크 계층 Swift 6 빌드 검증 — 해결됨.** Moya를 제거하면서 초안이 우려했던 3항목
 (외부 패키지 버전 호환, `complete` 상속 하 빌드, `@preconcurrency` 로 non-Sendable 억제)이

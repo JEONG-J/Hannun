@@ -68,18 +68,25 @@ final class FetchUserUseCase {
 
 ```swift
 // 등록
-container.register(UserRepositoryProtocol.self) { UserRepository() }
-container.register(LoginUseCaseProtocol.self) {
-    LoginUseCase(repository: container.resolve(UserRepositoryProtocol.self))
+container.register((any UserRepositoryProtocol).self) { UserRepository() }
+container.register((any LoginUseCaseProtocol).self) {
+    LoginUseCase(repository: container.resolve((any UserRepositoryProtocol).self))
 }
 
 // 사용
-let useCase = container.resolve(LoginUseCaseProtocol.self)
+let useCase = container.resolve((any LoginUseCaseProtocol).self)
 ```
+
+> **`(any P).self` 로 쓰는 이유** — `ProjectSettings.swift` 가 전 타깃에
+> `SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY: YES` 와 `SWIFT_TREAT_WARNINGS_AS_ERRORS: YES` 를
+> 함께 켠다. `P.self` 로 쓰면 "use of protocol as a type must be written 'any P'" 경고가 나고
+> 그 경고가 곧 빌드 에러다. 프로토콜 타입을 값으로 넘기는 자리는 전부 `(any P).self` 다.
 
 - `@Observable` 기반으로 SwiftUI Environment 주입 가능
 - `resolve()` 호출 시 캐싱 (싱글톤처럼 동작)
 - `resetCache()`: 로그아웃 시 전체 초기화
+- 저장소는 `@ObservationIgnored` — Environment 주입 목적으로만 `@Observable` 이다.
+  관찰 대상이면 View 갱신 도중의 `resolve` 가 다시 갱신을 유발한다
 
 ### Router (Hierarchical Router Pattern)
 

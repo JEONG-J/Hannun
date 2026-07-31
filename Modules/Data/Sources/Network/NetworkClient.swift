@@ -1,3 +1,10 @@
+//
+//  NetworkClient.swift
+//  HannunData
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 
@@ -16,7 +23,7 @@ protocol RequestAuthorizing: Sendable {
 ///
 /// actor 인 이유는 **401 재시도 시퀀스를 직렬화**하기 위해서다. 동시 요청 여러 건이 한꺼번에
 /// 401 을 받으면 토큰 무효화와 재발급이 서로 엉킬 수 있는데, 격리 안에서 처리하면 그 창이 닫힌다.
-/// (§11.1·§11.2 가 요구하는 호출량 제한 게이트를 나중에 붙일 자리이기도 하다.)
+/// (외부 API 가 요구하는 호출량 제한 게이트를 나중에 붙일 자리이기도 하다.)
 ///
 /// - Note: actor 는 재진입 가능하므로 요청이 직렬화되지는 않는다.
 ///   `session.data(for:)` 에서 중단되는 동안 다른 요청이 들어와 함께 진행된다.

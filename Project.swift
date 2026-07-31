@@ -1,9 +1,21 @@
+//
+//  Project.swift
+//  Hannun
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import ProjectDescription
 import ProjectDescriptionHelpers
 
+/// 앱 타깃 하나만 담는 루트 프로젝트.
+///
+/// 모듈은 각자 `Modules/*/Project.swift` · `Features/*/Project.swift` 에 있고,
+/// `Workspace.swift` 가 glob 으로 묶는다. 여기에는 앱 셸(엔트리포인트·DI 등록·Info.plist·
+/// entitlements·시크릿 xcconfig)만 둔다.
 let project = Project(
     name: "Hannun",
-    organizationName: "Hannun",
+    organizationName: hannunOrganizationName,
     options: .options(defaultKnownRegions: ["ko", "en"], developmentRegion: "ko"),
     settings: .settings(
         base: .hannunBase,
@@ -13,7 +25,6 @@ let project = Project(
         ]
     ),
     targets: [
-        // MARK: - App
         .target(
             name: "Hannun",
             destinations: hannunDestinations,
@@ -25,60 +36,18 @@ let project = Project(
             resources: ["App/Resources/Assets.xcassets"],
             entitlements: .file(path: "App/Config/Hannun.entitlements"),
             dependencies: [
-                .target(name: "NetWorthFeature"),
-                .target(name: "PortfolioFeature"),
-                .target(name: "PerformanceFeature"),
-                .target(name: "JournalFeature"),
-                .target(name: "HannunData"),        // 구현체를 아는 유일한 지점
-            ],
-            settings: .settings(base: .hannunBase)
-        ),
-
-        // MARK: - Shared
-        .module(name: "HannunCore", path: "Modules/Core", dependencies: []),
-        .module(name: "HannunDesignSystem", path: "Modules/DesignSystem", hasResources: true,
-                dependencies: [.target(name: "HannunCore")]),
-        .module(name: "HannunDomain", path: "Modules/Domain",
-                dependencies: [.target(name: "HannunCore")]),
-        // 네트워크는 URLSession + actor 로 직접 구현한다. 외부 SPM 의존성은 없다 (§5.5).
-        .module(name: "HannunData", path: "Modules/Data",
-                dependencies: [
-                    .target(name: "HannunDomain"),
-                    .target(name: "HannunCore"),
-                ]),
-        .module(name: "HannunTestSupport", path: "Modules/TestSupport",
-                dependencies: [
-                    .target(name: "HannunDomain"),
-                    .target(name: "HannunCore"),
-                ]),
-
-        // MARK: - Features
-        .feature(name: "NetWorthFeature", path: "Features/NetWorth"),
-        .feature(name: "PortfolioFeature", path: "Features/Portfolio"),
-        .feature(name: "PerformanceFeature", path: "Features/Performance"),
-        .feature(name: "JournalFeature", path: "Features/Journal"),
-
-        // MARK: - Tests
-        // extraDependencies 는 테스트 코드가 직접 import 하는 모듈이다.
-        // 전이 링크로 심볼은 풀리지만 `make inspect` 가 암묵적 의존성으로 잡으므로 명시한다.
-        .unitTests(for: "HannunCore", path: "Modules/Core"),
-        .unitTests(for: "HannunDomain", path: "Modules/Domain",
-                   extraDependencies: [.target(name: "HannunCore")]),
-        .unitTests(for: "HannunData", path: "Modules/Data",
-                   extraDependencies: [.target(name: "HannunCore")]),
-        .unitTests(for: "PortfolioFeature", path: "Features/Portfolio"),
-        .unitTests(for: "PerformanceFeature", path: "Features/Performance"),
-    ],
-    schemes: [
-        .scheme(
-            name: "Hannun",
-            shared: true,
-            buildAction: .buildAction(targets: ["Hannun"]),
-            testAction: .targets([
-                "HannunCoreTests", "HannunDomainTests", "HannunDataTests",
-                "PortfolioFeatureTests", "PerformanceFeatureTests",
-            ]),
-            runAction: .runAction(configuration: .debug, executable: "Hannun")
+                .project(target: "NetWorthFeature", path: .relativeToRoot("Features/NetWorth")),
+                .project(target: "PortfolioFeature", path: .relativeToRoot("Features/Portfolio")),
+                .project(
+                    target: "PerformanceFeature",
+                    path: .relativeToRoot("Features/Performance")
+                ),
+                .project(target: "JournalFeature", path: .relativeToRoot("Features/Journal")),
+                // 구현체를 아는 유일한 지점
+                .project(target: "HannunData", path: .relativeToRoot("Modules/Data")),
+                // DIContainer·ErrorHandler 직접 사용
+                .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
+            ]
         ),
     ]
 )

@@ -1,3 +1,10 @@
+//
+//  StubURLProtocol.swift
+//  HannunTestSupport
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import Synchronization
 
@@ -22,7 +29,7 @@ public enum StubURLProtocolError: Error, Sendable {
     case handlerNotFound
 }
 
-/// `URLSession` 요청을 가로채 미리 정한 응답을 돌려주는 테스트용 프로토콜 (§6.1).
+/// `URLSession` 요청을 가로채 미리 정한 응답을 돌려주는 테스트용 프로토콜.
 ///
 /// 네트워크 계층이 테스트의 존재를 알 필요가 없다는 점이 스터빙 API 를 프로덕션 코드에
 /// 심는 방식보다 낫다. 핸들러를 **세션마다 따로** 보관하므로 Swift Testing 의 기본

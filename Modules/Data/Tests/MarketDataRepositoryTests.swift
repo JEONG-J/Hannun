@@ -1,3 +1,10 @@
+//
+//  MarketDataRepositoryTests.swift
+//  HannunDataTests
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 import HannunTestSupport
@@ -76,7 +83,7 @@ struct MarketDataRepositoryTests {
 
         _ = try await repository.currentPrice(symbol: "KRW-BTC")
 
-        // 캐시를 만료시키고 서버를 죽인다 (§8: 마지막 캐시값 사용 + 갱신 실패 배지).
+        // 캐시를 만료시키고 서버를 죽인다 (마지막 캐시값 사용 + 갱신 실패 배지).
         clock.advance(by: 901)
         shouldFail.withLock { $0 = true }
 

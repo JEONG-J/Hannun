@@ -1,3 +1,10 @@
+//
+//  EndpointTests.swift
+//  HannunDataTests
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 import Testing

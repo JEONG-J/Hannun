@@ -1,8 +1,15 @@
+//
+//  MarketDataServiceProtocolTests.swift
+//  HannunDomainTests
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import HannunCore
 import Testing
 @testable import HannunDomain
 
-/// Domain 이 네트워크 구현 없이도 테스트 가능한지 확인하는 자리 표시자 (§3 봉인 규칙).
+/// Domain 이 네트워크 구현 없이도 테스트 가능한지 확인하는 자리 표시자 (봉인 규칙).
 private struct StubMarketDataService: MarketDataServiceProtocol {
     let prices: [String: Money]
 

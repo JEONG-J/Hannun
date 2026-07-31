@@ -38,6 +38,23 @@ View ←→ ViewModel(@Observable) → UseCase(Protocol) → Repository → Data
 4. **식별자에 의미 없는 숫자 접미사 금지** — `text1`/`btn2Color` 등 금지, 역할이 드러나는 이름 부여.
 5. **커밋·PR·이슈에 AI 작성 흔적(attribution) 절대 금지** — 커밋 메시지의 `Co-Authored-By` 라인,
    PR·이슈 제목/본문의 `🤖 Generated with [Claude Code](...)` 푸터 등 AI가 작성했음을 드러내는 문구 일체 추가 금지.
+6. **새 파일은 Xcode 헤더 블록으로 시작** — 파일명 / 타깃명 / `Created by euijjang97 on M/D/YY.`
+   (Xcode 기본 형식. 생성자는 항상 `euijjang97`, 날짜는 **파일을 만든 날**이며 이후 수정해도 그대로 둔다.)
+
+   ```swift
+   //
+   //  DIContainer.swift
+   //  HannunCore
+   //
+   //  Created by euijjang97 on 7/31/26.
+   //
+   ```
+
+   `.swift` 전부에 적용한다 — 소스·테스트·Tuist 매니페스트(`Project.swift` 등) 포함.
+   두 번째 줄은 파일이 속한 **타깃 이름**이다 (`Workspace.swift` 는 `Hannun`,
+   `Tuist/ProjectDescriptionHelpers/*` 는 `ProjectDescriptionHelpers`).
+   헤더 뒤에 빈 줄 하나를 두고 `import` 를 시작한다. 헤더에 스펙 절 번호(`§11.0` 등)나
+   변경 이력을 적지 않는다 — 그건 문서와 git 이 할 일이다.
 
 ## 코딩 스타일 (요약)
 
@@ -57,25 +74,21 @@ View ←→ ViewModel(@Observable) → UseCase(Protocol) → Repository → Data
 ## 빌드 명령 (요약)
 
 **Tuist 프로젝트다. `.xcodeproj`/`.xcworkspace` 를 직접 편집하지 않는다** — 생성물이라 덮어써진다.
-타깃·의존성 추가는 `Project.swift` 를 고치고 `make generate` 를 다시 돌린다.
 모든 `tuist` 호출은 `mise exec` 로 감싸여 있어 셸 activate 여부와 무관하게 `mise.toml` 의 버전이 쓰인다.
 
-| 명령 | 하는 일 |
-|------|---------|
-| `make bootstrap` | 최초 환경 구축 (mise 로 tuist 설치) |
-| `make generate` | 워크스페이스 생성. **`Project.swift` 를 고쳤거나 파일을 새로 만들면 필수** |
-| `make build-all` | 전 모듈 + 앱 빌드 |
-| `make build-<모듈>` | 해당 모듈만 빌드 (`core`/`design`/`domain`/`data`/`networth`/`portfolio`/`performance`/`journal`/`testsupport`/`app`) |
-| `make test-all` | 전체 테스트 |
-| `make test-<모듈>` | 해당 모듈만 테스트 (`core`/`domain`/`data`/`portfolio`/`performance`) |
-| `make inspect` | **암묵적 의존성 검사** — 아래 주의 참고 |
-| `make graph` | 의존성 그래프(`graph.png`) 생성 |
-| `make ci` | generate → build-all → test-all |
-| `make help` | 전체 타깃 목록 |
+**모듈 하나 = 프로젝트 하나.** 루트 `Workspace.swift` 가 `Modules/*` · `Features/*` 를 glob 으로 묶고,
+각 모듈은 자기 디렉터리의 `Project.swift` 한 줄(`moduleProject(...)` / `featureProject(...)`)로 정의된다.
+루트 `Project.swift` 에는 **앱 타깃만** 있다. 새 모듈은 디렉터리에 `Project.swift` 만 두면 자동 등록되므로
+`Workspace.swift` 는 건드리지 않는다. 의존성·리소스·테스트 추가는 **해당 모듈의 `Project.swift`** 를 고친다.
+
+전체 타깃 목록과 모듈별 스킴 매핑은 **`make help`** 로 확인한다 (`build-<모듈>`/`test-<모듈>` 패턴 포함).
+매니페스트를 고쳤거나 파일을 새로 만들었으면 **`make generate` 가 필수**다.
 
 > **`make inspect` 는 커밋 전에 돌린다.** 타깃이 `import` 하는 모듈은 전이 링크로 심볼이 풀려도
-> `Project.swift` 에 **명시 선언**돼야 한다. 테스트 타깃은 `.unitTests(for:path:extraDependencies:)`
-> 의 `extraDependencies` 에 적는다. 반대로 안 쓰는 `import` 를 남겨두면 이 검사가 실패한다.
+> 해당 모듈 `Project.swift` 에 **명시 선언**돼야 한다 — 모듈 간 참조는
+> `.project(target:path: .relativeToRoot("Modules/…"))` 형태다. 테스트가 직접 import 하는 모듈은
+> `moduleProject`/`featureProject` 의 `testDependencies:` 에 적는다.
+> 반대로 안 쓰는 `import` 를 남겨두면 이 검사가 실패한다.
 
 > 새 파일을 만든 직후 Xcode/SourceKit 이 `No such module` 을 띄우는 건 정상이다 —
 > `make generate` 전까지 프로젝트에 포함되지 않은 상태라서 그렇다. 실제 컴파일 에러가 아니다.
@@ -90,6 +103,8 @@ View ←→ ViewModel(@Observable) → UseCase(Protocol) → Repository → Data
 | 주제 | 문서 | 언제 읽나 |
 |------|------|----------|
 | 앱 설계 문서 (범위·데이터 모델·화면·기능 명세·외부 API) | `docs/design/2026-07-21-personal-asset-management-ios-app-design.md` | 기능 구현/이슈 작성 전 요구사항 확인, 기능 ID(NW-/PF-/PM-/JR-) 참조 |
+| UI 디자인 설계 (원칙·토큰·Glass 규칙·컴포넌트 인벤토리) | `docs/design/2026-07-27-ui-design-spec.md` | UI 규격의 **원본**. 토큰 값·Glass 적용 여부 판단 |
+| Pencil 시안 레퍼런스 (노드 구조·실측값·구현 시 차이) | `docs/design/2026-07-31-pencil-design-reference.md` | **화면 구현 착수 전 필수**. 시안 원본은 `hannun.pen` (암호화 — Pencil MCP 로만 접근) |
 
 프로젝트 규약 — 해당 작업을 할 때 먼저 열어본다:
 

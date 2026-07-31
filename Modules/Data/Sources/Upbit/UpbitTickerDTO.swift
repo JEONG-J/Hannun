@@ -1,7 +1,14 @@
+//
+//  UpbitTickerDTO.swift
+//  HannunData
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 
-/// 업비트 `GET /v1/ticker` 응답 한 건 (§11.1).
+/// 업비트 `GET /v1/ticker` 응답 한 건.
 struct UpbitTickerDTO: Decodable, Sendable, Equatable {
     /// 마켓 코드 (예: `KRW-BTC`)
     let market: String

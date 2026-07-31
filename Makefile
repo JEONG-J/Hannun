@@ -22,6 +22,9 @@ SHELL := /bin/bash
 
 SCHEME        ?= Hannun
 WORKSPACE     := Hannun.xcworkspace
+
+# 전 프로젝트의 타깃·테스트를 한 번에 도는 스킴. Tuist 가 워크스페이스마다 자동 생성한다.
+ALL_SCHEME    := Hannun-Workspace
 DESTINATION   ?= platform=iOS Simulator,name=iPhone 17 Pro
 CONFIGURATION ?= Debug
 
@@ -137,8 +140,10 @@ doctor: check-mise ## 개발 환경 진단
 		else echo "미설치 (선택 사항 — brew install xcbeautify 로 로그 가독성 향상)"; fi
 	@echo "── mise.toml ──";  cat mise.toml
 	@echo "── 매니페스트 ──"; \
-		if [ -f Project.swift ]; then echo "Project.swift 있음"; \
-		else echo "Project.swift 없음 (M0 스캐폴딩 미완료)"; fi
+		if [ -f Workspace.swift ]; then \
+			echo "Workspace.swift 있음"; \
+			find . -maxdepth 3 -name Project.swift -not -path "./Tuist/*" | sort | sed 's/^/  /'; \
+		else echo "Workspace.swift 없음 (M0 스캐폴딩 미완료)"; fi
 	@echo "── 워크스페이스 ──"; \
 		if [ -d "$(WORKSPACE)" ]; then echo "$(WORKSPACE) 있음"; \
 		else echo "$(WORKSPACE) 없음 → 'make generate'"; fi
@@ -244,9 +249,9 @@ build-features: ## Feature 4종만 빌드
 build-all: build-modules build-app ## 전 모듈 + 앱 빌드
 
 .PHONY: test-all
-test-all: check-workspace ## 전체 테스트 (Hannun 공용 스킴의 testAction)
-	@echo "▶︎ test-all: Hannun 공용 스킴"
-	@$(XCB) -scheme Hannun $(FILTER_FLAG) test $(XCPIPE)
+test-all: check-workspace ## 전체 테스트 (Tuist 자동 생성 워크스페이스 스킴)
+	@echo "▶︎ test-all: $(ALL_SCHEME)"
+	@$(XCB) -scheme $(ALL_SCHEME) $(FILTER_FLAG) test $(XCPIPE)
 
 .PHONY: test-modules
 test-modules: ## 테스트 타깃이 있는 모듈을 하나씩 순차 테스트
@@ -315,10 +320,18 @@ reset: clean clean-dd ## 전체 초기화 (clean + clean-dd)
 
 .PHONY: check-manifest
 check-manifest:
-	@if [ ! -f Project.swift ]; then \
-		echo "⚠︎  Project.swift 가 없습니다 — Tuist 매니페스트가 아직 작성되지 않았습니다."; \
+	@if [ ! -f Workspace.swift ] || [ ! -f Project.swift ]; then \
+		echo "⚠︎  Tuist 매니페스트가 없습니다 (Workspace.swift / Project.swift)."; \
 		echo "   설계 문서의 §5(매니페스트) / §12(M0 착수 순서)를 참고해 스캐폴딩이 필요합니다:"; \
 		echo "   docs/design/2026-07-30-tuist-module-target-spec.md"; \
+		exit 1; \
+	fi
+	@missing=$$(for d in Modules/* Features/*; do \
+		[ -d "$$d" ] && [ ! -f "$$d/Project.swift" ] && echo "$$d"; \
+	done); \
+	if [ -n "$$missing" ]; then \
+		echo "⚠︎  Project.swift 가 없는 모듈 디렉터리가 있습니다 — 워크스페이스 glob 에서 빠집니다:"; \
+		echo "$$missing" | sed 's/^/     /'; \
 		exit 1; \
 	fi
 

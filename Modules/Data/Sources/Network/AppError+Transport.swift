@@ -1,8 +1,15 @@
+//
+//  AppError+Transport.swift
+//  HannunData
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 
 /// 전송 계층 에러 → AppError 변환.
-/// Core 는 URLSession 을 몰라야 하므로 변환 지점을 HannunData 에 둔다 (§9.5).
+/// Core 는 URLSession 을 몰라야 하므로 변환 지점을 HannunData 에 둔다.
 extension AppError {
     /// `URLSession` 이 던진 에러를 앱 에러로 바꾼다.
     init(transport error: any Error) {

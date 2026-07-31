@@ -12,6 +12,11 @@
   - `tabViewBottomAccessory`: Apple SwiftUI 공식 문서 (developer.apple.com/documentation/swiftui).
     **`docs/claude/ios26-frameworks/` 에는 이 API 문서가 없다** — §3.1 의 시그니처·가용 버전은
     공식 문서에서 직접 확인한 내용이며, 구현 전 최신 문서로 재확인할 것
+- 시안 및 구현 레퍼런스
+  - Pencil 시안 원본: `hannun.pen` (저장소 루트). **암호화 포맷 — `Read`/`Grep` 불가, Pencil MCP 로만 접근**
+  - 시안 해설: `docs/design/2026-07-31-pencil-design-reference.md`
+    — 노드 ID 지도, 화면별 실측값, **시안대로 구현하면 안 되는 지점**(폰트·Glass·차트), 미설계 항목
+  - 이 문서와 `.pen` 의 토큰 값은 완전히 일치한다(검증 완료). 값이 갈리면 **이 문서가 기준**이다
 - 변경 이력
   - 2026-07-27 초안 확정
   - 2026-07-27 §3.1 탭바 하단 액세서리 신설 — 포트폴리오 툴바 액션·매매일지 FAB 폐지,

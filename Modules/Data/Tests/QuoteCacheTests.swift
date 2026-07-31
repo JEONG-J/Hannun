@@ -1,3 +1,10 @@
+//
+//  QuoteCacheTests.swift
+//  HannunDataTests
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 import Synchronization
@@ -48,7 +55,7 @@ struct QuoteCacheTests {
         clock.advance(by: 61)
         _ = await cache.value(for: "KRW-BTC")
 
-        // value(for:) 가 만료 항목을 지우더라도 폴백용 값은 살아 있어야 한다 (§8).
+        // value(for:) 가 만료 항목을 지우더라도 폴백용 값은 살아 있어야 한다.
         #expect(await cache.staleValue(for: "KRW-BTC") == .krw(95_000_000))
     }
 

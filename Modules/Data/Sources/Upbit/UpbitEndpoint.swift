@@ -1,6 +1,13 @@
+//
+//  UpbitEndpoint.swift
+//  HannunData
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 
-/// 업비트 공개 시세(Quotation) API (§11.1).
+/// 업비트 공개 시세(Quotation) API.
 /// 인증이 필요 없어 토큰·앱키 관련 설정이 전혀 없다.
 enum UpbitEndpoint: Endpoint {
     /// 여러 마켓의 현재가를 한 번에 조회한다. 마켓 코드 예: `KRW-BTC`

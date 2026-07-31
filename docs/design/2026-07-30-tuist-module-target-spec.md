@@ -2,6 +2,7 @@
 
 - 작성일: 2026-07-30
 - 개정: 2026-07-31 — **네트워킹에서 Moya를 제거하고 `URLSession` + actor 직접 구현으로 전환** (§10.4)
+- 개정: 2026-08-01 — **단일 `Project.swift` 에서 다중 프로젝트 워크스페이스로 전환** (§5, §10.6)
 - 상태: M0 스캐폴딩 + 네트워크 계층(업비트) 구현 완료
 - 선행 문서
   - `docs/design/2026-07-21-personal-asset-management-ios-app-design.md` (기능 명세·데이터 모델·외부 API)
@@ -17,12 +18,12 @@
 
 | 항목 | 결정 | 근거 |
 |---|---|---|
-| 프로젝트 형태 | **단일 `Project.swift` + 다중 타깃** (Workspace 다중 프로젝트 아님) | 9개 타깃 규모에서 멀티 프로젝트는 generate 시간·탐색 비용만 늘고, 모듈 경계는 타깃 의존성으로 이미 강제됨 |
+| 프로젝트 형태 | **`Workspace.swift` + 모듈당 `Project.swift`** (다중 프로젝트 워크스페이스) | 모듈 경계가 파일 경계와 일치해 매니페스트 diff가 모듈 단위로 떨어지고, `Modules/*`·`Features/*` glob 덕에 새 모듈은 디렉터리만 만들면 등록된다 (§10.6) |
 | 모듈 분할 축 | **Feature는 Presentation만 분할, Domain/Data는 공유** | SwiftData 스키마가 단일 ModelContainer로 묶이고, 4개 탭이 같은 엔티티를 교차 참조 (§10.1) |
 | 타깃 수 | 앱 1 + 공유 5 + Feature 4 = **10** (+ 테스트 5) | |
 | product type | 전부 `.staticFramework` (앱만 `.app`) | dylib 로딩 오버헤드 없음. 리소스는 Tuist 번들 접근자로 해결 (§9.1) |
 | 네트워킹 | **`URLSession` + actor 직접 구현** (`Endpoint` 프로토콜 + `NetworkClient` actor) | 호출하는 API가 GET 6~7개 + POST 1개뿐이라 Moya의 실익이 어댑터 비용을 넘지 못했다. 직접 구현이 전 타깃 Swift 6 complete 를 지킨다 (§10.4) |
-| 외부 의존성 | **없음** — `Tuist/Package.swift` 자체가 없다 | SwiftData·Swift Charts·`Synchronization` 은 시스템 프레임워크. `tuist install` 단계가 사라진다 (§5.5) |
+| 외부 의존성 | **없음** — `Tuist/Package.swift` 자체가 없다 | SwiftData·Swift Charts·`Synchronization` 은 시스템 프레임워크. `tuist install` 단계가 사라진다 (§5.7) |
 | 툴체인 | **Tuist 4.202.6** — `mise.toml` 로 프로젝트 고정 (§7.1) | 머신 간 버전 편차 제거. `tuist@latest` 는 canary를 물어오므로 금지 |
 | 테스트 프레임워크 | **Swift Testing** (`import Testing`) — XCTest 신규 작성 금지 | toolchain 내장이라 의존성 0. 파라미터화(`@Test(arguments:)`)가 YTD·환산 케이스 표에 그대로 맞음. 단 **기본 병렬 실행**이라 공유 상태 주의 (§6.2) |
 | Swift 버전 | Swift 6 language mode + `SWIFT_STRICT_CONCURRENCY=complete` | 로컬 toolchain Swift 6.3.3 확인 |
@@ -115,15 +116,20 @@ public struct CategoryDot: View { public init(_ category: AssetCategory) { ... }
 
 ## 4. 디렉터리 레이아웃
 
+**모듈 하나 = 디렉터리 하나 = `Project.swift` 하나.** 워크스페이스는 `Modules/*`·`Features/*`
+glob 으로 이들을 빨아들이므로, 새 모듈은 디렉터리를 만들고 `Project.swift` 만 두면 등록된다.
+
 ```
 Hannun/
 ├── mise.toml                          # Tuist 버전 고정 (§7.1) — 커밋
 ├── Tuist.swift                        # 생성 옵션 (구 Tuist/Config.swift)
-├── Project.swift                      # 전 타깃 정의
+├── Workspace.swift                    # 프로젝트 glob — 모듈 추가 시에도 고칠 일 없음
+├── Project.swift                      # 앱 타깃 하나만
 ├── Tuist/
-│   └── ProjectDescriptionHelpers/     # Package.swift 없음 — 외부 의존성 0 (§5.5)
+│   └── ProjectDescriptionHelpers/     # Package.swift 없음 — 외부 의존성 0 (§5.7)
 │       ├── ProjectSettings.swift      # bundleId prefix, destinations, 공통 settings
-│       └── Target+Hannun.swift        # .module / .feature / .unitTests 팩토리
+│       ├── Project+Module.swift       # moduleProject(...) 팩토리
+│       └── Project+Feature.swift      # featureProject(...) 팩토리
 ├── App/
 │   ├── Sources/
 │   │   ├── HannunApp.swift            # @main, ModelContainer 주입
@@ -137,17 +143,21 @@ Hannun/
 │       ├── Hannun.release.xcconfig    # KIS 키 (gitignore)
 │       └── Hannun.entitlements        # iCloud/CloudKit
 ├── Modules/
-│   ├── Core/{Sources,Tests}
-│   ├── DesignSystem/{Sources,Resources}
-│   ├── Domain/{Sources,Tests}
-│   ├── Data/{Sources,Tests}
-│   └── TestSupport/Sources
+│   ├── Core/{Project.swift,Sources,Tests}
+│   ├── DesignSystem/{Project.swift,Sources,Resources}
+│   ├── Domain/{Project.swift,Sources,Tests}
+│   ├── Data/{Project.swift,Sources,Tests}
+│   └── TestSupport/{Project.swift,Sources}
 └── Features/
-    ├── NetWorth/Sources
-    ├── Portfolio/{Sources,Tests}
-    ├── Performance/{Sources,Tests}
-    └── Journal/Sources
+    ├── NetWorth/{Project.swift,Sources}
+    ├── Portfolio/{Project.swift,Sources,Tests}
+    ├── Performance/{Project.swift,Sources,Tests}
+    └── Journal/{Project.swift,Sources}
 ```
+
+> `Sources/**`·`Tests/**`·`Resources/**` 경로는 이제 **모듈 디렉터리 기준 상대 경로**다.
+> 저장소 루트를 기준으로 삼는 건 다른 모듈을 참조할 때뿐 —
+> `.project(target: "HannunCore", path: .relativeToRoot("Modules/Core"))`.
 
 ### 4.1 `Modules/Domain/Sources`
 
@@ -227,6 +237,7 @@ import ProjectDescription
 
 /// TODO: 팀 organization identifier 확정 후 교체 (§11-②)
 public let bundleIdPrefix = "com.jeong.hannun"
+public let hannunOrganizationName = "Hannun"
 public let hannunDestinations: Destinations = [.iPhone, .iPad]
 public let hannunDeploymentTargets: DeploymentTargets = .iOS("26.0")
 
@@ -240,78 +251,85 @@ public extension SettingsDictionary {
         ]
     }
 }
+
+/// 모든 프로젝트가 공유하는 프로젝트 단위 설정.
+public let hannunProjectSettings: Settings = .settings(base: .hannunBase)
 ```
 
-### 5.2 `Tuist/ProjectDescriptionHelpers/Target+Hannun.swift`
+> 프로젝트 설정은 소속 타깃 전체로 내려간다. 단일 프로젝트 시절에는 타깃마다
+> `settings: .settings(base: .hannunBase)` 를 붙였지만, 이제 프로젝트 팩토리가 한 번만 건다.
+
+### 5.2 프로젝트 팩토리 — `Project+Module.swift` / `Project+Feature.swift`
+
+두 헬퍼가 `Project` **하나를 통째로** 만든다. 각 모듈의 `Project.swift` 는 이 함수 호출 한 줄이다.
+
+```swift
+// Project+Module.swift — 공유 계층 (Core / DesignSystem / Domain / Data / TestSupport)
+public func moduleProject(
+    name: String,
+    bundleIdSuffix: String,
+    resources: ResourceFileElements? = nil,
+    dependencies: [TargetDependency] = [],
+    additionalSettings: SettingsDictionary = [:],
+    includesTests: Bool = false,
+    testDependencies: [TargetDependency] = []
+) -> Project
+```
+
+```swift
+// Project+Feature.swift — 탭 하나
+public func featureProject(
+    name: String,
+    bundleIdSuffix: String,
+    extraDependencies: [TargetDependency] = [],
+    includesTests: Bool = false,
+    testDependencies: [TargetDependency] = []
+) -> Project
+```
+
+| 항목 | 규칙 |
+|---|---|
+| product | `.staticFramework` 고정 (테스트는 `.unitTests`) |
+| sources | `Sources/**` (모듈 디렉터리 기준) |
+| 테스트 sources | `Tests/**`, 타깃명 `{name}Tests` |
+| bundleId | 모듈 `com.jeong.hannun.{suffix}` / Feature `com.jeong.hannun.feature.{suffix}` |
+| Feature 의존성 | `HannunDomain` · `HannunDesignSystem` · `HannunCore` **고정** |
+
+> `featureProject` 가 Feature 의 의존성을 한 곳에 고정하므로, 실수로 `HannunData` 나
+> 다른 Feature 를 끼워 넣는 일이 구조적으로 막힌다.
+
+> `testDependencies` 에는 **테스트 코드가 직접 `import` 하는 모듈을 전부** 적는다.
+> 대상 모듈을 통해 전이적으로 링크되더라도 `make inspect` 가 암묵적 의존성으로 잡는다 (§8).
+
+### 5.3 `Workspace.swift`
 
 ```swift
 import ProjectDescription
 
-public extension Target {
-    /// 공유 계층 모듈 (Core / DesignSystem / Domain / Data / TestSupport)
-    static func module(
-        name: String,
-        path: String,
-        hasResources: Bool = false,
-        dependencies: [TargetDependency]
-    ) -> Target {
-        .target(
-            name: name,
-            destinations: hannunDestinations,
-            product: .staticFramework,
-            bundleId: "\(bundleIdPrefix).\(name.lowercased())",
-            deploymentTargets: hannunDeploymentTargets,
-            sources: ["\(path)/Sources/**"],
-            resources: hasResources ? ["\(path)/Resources/**"] : nil,
-            dependencies: dependencies,
-            settings: .settings(base: .hannunBase)
-        )
-    }
-
-    /// Feature 모듈 — 의존성이 항상 동일하므로 팩토리로 고정한다
-    static func feature(name: String, path: String) -> Target {
-        .module(
-            name: name,
-            path: path,
-            dependencies: [
-                .target(name: "HannunDomain"),
-                .target(name: "HannunDesignSystem"),
-                .target(name: "HannunCore"),
-            ]
-        )
-    }
-
-    /// Swift Testing 전용 타깃. `import Testing` 은 toolchain 내장이라 별도 의존성이 없다 (§6.2)
-    static func unitTests(for moduleName: String, path: String) -> Target {
-        .target(
-            name: "\(moduleName)Tests",
-            destinations: hannunDestinations,
-            product: .unitTests,
-            bundleId: "\(bundleIdPrefix).\(moduleName.lowercased()).tests",
-            deploymentTargets: hannunDeploymentTargets,
-            sources: ["\(path)/Tests/**"],
-            dependencies: [
-                .target(name: moduleName),
-                .target(name: "HannunTestSupport"),
-            ],
-            settings: .settings(base: .hannunBase)
-        )
-    }
-}
+let workspace = Workspace(
+    name: "Hannun",
+    projects: [
+        ".",
+        "Modules/*",
+        "Features/*",
+    ]
+)
 ```
 
-> `Target.feature`가 Feature의 의존성을 한 곳에 고정하므로, 실수로 `HannunData`를 끼워 넣는 일이
-> 구조적으로 막힌다.
+glob 이라 **새 모듈은 디렉터리에 `Project.swift` 만 두면 자동 등록**된다 — 이 파일은 고치지 않는다.
+(`make generate` 가 `Project.swift` 없는 모듈 디렉터리를 먼저 잡아준다.)
 
-### 5.3 `Project.swift`
+스킴은 전부 Tuist 자동 생성이다. 타깃마다 동명 스킴이 생기고, 전 프로젝트의 타깃·테스트를
+한 번에 도는 **`Hannun-Workspace`** 스킴이 함께 생긴다 (`make test-all` 이 이걸 쓴다).
+프로젝트 단위 스킴으로는 다른 프로젝트의 테스트 타깃을 `testAction` 에 넣을 수 없으므로,
+전체 테스트 스킴을 손으로 유지하지 않는다.
+
+### 5.4 루트 `Project.swift` — 앱 셸만
 
 ```swift
-import ProjectDescription
-import ProjectDescriptionHelpers
-
 let project = Project(
     name: "Hannun",
-    organizationName: "Hannun",
+    organizationName: hannunOrganizationName,
     options: .options(defaultKnownRegions: ["ko", "en"], developmentRegion: "ko"),
     settings: .settings(
         base: .hannunBase,
@@ -321,7 +339,6 @@ let project = Project(
         ]
     ),
     targets: [
-        // MARK: - App
         .target(
             name: "Hannun",
             destinations: hannunDestinations,
@@ -330,69 +347,73 @@ let project = Project(
             deploymentTargets: hannunDeploymentTargets,
             infoPlist: .file(path: "App/Resources/Info.plist"),
             sources: ["App/Sources/**"],
-            resources: ["App/Resources/**"],
+            resources: ["App/Resources/Assets.xcassets"],
             entitlements: .file(path: "App/Config/Hannun.entitlements"),
             dependencies: [
-                .target(name: "NetWorthFeature"),
-                .target(name: "PortfolioFeature"),
-                .target(name: "PerformanceFeature"),
-                .target(name: "JournalFeature"),
-                .target(name: "HannunData"),        // 구현체를 아는 유일한 지점
-            ],
-            settings: .settings(base: .hannunBase)
-        ),
-
-        // MARK: - Shared
-        .module(name: "HannunCore", path: "Modules/Core", dependencies: []),
-        .module(name: "HannunDesignSystem", path: "Modules/DesignSystem", hasResources: true,
-                dependencies: [.target(name: "HannunCore")]),
-        .module(name: "HannunDomain", path: "Modules/Domain",
-                dependencies: [.target(name: "HannunCore")]),
-        // 네트워크는 URLSession + actor 로 직접 구현한다. 외부 SPM 의존성은 없다 (§5.5).
-        .module(name: "HannunData", path: "Modules/Data",
-                dependencies: [
-                    .target(name: "HannunDomain"),
-                    .target(name: "HannunCore"),
-                ]),
-        .module(name: "HannunTestSupport", path: "Modules/TestSupport",
-                dependencies: [
-                    .target(name: "HannunDomain"),
-                    .target(name: "HannunCore"),
-                ]),
-
-        // MARK: - Features
-        .feature(name: "NetWorthFeature", path: "Features/NetWorth"),
-        .feature(name: "PortfolioFeature", path: "Features/Portfolio"),
-        .feature(name: "PerformanceFeature", path: "Features/Performance"),
-        .feature(name: "JournalFeature", path: "Features/Journal"),
-
-        // MARK: - Tests
-        // extraDependencies 는 테스트 코드가 직접 import 하는 모듈이다.
-        // 전이 링크로 심볼은 풀리지만 `make inspect` 가 암묵적 의존성으로 잡으므로 명시한다.
-        .unitTests(for: "HannunCore", path: "Modules/Core"),
-        .unitTests(for: "HannunDomain", path: "Modules/Domain",
-                   extraDependencies: [.target(name: "HannunCore")]),
-        .unitTests(for: "HannunData", path: "Modules/Data",
-                   extraDependencies: [.target(name: "HannunCore")]),
-        .unitTests(for: "PortfolioFeature", path: "Features/Portfolio"),
-        .unitTests(for: "PerformanceFeature", path: "Features/Performance"),
-    ],
-    schemes: [
-        .scheme(
-            name: "Hannun",
-            shared: true,
-            buildAction: .buildAction(targets: ["Hannun"]),
-            testAction: .targets([
-                "HannunCoreTests", "HannunDomainTests", "HannunDataTests",
-                "PortfolioFeatureTests", "PerformanceFeatureTests",
-            ]),
-            runAction: .runAction(configuration: .debug, executable: "Hannun")
+                .project(target: "NetWorthFeature", path: .relativeToRoot("Features/NetWorth")),
+                .project(target: "PortfolioFeature", path: .relativeToRoot("Features/Portfolio")),
+                .project(target: "PerformanceFeature", path: .relativeToRoot("Features/Performance")),
+                .project(target: "JournalFeature", path: .relativeToRoot("Features/Journal")),
+                // 구현체를 아는 유일한 지점
+                .project(target: "HannunData", path: .relativeToRoot("Modules/Data")),
+                // DIContainer·ErrorHandler 직접 사용
+                .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
+            ]
         ),
     ]
 )
 ```
 
-### 5.4 `Tuist.swift`
+### 5.5 모듈별 `Project.swift`
+
+호출 한 줄이 곧 모듈 정의다. 전문은 각 파일 참고.
+
+```swift
+// Modules/Core/Project.swift — 잎 노드
+let project = moduleProject(name: "HannunCore", bundleIdSuffix: "core", includesTests: true)
+```
+
+```swift
+// Modules/DesignSystem/Project.swift — 리소스 보유 (Bundle.module 접근자 생성)
+let project = moduleProject(
+    name: "HannunDesignSystem",
+    bundleIdSuffix: "designsystem",
+    resources: ["Resources/**"],
+    dependencies: [.project(target: "HannunCore", path: .relativeToRoot("Modules/Core"))]
+)
+```
+
+```swift
+// Modules/Data/Project.swift — 테스트가 TestSupport 를 직접 import 한다
+let project = moduleProject(
+    name: "HannunData",
+    bundleIdSuffix: "data",
+    dependencies: [
+        .project(target: "HannunDomain", path: .relativeToRoot("Modules/Domain")),
+        .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
+    ],
+    includesTests: true,
+    testDependencies: [
+        .project(target: "HannunCore", path: .relativeToRoot("Modules/Core")),
+        .project(target: "HannunTestSupport", path: .relativeToRoot("Modules/TestSupport")),
+    ]
+)
+```
+
+```swift
+// Features/Portfolio/Project.swift — 의존성 3종은 팩토리가 고정한다
+let project = featureProject(
+    name: "PortfolioFeature",
+    bundleIdSuffix: "portfolio",
+    includesTests: true
+)
+```
+
+> **리소스 번들 이름이 바뀐다.** Tuist 가 만드는 번들명은 `{프로젝트}_{타깃}` 이라
+> `Hannun_HannunDesignSystem` → `HannunDesignSystem_HannunDesignSystem` 이 됐다.
+> `Bundle.module` 접근자가 Derived 에 자동 재생성되므로 코드는 그대로다 (§9.1).
+
+### 5.6 `Tuist.swift`
 
 ```swift
 import ProjectDescription
@@ -404,7 +425,7 @@ let tuist = Tuist(project: .tuist())
 > `tuist inspect dependencies --only implicit`(= `make inspect`)를 CI·로컬 검증 단계로 돌린다.
 > generate 시점이 아니라 별도 명령이므로 §8 체크리스트와 `.github/workflows` 에 넣어야 실효가 있다.
 
-### 5.5 외부 의존성 — 없음
+### 5.7 외부 의존성 — 없음
 
 **`Tuist/Package.swift` 를 두지 않는다.** 네트워크를 `URLSession` + actor 로 직접 구현하면서
 외부 SPM 의존성이 0개가 됐고, 그 결과:
@@ -484,8 +505,8 @@ public final class StubURLProtocol: URLProtocol {
 ### 6.2 Swift Testing 규칙
 
 **의존성 추가가 필요 없다.** Swift Testing은 Xcode 16+ / Swift 6 toolchain에 포함되어 있어
-`Tuist/Package.swift`에 아무것도 넣지 않는다. §5.2의 `Target.unitTests` 팩토리(`product: .unitTests`)가
-생성하는 타깃에서 `import Testing` 이 바로 동작한다. XCTest와 한 타깃에 공존 가능하지만,
+`Tuist/Package.swift`에 아무것도 넣지 않는다. §5.2의 팩토리가 `includesTests: true` 일 때 만드는
+테스트 타깃(`product: .unitTests`)에서 `import Testing` 이 바로 동작한다. XCTest와 한 타깃에 공존 가능하지만,
 **신규 테스트는 예외 없이 Swift Testing으로 작성한다.**
 
 | XCTest | Swift Testing |
@@ -627,8 +648,9 @@ struct PortfolioViewModelTests {
 
 #### 스킴 설정
 
-§5.3의 `.testAction(.targets([...]))` 은 Swift Testing 타깃도 그대로 인식한다. `tuist test Hannun` 이
-XCTest·Swift Testing을 모두 실행하므로 명령 변경도 없다.
+스킴은 손으로 선언하지 않는다(§5.3). Tuist 가 자동 생성하는 `Hannun-Workspace` 스킴의 `testAction`
+이 전 프로젝트의 테스트 타깃을 포함하고, Swift Testing 타깃도 그대로 인식한다. 새 테스트 타깃을
+추가해도 스킴을 손볼 일이 없다.
 
 ## 7. 빌드 명령
 
@@ -664,13 +686,13 @@ mise use tuist@<안정판 버전>
 
 ```bash
 # 프로젝트 생성
-# tuist install 은 외부 SPM 의존성이 없어 불필요하다 (§5.5)
-tuist generate          # Hannun.xcworkspace 생성 + Xcode 열기
+# tuist install 은 외부 SPM 의존성이 없어 불필요하다 (§5.7)
+tuist generate          # Workspace.swift 기준으로 전 프로젝트 생성 + Xcode 열기
 tuist generate --no-open
 
 # 빌드 / 테스트
 tuist build Hannun
-tuist test Hannun
+tuist test Hannun-Workspace   # 전 프로젝트 테스트 (자동 생성 스킴)
 
 # 검증 / 유지보수
 tuist graph --format png    # 의존성 그래프로 §3 위반 육안 확인
@@ -688,7 +710,7 @@ make bootstrap        # 최초 1회: mise install + tuist 버전 확인
 make generate         # tuist generate --no-open
 make build-domain     # HannunDomain 모듈만 빌드
 make test-domain      # HannunDomain 모듈 테스트
-make test-all         # Hannun 공용 스킴의 testAction (§5.3 의 테스트 타깃 5종)
+make test-all         # Hannun-Workspace 스킴 — 전 프로젝트의 테스트 타깃 5종
 make help             # 전체 타깃 + 모듈 ↔ 스킴 매핑 표
 ```
 
@@ -709,12 +731,13 @@ make help             # 전체 타깃 + 모듈 ↔ 스킴 매핑 표
 Swift Testing 스위트 단위 실행). `xcbeautify` 가 있으면 자동으로 로그를 포매팅하고 없으면 원본 출력을
 쓴다 — 파이프에서 실패를 삼키지 않도록 `.SHELLFLAGS` 에 `-o pipefail` 을 준다.
 
-> **전제 조건**: 모듈별 타깃은 Tuist 가 타깃마다 자동 생성하는 스킴에 의존한다. 따라서
-> `Tuist.swift` 의 `generationOptions` 에 **`disableAutogeneratedSchemes` 를 넣지 않는다.**
-> §5.3 에서 명시적으로 선언하는 `Hannun` 공용 스킴은 자동 생성 스킴과 공존한다.
+> **전제 조건**: 모듈별 타깃도 `test-all` 도 Tuist 자동 생성 스킴에 의존한다 — 타깃마다 동명 스킴,
+> 워크스페이스마다 `Hannun-Workspace`. 따라서 `Tuist.swift` 의 `generationOptions` 에
+> **`disableAutogeneratedSchemes` 를 넣지 않는다.**
 >
-> `Project.swift` / 워크스페이스가 없으면 각 타깃이 실패 대신 "M0 스캐폴딩 필요" 안내를 출력한다
-> (§12 참고). 즉 M0 완료 전까지 `make bootstrap` / `doctor` / `help` 만 동작한다.
+> `Workspace.swift` / 루트 `Project.swift` 가 없거나, `Modules/*`·`Features/*` 중 `Project.swift`
+> 가 빠진 디렉터리가 있으면 각 타깃이 실패 대신 안내를 출력한다 (§12 참고). 후자는 워크스페이스
+> glob 에서 조용히 누락되는 사고를 막으려는 검사다.
 
 `.gitignore` 에 추가할 항목:
 
@@ -735,13 +758,13 @@ App/Config/Hannun.release.xcconfig
 > 충돌 제거다. 신규 클론 후 첫 명령은 `mise install && tuist generate` (= `make bootstrap`).
 >
 > **커밋하는 버전 고정 파일은 `mise.toml`(Tuist 버전) 하나뿐이다.** 외부 SPM 의존성이 없어
-> `Tuist/Package.resolved` 가 존재하지 않는다(§5.5).
+> `Tuist/Package.resolved` 가 존재하지 않는다(§5.7).
 
 ## 8. CLAUDE.md 반영 필요 사항
 
-`CLAUDE.md` 의 **"빌드 명령 (요약)" 섹션이 현재 비어 있다.** Makefile 기준 명령
-(`make bootstrap` / `make generate` / `make build-<모듈>` / `make test-<모듈>` / `make test-all`)과
-이 문서 링크를 채워야 한다. 원본 `tuist` 명령은 §7.2, 모듈 약칭 매핑은 §7.3 에 있다.
+`CLAUDE.md` 의 **"빌드 명령 (요약)" 섹션은 반영 완료**다 — Makefile 기준 명령, 매니페스트 구성
+(`Workspace.swift` + 모듈별 `Project.swift`), `make inspect` 주의를 담았다.
+원본 `tuist` 명령은 §7.2, 모듈 약칭 매핑은 §7.3 에 있다.
 
 **절대 규칙에 추가를 검토할 항목 2개** — 둘 다 위반 시 조용히 깨지는 종류다.
 
@@ -1059,6 +1082,44 @@ DataSource 위치에 배치했다. 설계 문서 §3 문구를 CLAUDE.md 용어�
 이상 종목 수만큼 요청을 보내는 단건 API만으로는 부족하다. 조회하지 못한 심볼은 결과에서 빠진다 —
 일부 실패가 전체를 무너뜨리지 않게 하려는 선택이고, 명세 §8의 부분 실패 정책과 같은 방향이다.
 
+### 10.6 왜 단일 `Project.swift` 를 버리고 다중 프로젝트 워크스페이스로 갔나 (2026-08-01 개정)
+
+**초안의 결정과 그 근거** — §1은 "단일 `Project.swift` + 다중 타깃"을 택하고, 이유를 "타깃 10개
+규모에서 워크스페이스 분리는 generate 시간만 늘린다"로 적었다. 실제로 그 규모에서 generate 는
+0.5초 안팎이고, 이 판단 자체는 지금도 틀리지 않았다.
+
+**뒤집은 이유** — 비용이 아니라 **매니페스트를 사람이 다루는 방식**이 문제였다.
+
+1. **한 파일이 모든 모듈의 변경점을 빨아들인다.** DesignSystem 리소스 하나를 추가해도 diff 는
+   루트 `Project.swift` 에 찍힌다. 모듈 소유자가 갈리는 상황에서 매니페스트만 항상 충돌 지점이
+   되고, 리뷰에서 "이 줄이 어느 모듈 것인지"를 매번 눈으로 찾아야 한다.
+2. **새 모듈 추가가 두 곳 편집이다.** 디렉터리를 만들고 루트 매니페스트에 `.module(...)` /
+   `.feature(...)` / `.unitTests(...)` 세 줄을 더해야 했다. 지금은 `Modules/*` · `Features/*`
+   glob 이라 **디렉터리에 `Project.swift` 를 두면 끝**이다.
+3. **경로가 전부 루트 기준이었다.** `sources: ["Modules/Domain/Sources/**"]` 처럼 모듈 안의
+   내용을 루트 좌표로 적어야 해서, 모듈을 옮기면 매니페스트의 문자열을 손봐야 했다. 이제
+   `Sources/**` · `Tests/**` · `Resources/**` 는 모듈 기준이고, 루트 좌표(`.relativeToRoot`)는
+   **모듈을 가로지르는 의존성에만** 남는다 — 경계를 넘는 지점이 문법으로 드러난다.
+4. **스킴을 손으로 유지할 필요가 없어졌다.** 단일 프로젝트일 때는 전체 테스트용 `Hannun` 스킴에
+   테스트 타깃 5종을 나열했고, 모듈이 늘 때마다 그 목록을 갱신해야 했다. 워크스페이스에는 Tuist 가
+   `Hannun-Workspace` 스킴을 자동 생성해 전 프로젝트의 타깃·테스트를 모두 포함시킨다(§5.3).
+
+**레퍼런스** — 사내 UMCApp(`Workspace.swift` + `Core/*` · `Features/*` glob + `Project` 를 반환하는
+`coreProject`/`featureProject` 헬퍼)의 매니페스트 구성을 그대로 따랐다. 폴더명만 `Core/` 대신
+기존 `Modules/` 를 유지했다 — 바꾸면 `Core/Core` 가 된다.
+
+**단, 레퍼런스의 Feature 3계층 분할은 채택하지 않았다.** UMCApp 의 `featureProject` 는 Feature 당
+`{Name}Domain` / `{Name}Data` / `{Name}Presentation` 3타깃을 만든다. Hannun 의 `featureProject` 는
+Presentation 하나만 만들고 Domain/Data 는 `Modules/` 에서 공유한다 — **§10.1 의 근거(단일 SwiftData
+스키마, 네 탭의 엔티티 교차 참조, 서버 부재)는 프로젝트를 몇 개로 쪼개든 그대로이기 때문이다.**
+매니페스트 구성(어떻게 선언하나)과 계층 분할(무엇을 타깃으로 나누나)은 서로 독립적인 결정이고,
+이번에 바꾼 것은 앞쪽뿐이다.
+
+**전환 비용** — 실제로 발생한 변화는 리소스 번들 이름 하나뿐이었다. 번들명이 `{프로젝트}_{타깃}`
+이라 `Hannun_HannunDesignSystem` → `HannunDesignSystem_HannunDesignSystem` 이 됐고, `Bundle.module`
+접근자는 Tuist 가 Derived 에 재생성하므로 코드는 손대지 않았다. 전환 후 `make inspect` 무결점,
+`make build-all` 10타깃, `make test-all` 53테스트 모두 통과.
+
 ## 11. 미결 사항 (착수 전 확인 필요)
 
 ① **배포 타깃 충돌 — 결정 필요.**
@@ -1074,7 +1135,7 @@ UI 스펙 §2.4·§3.1을 전면 재작성해야 하므로, 먼저 이 항목을
 ③ **Tuist 툴체인 — 해결됨.** `mise.toml` 에 `tuist = "4.202.6"` 으로 고정하고, §5 manifest를
 `tuist generate` + `tuist build` 로 컴파일 검증까지 마쳤다(§7.1). 이 과정에서 확인된 차이 2가지는
 문서에 반영했다 — `enforceExplicitDependencies` 는 deprecated 라 `tuist inspect dependencies`
-로 대체(§5.4), 리소스 glob은 `Resources/**` 가 아니라 존재하는 디렉터리만 지정해야 한다.
+로 대체(§5.6), 리소스 glob은 `Resources/**` 가 아니라 존재하는 디렉터리만 지정해야 한다.
 
 ④ **CloudKit 스키마 제약 반영.** §9.2 제약에 맞춰 설계 문서 §4 엔티티 표의 "필수/null" 표기를
 "모델 기본값 + 계층 검증"으로 다시 적을 필요가 있다.
@@ -1095,7 +1156,7 @@ UI 스펙 §2.4·§3.1을 전면 재작성해야 하므로, 먼저 이 항목을
 
 | 단계 | 산출물 | 완료 기준 |
 |---|---|---|
-| M0 | Tuist 스캐폴딩 — §4 디렉터리, §5 manifest, 빈 타깃 10개 | ✅ `make generate && make build-all` 성공, `make inspect` 무결, `tuist graph` 가 §3과 일치 |
+| M0 | Tuist 스캐폴딩 — §4 디렉터리, §5 manifest(`Workspace.swift` + 프로젝트 10개) | ✅ `make generate && make build-all` 성공, `make inspect` 무결, `tuist graph` 가 §3과 일치 |
 | M1 | `HannunCore` + `HannunDesignSystem` — 토큰(§2.1~2.3), Loadable/AppError/DIContainer, 공통 컴포넌트 18종 | 컴포넌트별 `#if DEBUG` 프리뷰가 Feature 없이 렌더 |
 | M2 | `HannunDomain` 엔티티·프로토콜 + `HannunData` Persistence | 인메모리 컨테이너로 CRUD 통과, CloudKit 스키마 검증 통과 |
 | M3 | `HannunData` Network — `Endpoint`/`NetworkClient` actor, 업비트·KIS 클라이언트, `KISTokenProvider`, 캐시 | `HannunDataTests` 통과(`StubURLProtocol` 기반, §6.1), 오프라인 시 마지막 성공값 폴백 동작, 401 → 토큰 재발급 → 재시도 확인. **업비트 경로는 완료, KIS 미착수(§11-⑥)** |

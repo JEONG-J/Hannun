@@ -1,7 +1,14 @@
+//
+//  UpbitClient.swift
+//  HannunData
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 
-/// 업비트 시세 조회 클라이언트 (§11.1).
+/// 업비트 시세 조회 클라이언트.
 ///
 /// 인증이 없어 보관할 상태가 없으므로 actor 가 아니라 `Sendable` 값 타입이다.
 /// 격리가 필요한 지점(요청 시퀀스)은 `NetworkClient` 가, 캐시는 `QuoteCache` 가 맡는다.

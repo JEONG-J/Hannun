@@ -8,6 +8,36 @@
 - **접근 제어자**: 외부 불필요 상태는 `private` 필수
 - **상수**: View 내부 전용은 `fileprivate enum Constants`
 
+## 파일 헤더
+
+**모든 `.swift` 파일은 Xcode 기본 헤더 블록으로 시작합니다.** 소스·테스트·Tuist 매니페스트 전부 해당합니다.
+
+```swift
+//
+//  DIContainer.swift
+//  HannunCore
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
+import Foundation
+```
+
+| 줄 | 내용 | 비고 |
+|---|---|---|
+| 2번째 | 파일명 (확장자 포함) | 파일을 rename 하면 같이 고친다 |
+| 3번째 | 파일이 속한 **타깃 이름** | `HannunCore`·`PortfolioFeature` 등. 폴더명이 아니다 |
+| 5번째 | `Created by euijjang97 on M/D/YY.` | 생성자 고정, 날짜는 **만든 날** |
+
+- 날짜 형식은 Xcode 그대로 **`M/D/YY`** — 한 자리 수에 0을 채우지 않는다 (`7/31/26`, `8/1/26`).
+- **생성일은 이후 수정해도 갱신하지 않는다.** 변경 이력은 git 이 갖고 있다.
+- 헤더 블록과 첫 `import` 사이에 빈 줄 하나.
+- 매니페스트도 예외가 아니다. 타깃 줄에는 그 매니페스트가 정의하는 프로젝트 이름을 쓴다
+  (루트 `Project.swift`·`Workspace.swift` → `Hannun`, `Modules/Core/Project.swift` → `HannunCore`,
+  `Tuist/ProjectDescriptionHelpers/*.swift` → `ProjectDescriptionHelpers`).
+- **헤더에 설계 문서 절 번호(`§11.0` 등)나 변경 이력을 쓰지 않는다.** 스펙 참조가 필요하면 해당
+  타입·함수 위의 문서 주석(`///`)에 적는다. 헤더는 Xcode 가 만드는 형식 그대로 유지한다.
+
 ## 네이밍 규칙
 
 식별자(상수·변수·프로퍼티·함수·case·타입)는 **무엇인지·왜 존재하는지**를 이름만으로 읽을 수 있어야 합니다.

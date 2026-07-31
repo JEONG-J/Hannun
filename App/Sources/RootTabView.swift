@@ -1,3 +1,10 @@
+//
+//  RootTabView.swift
+//  Hannun
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import JournalFeature
 import NetWorthFeature
 import PerformanceFeature

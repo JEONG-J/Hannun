@@ -1,3 +1,10 @@
+//
+//  Endpoint.swift
+//  HannunData
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 
@@ -6,10 +13,10 @@ import HannunCore
 /// 외부 API 가 둘(KIS, 업비트)이고 인증 체계가 서로 다르기 때문에,
 /// "이 요청에 인증이 필요한가"를 정책 객체가 아니라 엔드포인트 자신이 선언한다.
 enum EndpointAuthentication: Equatable, Sendable {
-    /// 인증 없음. 업비트 Quotation API 가 여기에 해당한다 (§11.1).
+    /// 인증 없음. 업비트 Quotation API 가 여기에 해당한다.
     case none
 
-    /// KIS 접근토큰(Bearer) + 앱키·앱시크릿 헤더를 붙인다 (§11.2).
+    /// KIS 접근토큰(Bearer) + 앱키·앱시크릿 헤더를 붙인다.
     case kisAccessToken
 }
 

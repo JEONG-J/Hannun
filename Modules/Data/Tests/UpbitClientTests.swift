@@ -1,3 +1,10 @@
+//
+//  UpbitClientTests.swift
+//  HannunDataTests
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 import HannunCore
 import HannunTestSupport
@@ -7,7 +14,7 @@ import Testing
 
 @Suite("UpbitClient")
 struct UpbitClientTests {
-    /// 업비트 `GET /v1/ticker` 실제 응답 모양에서 쓰는 필드만 남긴 것 (§11.1).
+    /// 업비트 `GET /v1/ticker` 실제 응답 모양에서 쓰는 필드만 남긴 것.
     private static let tickerJSON = """
     [
       {

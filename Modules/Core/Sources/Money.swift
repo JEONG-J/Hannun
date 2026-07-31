@@ -1,3 +1,10 @@
+//
+//  Money.swift
+//  HannunCore
+//
+//  Created by euijjang97 on 7/31/26.
+//
+
 import Foundation
 
 /// 취급 통화. 해외 자산은 원화 환산 값을 함께 보관한다.

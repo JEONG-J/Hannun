@@ -40,6 +40,7 @@ PR 리뷰는 **지적 사항이 있는 파일만** 아래 형식으로 작성한
 
 ## 리뷰 시 체크리스트
 
+- [ ] 새로 추가된 `.swift` 에 Xcode 헤더 블록(파일명 / 타깃명 / `Created by euijjang97 on M/D/YY.`)이 있는가
 - [ ] Domain Model에 `public init` / `public let`이 있는가
 - [ ] Mock 데이터가 `#if DEBUG`로 감싸져 있는가
 - [ ] 동일 파일 수정하는 다른 PR과의 충돌 가능성 확인

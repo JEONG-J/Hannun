@@ -25,14 +25,8 @@ public struct MarketDataRepository: MarketDataServiceProtocol {
 
     // MARK: - Function
 
-    public init(session: URLSession = .shared) {
-        self.init(
-            upbit: UpbitClient(session: session),
-            koreaInvestment: KISClient.makeIfConfigured(session: session),
-            cache: QuoteCache()
-        )
-    }
-
+    /// 조립은 `MarketRepositories` 가 맡는다 — KIS 클라이언트를 여기서 만들면
+    /// 환율 저장소와 토큰 발급이 갈라진다.
     init(upbit: UpbitClient, koreaInvestment: KISClient?, cache: QuoteCache) {
         self.upbit = upbit
         self.koreaInvestment = koreaInvestment

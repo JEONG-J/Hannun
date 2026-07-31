@@ -41,6 +41,9 @@ enum DIRegistration {
         into container: DIContainer,
         modelContainer: ModelContainer
     ) {
+        // 시세와 환율은 같은 KIS 접근토큰을 쓴다. 조립을 한 번만 해야 토큰도 한 번만 발급된다.
+        let market = MarketRepositories()
+
         container.register((any HoldingRepositoryProtocol).self) {
             HoldingRepository(modelContainer: modelContainer)
         }
@@ -56,12 +59,8 @@ enum DIRegistration {
         container.register((any JournalRepositoryProtocol).self) {
             JournalRepository(modelContainer: modelContainer)
         }
-        container.register((any MarketDataServiceProtocol).self) {
-            MarketDataRepository()
-        }
-        container.register((any ExchangeRateServiceProtocol).self) {
-            ExchangeRateRepository()
-        }
+        container.register((any MarketDataServiceProtocol).self) { market.marketData }
+        container.register((any ExchangeRateServiceProtocol).self) { market.exchangeRate }
     }
 
     /// 팩토리는 컨테이너보다 오래 살 수 없으므로 `unowned` 로 잡아 순환 참조를 만들지 않는다.

@@ -29,13 +29,8 @@ public struct ExchangeRateRepository: ExchangeRateServiceProtocol {
 
     // MARK: - Function
 
-    public init(session: URLSession = .shared) {
-        self.init(
-            koreaInvestment: KISClient.makeIfConfigured(session: session),
-            cache: ExchangeRateCache()
-        )
-    }
-
+    /// 조립은 `MarketRepositories` 가 맡는다 — KIS 클라이언트를 여기서 만들면
+    /// 시세 저장소와 토큰 발급이 갈라진다.
     init(koreaInvestment: KISClient?, cache: ExchangeRateCache) {
         self.koreaInvestment = koreaInvestment
         self.cache = cache

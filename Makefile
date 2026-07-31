@@ -79,7 +79,7 @@ SCHEME_testsupport := HannunTestSupport
 SCHEME_app         := Hannun
 
 # 테스트 타깃이 존재하는 모듈 (설계 문서 §6)
-TESTABLE_MODULES := core domain data portfolio performance
+TESTABLE_MODULES := core design domain data networth portfolio performance journal
 
 # 의존 계층 순서 (L1 → L4)
 LAYER_MODULES   := core design domain data

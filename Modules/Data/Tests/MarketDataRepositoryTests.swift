@@ -26,18 +26,59 @@ private final class TestClock: Sendable {
     }
 }
 
+/// 토큰 발급을 타지 않는 인증기. 이 스위트의 관심사는 라우팅과 캐시다.
+private struct FixedAuthorizer: RequestAuthorizing {
+    func authorize(_ request: URLRequest) async throws -> URLRequest {
+        var authorized = request
+        authorized.setValue("Bearer token", forHTTPHeaderField: "authorization")
+        return authorized
+    }
+
+    func invalidate() async {}
+}
+
 @Suite("MarketDataRepository")
 struct MarketDataRepositoryTests {
     private static let tickerJSON = """
     [{"market":"KRW-BTC","trade_price":95000000,"signed_change_rate":0.0213}]
     """
 
+    private static let domesticJSON = """
+    {"rt_cd":"0","msg1":"정상처리 되었습니다.","output":{"stck_prpr":"70800","prdy_ctrt":"1.28"}}
+    """
+
+    private static let overseasJSON = """
+    {"rt_cd":"0","msg1":"정상처리 되었습니다.","output":{"last":"228.52","rate":"-0.41"}}
+    """
+
     private func makeRepository(
         cache: QuoteCache,
+        isKoreaInvestmentConfigured: Bool = true,
         handler: @escaping StubURLProtocol.Handler
     ) -> (MarketDataRepository, URLSession) {
         let session = StubURLProtocol.makeSession(handler: handler)
-        return (MarketDataRepository(upbit: UpbitClient(session: session), cache: cache), session)
+        let koreaInvestment = isKoreaInvestmentConfigured
+            ? KISClient(session: session, authorizer: FixedAuthorizer())
+            : nil
+
+        let repository = MarketDataRepository(
+            upbit: UpbitClient(session: session),
+            koreaInvestment: koreaInvestment,
+            cache: cache
+        )
+        return (repository, session)
+    }
+
+    /// 업비트와 KIS 요청을 호스트로 갈라 각자의 픽스처를 돌려준다.
+    private func routedResponse(for request: URLRequest) -> StubResponse {
+        guard let host = request.url?.host() else { return .json("{}", statusCode: 500) }
+
+        if host.contains("upbit") { return .json(Self.tickerJSON) }
+        guard let path = request.url?.path() else { return .json("{}", statusCode: 500) }
+
+        return path.contains("overseas")
+            ? .json(Self.overseasJSON)
+            : .json(Self.domesticJSON)
     }
 
     @Test("업비트 마켓의 현재가를 조회한다")
@@ -50,6 +91,66 @@ struct MarketDataRepositoryTests {
         let price = try await repository.currentPrice(symbol: "KRW-BTC")
 
         #expect(price == .krw(95_000_000))
+    }
+
+    @Test("국내 종목코드는 KIS 국내 시세로 간다")
+    func routesDomesticCodeToKoreaInvestment() async throws {
+        let requestedPath = Mutex<String?>(nil)
+        let (repository, session) = makeRepository(cache: QuoteCache()) { request in
+            requestedPath.withLock { $0 = request.url?.path() }
+            return .json(Self.domesticJSON)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        let price = try await repository.currentPrice(symbol: "005930")
+
+        #expect(price == .krw(70_800))
+        #expect(requestedPath.withLock { $0 } == "/uapi/domestic-stock/v1/quotations/inquire-price")
+    }
+
+    @Test("해외 티커는 KIS 해외 시세로 가고 달러로 돌아온다")
+    func routesOverseasTickerToKoreaInvestment() async throws {
+        let (repository, session) = makeRepository(cache: QuoteCache()) { request in
+            self.routedResponse(for: request)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        let price = try await repository.currentPrice(symbol: "NAS:AAPL")
+
+        #expect(price == .usd(Decimal(string: "228.52")!))
+    }
+
+    @Test("업비트와 KIS 를 섞어 조회해도 한 번에 합쳐 돌려준다")
+    func mergesUpbitAndKoreaInvestment() async throws {
+        let (repository, session) = makeRepository(cache: QuoteCache()) { request in
+            self.routedResponse(for: request)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        let prices = try await repository.currentPrices(
+            symbols: ["KRW-BTC", "005930", "NAS:AAPL"]
+        )
+
+        #expect(prices.count == 3)
+        #expect(prices["KRW-BTC"] == .krw(95_000_000))
+        #expect(prices["005930"] == .krw(70_800))
+        #expect(prices["NAS:AAPL"] == .usd(Decimal(string: "228.52")!))
+    }
+
+    @Test("KIS 가 막혀도 업비트 결과는 그대로 살린다")
+    func keepsUpbitResultWhenKoreaInvestmentFails() async throws {
+        let (repository, session) = makeRepository(cache: QuoteCache()) { request in
+            guard request.url?.host()?.contains("upbit") == true else {
+                return .json(#"{"msg1":"서비스 점검 중입니다."}"#, statusCode: 500)
+            }
+            return .json(Self.tickerJSON)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        let prices = try await repository.currentPrices(symbols: ["KRW-BTC", "005930"])
+
+        #expect(prices["KRW-BTC"] == .krw(95_000_000))
+        #expect(prices["005930"] == nil)
     }
 
     @Test("유효한 캐시가 있으면 네트워크를 타지 않는다")
@@ -90,6 +191,28 @@ struct MarketDataRepositoryTests {
         #expect(try await repository.currentPrice(symbol: "KRW-BTC") == .krw(95_000_000))
     }
 
+    @Test("KIS 조회가 실패해도 마지막 캐시값으로 버틴다")
+    func fallsBackToStaleKoreaInvestmentValue() async throws {
+        let clock = TestClock()
+        let shouldFail = Mutex(false)
+        let (repository, session) = makeRepository(
+            cache: QuoteCache(timeToLive: 900, now: clock.now)
+        ) { _ in
+            if shouldFail.withLock({ $0 }) {
+                return .json(#"{"msg1":"서비스 점검 중입니다."}"#, statusCode: 500)
+            }
+            return .json(Self.domesticJSON)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        _ = try await repository.currentPrice(symbol: "005930")
+
+        clock.advance(by: 901)
+        shouldFail.withLock { $0 = true }
+
+        #expect(try await repository.currentPrice(symbol: "005930") == .krw(70_800))
+    }
+
     @Test("캐시도 없이 갱신에 실패하면 에러를 올린다")
     func propagatesErrorWithoutCache() async throws {
         let (repository, session) = makeRepository(cache: QuoteCache()) { _ in
@@ -102,16 +225,34 @@ struct MarketDataRepositoryTests {
         }
     }
 
-    @Test("아직 지원하지 않는 제공자는 validation 에러다")
-    func rejectsUnsupportedProvider() async throws {
-        let (repository, session) = makeRepository(cache: QuoteCache()) { _ in
+    @Test("KIS 앱키가 없으면 주식 조회는 설정 안내로 막는다")
+    func requiresCredentialsForKoreaInvestment() async throws {
+        let (repository, session) = makeRepository(
+            cache: QuoteCache(),
+            isKoreaInvestmentConfigured: false
+        ) { _ in
+            .json(Self.domesticJSON)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        await #expect(
+            throws: AppError.validation("주식·ETF 시세를 보려면 KIS 앱키를 설정해 주세요.")
+        ) {
+            try await repository.currentPrice(symbol: "005930")
+        }
+    }
+
+    @Test("KIS 앱키가 없어도 코인 시세는 그대로 동작한다")
+    func servesUpbitWithoutCredentials() async throws {
+        let (repository, session) = makeRepository(
+            cache: QuoteCache(),
+            isKoreaInvestmentConfigured: false
+        ) { _ in
             .json(Self.tickerJSON)
         }
         defer { StubURLProtocol.tearDown(session) }
 
-        await #expect(throws: AppError.validation("아직 시세를 조회할 수 없는 종목입니다: 005930")) {
-            try await repository.currentPrice(symbol: "005930")
-        }
+        #expect(try await repository.currentPrice(symbol: "KRW-BTC") == .krw(95_000_000))
     }
 
     @Test("배치 조회는 캐시 히트와 네트워크 결과를 합친다")

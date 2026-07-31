@@ -83,8 +83,13 @@ actor NetworkClient {
             throw AppError.network("HTTP 응답이 아닙니다.")
         }
 
-        // 토큰 만료. 한 번만 무효화 후 재시도하고, 그래도 401 이면 재로그인 흐름으로 넘긴다.
-        if httpResponse.statusCode == 401, endpoint.authentication != .none {
+        // 토큰 만료. 한 번만 무효화 후 재시도하고, 그래도 막히면 재로그인 흐름으로 넘긴다.
+        // KIS 는 만료를 401 이 아니라 응답 본문의 msg_cd 로 알리기도 해서 본문까지 본다.
+        let isExpired = AppError.indicatesExpiredCredential(
+            statusCode: httpResponse.statusCode,
+            data: data
+        )
+        if isExpired, endpoint.authentication != .none {
             guard retryCount < maxRetryCount else {
                 throw AppError.unauthorized
             }

@@ -37,7 +37,7 @@ extension AppError {
     /// 2xx 가 아닌 HTTP 응답을 앱 에러로 바꾼다.
     /// 서버가 본문에 메시지를 실어 보냈다면 그걸 우선 노출한다.
     init(statusCode: Int, data: Data?) {
-        if statusCode == 401 {
+        if Self.indicatesExpiredCredential(statusCode: statusCode, data: data) {
             self = .unauthorized
             return
         }
@@ -59,12 +59,25 @@ extension AppError {
         }
     }
 
+    /// 접근토큰을 다시 받아 재시도해야 하는 응답인지 판정한다.
+    ///
+    /// **KIS 는 토큰이 만료돼도 401 을 주지 않는 경우가 있다** — 200 계열이 아닌 응답 본문의
+    /// `msg_cd` 로만 알려준다. 상태 코드만 보면 재발급 경로를 타지 못하고 그대로 실패로 굳는다.
+    ///
+    /// 확인 필요: 아래 코드 값은 KIS 문서·현장 보고에서 가장 널리 쓰이는 것이고 실키 검증 전이다.
+    static func indicatesExpiredCredential(statusCode: Int, data: Data?) -> Bool {
+        if statusCode == 401 { return true }
+
+        guard let code = messageCode(from: data) else { return false }
+        return expiredCredentialMessageCodes.contains(code)
+    }
+
+    /// `EGW00121` 유효하지 않은 토큰 · `EGW00123` 기간이 만료된 토큰
+    private static let expiredCredentialMessageCodes: Set<String> = ["EGW00121", "EGW00123"]
+
     /// KIS 는 `msg1`, 업비트는 `error.message` 에 실패 사유를 담는다.
     private static func serverMessage(from data: Data?) -> String? {
-        guard
-            let data, !data.isEmpty,
-            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { return nil }
+        guard let json = jsonObject(from: data) else { return nil }
 
         if let message = json["msg1"] as? String, !message.isEmpty {
             return message
@@ -74,5 +87,17 @@ extension AppError {
             return message
         }
         return nil
+    }
+
+    private static func messageCode(from data: Data?) -> String? {
+        guard let code = jsonObject(from: data)?["msg_cd"] as? String, !code.isEmpty else {
+            return nil
+        }
+        return code
+    }
+
+    private static func jsonObject(from data: Data?) -> [String: Any]? {
+        guard let data, !data.isEmpty else { return nil }
+        return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     }
 }

@@ -110,6 +110,61 @@ struct NetworkClientTests {
         #expect(await authorizer.authorizeCount == 2)
     }
 
+    @Test("KIS 는 만료를 500 + msg_cd 로 알려도 재시도한다")
+    func retriesOnExpiredMessageCode() async throws {
+        let requestCount = Mutex(0)
+        let session = StubURLProtocol.makeSession { _ in
+            let attempt = requestCount.withLock { count in
+                count += 1
+                return count
+            }
+            guard attempt > 1 else {
+                return .json(
+                    #"{"rt_cd":"1","msg_cd":"EGW00123","msg1":"토큰이 만료되었습니다."}"#,
+                    statusCode: 500
+                )
+            }
+            return .json(#"{"message":"안녕"}"#)
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        var endpoint = EchoEndpoint()
+        endpoint.authentication = .kisAccessToken
+        let authorizer = SpyAuthorizer()
+        let client = NetworkClient(session: session, authorizer: authorizer)
+
+        let value = try await client.send(endpoint, as: EchoBody.self)
+
+        #expect(value == EchoBody(message: "안녕"))
+        #expect(requestCount.withLock { $0 } == 2)
+        #expect(await authorizer.invalidateCount == 1)
+    }
+
+    @Test("만료와 무관한 KIS 에러 코드는 재시도하지 않는다")
+    func doesNotRetryUnrelatedMessageCode() async throws {
+        let requestCount = Mutex(0)
+        let session = StubURLProtocol.makeSession { _ in
+            requestCount.withLock { $0 += 1 }
+            return .json(
+                #"{"rt_cd":"1","msg_cd":"EGW00201","msg1":"초당 거래건수를 초과하였습니다."}"#,
+                statusCode: 500
+            )
+        }
+        defer { StubURLProtocol.tearDown(session) }
+
+        var endpoint = EchoEndpoint()
+        endpoint.authentication = .kisAccessToken
+        let authorizer = SpyAuthorizer()
+        let client = NetworkClient(session: session, authorizer: authorizer)
+
+        await #expect(throws: AppError.self) {
+            try await client.data(for: endpoint)
+        }
+
+        #expect(requestCount.withLock { $0 } == 1)
+        #expect(await authorizer.invalidateCount == 0)
+    }
+
     @Test("인증이 없는 엔드포인트의 401 은 재시도하지 않는다")
     func doesNotRetryUnauthenticatedEndpoint() async throws {
         let requestCount = Mutex(0)

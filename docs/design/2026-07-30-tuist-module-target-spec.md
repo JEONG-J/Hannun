@@ -1122,11 +1122,12 @@ Presentation 하나만 만들고 Domain/Data 는 `Modules/` 에서 공유한다 
 
 ## 11. 미결 사항 (착수 전 확인 필요)
 
-① **배포 타깃 충돌 — 결정 필요.**
-설계 문서 §1 타겟은 "iOS 17 이상"인데, UI 스펙과 CLAUDE.md는 iOS 26 전용 API(Liquid Glass,
-`tabViewBottomAccessory`, `ConcentricRectangle`)를 전제로 작성됐다. 이 문서는 **iOS 26.0** 으로
-확정했다. 확정 시 설계 문서 §1의 "iOS 17 이상"을 수정해야 한다. 만약 iOS 17을 유지해야 한다면
-UI 스펙 §2.4·§3.1을 전면 재작성해야 하므로, 먼저 이 항목을 확정한 뒤 착수하는 것이 안전하다.
+① **배포 타깃 — 해결됨.** **iOS 26.0** 으로 확정했다. 설계 문서 §1 타겟의 "iOS 17 이상"을
+"iOS 26.0 이상"으로 고치고 확정 근거(UI 스펙이 Liquid Glass·`tabViewBottomAccessory`·
+`ConcentricRectangle` 을 전제한다)를 같은 자리에 남겼다. 매니페스트도 이미 같은 값이다 —
+`ProjectSettings.swift` 의 `hannunDeploymentTargets = .iOS("26.0")`(§5.1). 이로써 설계 문서·
+UI 스펙·CLAUDE.md·매니페스트가 한 값으로 정렬됐고, iOS 17 유지 시 필요했던 UI 스펙
+§2.4·§3.1 재작성 논의는 닫힌다.
 
 ② **bundle identifier prefix.** `com.jeong.hannun` 은 임의 placeholder다. Apple Developer 팀의
 실제 organization identifier로 교체해야 하고, CloudKit 컨테이너 ID

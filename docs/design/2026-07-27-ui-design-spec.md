@@ -264,7 +264,30 @@ iOS 26 `TabView`는 탭바 바로 위에 떠 있는 Liquid Glass 액세서리를
 - `tabBarMinimizeBehavior(.onScrollDown)`은 **iPhone 전용**. iPad/Mac Catalyst에서는
   탭바가 최소화되지 않으므로 `.inline` 대응은 iPhone 기준으로만 검증한다.
 - 액세서리 높이만큼 콘텐츠 하단에 여백이 필요하다 — 리스트 마지막 행이 캡슐에 가리지
-  않도록 `safeAreaPadding` 또는 하단 스페이서로 보정한다.
+  않도록 `safeAreaPadding` 또는 하단 스페이서로 보정한다
+
+#### 구현: 누가 액세서리를 만들고 누가 그리나
+
+"`TabView` 에 하나만 붙는다" 는 규칙과 "내용은 탭 화면의 상태를 읽는다" 는 요구가 계층상
+충돌한다 — `TabView` 는 앱 타깃(`App/Sources/RootTabView.swift`)에 있는데, 액세서리가 읽어야 할
+선택된 통화·벤치마크는 Feature 의 ViewModel 안에 있고 **Feature 는 앱 타깃을 import 할 수 없다**.
+
+그래서 공유 커널에 등록소를 둔다 (`Modules/Core/Sources/TabAccessory.swift`).
+
+- **Feature** 는 탭 **루트 View** 에 `.tabAccessory(_:content:)` 를 붙여 자기 몫을 등록한다.
+  액세서리는 화면이 아니라 탭에 속하므로 상세 화면을 push 해도 그대로 남아야 한다 —
+  그래서 루트에만 붙인다.
+- **앱 셸** 은 `TabAccessoryHost.content(for: selectedTab)` 로 현재 탭의 등록물만 꺼내
+  `tabViewBottomAccessory` 에 넣는다. 분기는 여기 한 곳에서만 일어난다.
+- 등록 클로저가 Feature 의 `@Observable` ViewModel 을 **참조로** 붙잡으므로, `AnyView` 로
+  타입을 지워도 Observation 추적은 살아 있다 — ViewModel 값이 바뀌면 액세서리도 다시 그려진다.
+
+```swift
+PerformanceContentView(viewModel: viewModel)
+    .tabAccessory(.performance) {
+        BottomAccessory { ChipGroup(appearance: .accessory) { … } }
+    }
+```.
 
 ## 4. 화면별 스펙
 

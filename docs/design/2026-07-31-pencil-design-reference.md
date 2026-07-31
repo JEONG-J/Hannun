@@ -142,6 +142,7 @@ Pencil 은 정적 캔버스라 iOS 26 의 실제 렌더링을 그대로 표현�
 | `background_blur(20)` + `shadow` | `.glassEffect` 가 내장 | 캡슐에 blur/shadow 를 직접 얹지 않는다 |
 | 도넛 = `ellipse` 5개 겹침 | Swift Charts `SectorMark` | §6.1 의 각도값은 비율 검증용이지 좌표가 아니다 |
 | 추이 차트 = `path` geometry | Swift Charts `LineMark` + `AreaMark` | 시안 path 는 예시 곡선. 실데이터로 그린다 |
+| 선택 칩·주요 액션의 **흰 라벨** | `Color.onBrand` | 라이트는 시안대로 흰색. 다크는 `brand` 가 밝아져(`#6E6CFF`) 흰 라벨 대비가 4.0:1 로 AA 미달이라 잉크로 뒤집는다 (UI 스펙 §2.1) |
 | `StatusBar` 프레임 | 그리지 않는다 | 시스템이 그린다 |
 | lucide 아이콘 | SF Symbols (§5.1) | |
 | 숫자 예시값 | 전부 목업 | `#if DEBUG` 프리뷰 데이터로만 사용 |

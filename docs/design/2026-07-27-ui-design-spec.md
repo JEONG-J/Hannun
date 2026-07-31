@@ -71,7 +71,16 @@ Glass는 "콘텐츠 위에 떠 있는 기능 레이어"에만 쓴다. 콘텐츠 
 | `textPrimary` | `#14181F` | `#F2F4F8` | 주 텍스트·금액 |
 | `textSecondary` | `#6B7280` | `#9AA1AE` | 보조 텍스트·서브라인·통화기호 |
 | `brand` | `#5856D6` | `#6E6CFF` | 브랜드 강조 (인디고 — 손익 색과 분리) |
+| `onBrand` | `#FFFFFF` | `#0A0C12` | **`brand` 채움 위 라벨** — 선택된 필터 칩, 액세서리 주요 액션 |
 | `separator` | `#E2E4EA` | `#2E3340` | 구분선 (최소 사용, scroll edge effect 우선) |
+
+> **`onBrand` 가 다크에서 흰색이 아닌 이유.** 다크 `brand`(`#6E6CFF`)는 라이트보다 밝아서 흰 라벨의
+> 대비가 약 4.0:1 로 떨어진다 — 13pt Semibold 칩 라벨은 WCAG 대형 텍스트가 아니므로 AA(4.5:1) 미달이다.
+> 잉크로 뒤집으면 약 4.9:1 이 된다. 다크에서 주 색이 밝아지고 그 위 라벨이 어두워지는 건 표준적인
+> on-color 패턴이다. 시안대로 양쪽 다 흰 라벨로 가려면 colorset 다크 값 하나만 바꾸면 된다.
+>
+> **`brand` 를 라벨 색으로 쓰는 건 옅은 tint 배경 위에서만이다** (`HannunTint`, 알파 12/18% — §2.2).
+> 채움(`Glass.tint(brand)` · solid `brand`) 위에 `brand` 라벨을 얹으면 같은 색이라 글자가 사라진다.
 
 #### 손익 색 (확정)
 
@@ -150,10 +159,10 @@ design-system.md의 variant 표를 화면 요소에 대응시킨다. 구현 시 
 | 화면 요소 | Variant | 비고 |
 |-----------|---------|------|
 | 필터 칩(벤치마크·종목·카테고리) | `.regular.interactive()` | ChipGroup은 Container+Union 필수 |
-| 선택된 칩 | `.regular.tint(brand).interactive()` | 선택 상태를 tint로 구분 |
+| 선택된 칩 | `.regular.tint(brand).interactive()` | 선택 상태를 tint로 구분. **라벨은 `onBrand`** — `tint` 는 알파 wash 가 아니라 채도 그대로의 채움이다 |
 | 탭바 하단 액세서리 캡슐 | `.regular` | 컨테이너 자체에만 적용 (§3.1) |
 | 액세서리 **내부** 세그먼트·칩 | **glass 금지** | 불투명 `surfaceSecondary` + 선택 시 brand tint |
-| 액세서리 **내부** 주요 액션 버튼 | **glass 금지** | `brand` 채움(solid) + 흰색 라벨 |
+| 액세서리 **내부** 주요 액션 버튼 | **glass 금지** | `brand` 채움(solid) + `onBrand` 라벨 |
 | KRW/USD 통화 토글 | `.regular.interactive()` | capsule. 순자산 탭에서는 액세서리 내부로 이동(§4.1) → glass 금지 규칙 적용 |
 | 기간 세그먼트(성과 탭) | `.regular.interactive()` | 차트 아래 인라인 배치 (액세서리 아님 — §4.3) |
 | 일지 작성 버튼 | `brand` 채움 | 액세서리 우측 44pt 원형 (FAB 대체 — §4.4) |

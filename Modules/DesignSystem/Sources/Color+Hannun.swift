@@ -21,6 +21,13 @@ public extension Color {
     static let textSecondary = Color("textSecondary", bundle: .module)
     /// 손익 색(빨강·파랑)과 겹치지 않도록 분리한 인디고 계열.
     static let brand = Color("brand", bundle: .module)
+    /// `brand` **채움 위**에 얹는 라벨 색. 선택된 필터 칩, 액세서리 주요 액션 버튼이 쓴다.
+    ///
+    /// 라이트에서만 흰색이고 다크에서는 잉크다 — 다크의 `brand`(`#6E6CFF`)가 라이트보다 밝아서
+    /// 흰 라벨을 얹으면 대비가 약 4.0:1 로 떨어진다(13pt Semibold 칩 라벨 기준 AA 미달).
+    /// 잉크로 뒤집으면 약 4.9:1 이 된다. `brand` 를 라벨 색으로 쓰는 건
+    /// **옅은 tint 배경**(`HannunTint`, 알파 12/18%) 위에서만이다 — 채움 위에 쓰면 글자가 사라진다.
+    static let onBrand = Color("onBrand", bundle: .module)
     static let separator = Color("separator", bundle: .module)
 
     // MARK: - 손익
@@ -54,6 +61,7 @@ private struct ColorTokenPreview: View {
         ("textPrimary", .textPrimary),
         ("textSecondary", .textSecondary),
         ("brand", .brand),
+        ("onBrand", .onBrand),
         ("separator", .separator),
     ]
 

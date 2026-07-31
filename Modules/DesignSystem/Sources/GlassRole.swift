@@ -17,6 +17,9 @@ public enum GlassRole: CaseIterable, Sendable {
     /// `glassEffectUnion` 으로 묶어 오프스크린 렌더링을 줄인다.
     case filterChip
     /// 선택된 필터 칩. 선택 상태를 brand tint 로 구분한다.
+    ///
+    /// `Glass.tint(_:)` 는 알파 wash 가 아니라 채도를 그대로 먹이는 채움이다.
+    /// **라벨은 `onBrand`** 를 쓴다 — `brand` 를 쓰면 배경과 같은 색이라 글자가 사라진다.
     case selectedFilterChip
     /// 탭바 하단 액세서리 캡슐. **컨테이너 자체에만** 붙인다.
     case accessoryCapsule
@@ -25,7 +28,7 @@ public enum GlassRole: CaseIterable, Sendable {
     case accessoryControl
     /// 선택된 액세서리 내부 컨트롤. 라벨은 `brand` 를 쓴다.
     case selectedAccessoryControl
-    /// 액세서리 내부 주요 액션(종목 추가·일지 작성). `brand` 채움 + 흰 라벨.
+    /// 액세서리 내부 주요 액션(종목 추가·일지 작성). `brand` 채움 + `onBrand` 라벨.
     case accessoryPrimaryAction
     /// 성과 탭 기간 세그먼트. 액세서리가 아니라 차트 바로 아래 인라인이라 glass 를 쓴다.
     case periodSegment
@@ -147,7 +150,7 @@ private struct GlassRolePreview: View {
 
                     Text(benchmark)
                         .hannunFont(.pillLabel)
-                        .foregroundStyle(isSelected ? Color.brand : Color.textPrimary)
+                        .foregroundStyle(isSelected ? Color.onBrand : Color.textPrimary)
                         .padding(.vertical, .spacingS)
                         .padding(.horizontal, .spacingM)
                         .hannunGlass(isSelected ? .selectedFilterChip : .filterChip)

@@ -1,0 +1,4905 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "uBXoB",
+      "x": 520,
+      "y": -1050,
+      "name": "ChangePill",
+      "reusable": true,
+      "fill": "$gain-tint",
+      "cornerRadius": 100,
+      "padding": [
+        "$spacing-xs",
+        "$spacing-s"
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "M0plo",
+          "name": "PillLabel",
+          "fill": "$gain",
+          "content": "+2.4%",
+          "fontFamily": "$font",
+          "fontSize": "$font-caption",
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "sVklS",
+      "x": 660,
+      "y": -1050,
+      "name": "glass/FilterChip",
+      "reusable": true,
+      "fill": "$surface-secondary",
+      "cornerRadius": 100,
+      "padding": [
+        8,
+        14
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "jzNW7",
+          "name": "ChipLabel",
+          "fill": "$text-secondary",
+          "content": "코스피",
+          "fontFamily": "$font",
+          "fontSize": "$font-caption",
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "XFnrJ",
+      "x": 520,
+      "y": -970,
+      "name": "SectionHeader",
+      "reusable": true,
+      "width": 370,
+      "padding": [
+        6,
+        0
+      ],
+      "justifyContent": "space_between",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "TyuSP",
+          "name": "SectionLeft",
+          "gap": "$spacing-s",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "ellipse",
+              "id": "pUxgb",
+              "name": "CategoryDot",
+              "fill": "$category-domestic",
+              "width": 8,
+              "height": 8
+            },
+            {
+              "type": "text",
+              "id": "dRjcS",
+              "name": "SectionName",
+              "fill": "$text-primary",
+              "content": "국내주식",
+              "fontFamily": "$font",
+              "fontSize": "$font-sub",
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "mCpN7",
+          "name": "SectionRight",
+          "gap": "$spacing-xs",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "p9xU6X",
+              "name": "SectionSubtotal",
+              "fill": "$text-secondary",
+              "content": "₩12,450,000",
+              "fontFamily": "$font",
+              "fontSize": "$font-sub"
+            },
+            {
+              "type": "icon",
+              "id": "XebwS",
+              "name": "SectionChevron",
+              "width": 16,
+              "height": 16,
+              "icon": "chevron-down",
+              "library": "lucide",
+              "fill": "$text-secondary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fq0Sb",
+      "x": 0,
+      "y": -1050,
+      "name": "StatusBar",
+      "reusable": true,
+      "width": 402,
+      "height": 62,
+      "padding": [
+        10,
+        28
+      ],
+      "justifyContent": "space_between",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "cbMeb",
+          "name": "StatusTime",
+          "fill": "$text-primary",
+          "content": "9:41",
+          "fontFamily": "$font",
+          "fontSize": "$font-sub",
+          "fontWeight": "600"
+        },
+        {
+          "type": "frame",
+          "id": "si33q",
+          "name": "StatusIcons",
+          "gap": 6,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "b4Nb7",
+              "name": "StatusCellular",
+              "width": 17,
+              "height": 17,
+              "icon": "signal",
+              "library": "lucide",
+              "fill": "$text-primary"
+            },
+            {
+              "type": "icon",
+              "id": "o4Vd9N",
+              "name": "StatusWifi",
+              "width": 17,
+              "height": 17,
+              "icon": "wifi",
+              "library": "lucide",
+              "fill": "$text-primary"
+            },
+            {
+              "type": "icon",
+              "id": "awhvq",
+              "name": "StatusBattery",
+              "width": 22,
+              "height": 22,
+              "icon": "battery-full",
+              "library": "lucide",
+              "fill": "$text-primary"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "pFiEH",
+      "x": 0,
+      "y": -950,
+      "name": "NavBarLargeTitle",
+      "reusable": true,
+      "width": 402,
+      "padding": [
+        8,
+        16
+      ],
+      "justifyContent": "space_between",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "kNs0a",
+          "name": "NavTitle",
+          "fill": "$text-primary",
+          "content": "순자산",
+          "fontFamily": "$font",
+          "fontSize": "$font-title",
+          "fontWeight": "700"
+        },
+        {
+          "type": "frame",
+          "id": "SIeWo",
+          "name": "NavActions",
+          "gap": "$spacing-l",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "GAZCR",
+              "name": "NavActionIcon",
+              "width": 24,
+              "height": 24,
+              "icon": "plus",
+              "library": "lucide",
+              "fill": "$brand"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "BgjId",
+      "x": 0,
+      "y": -840,
+      "name": "TabBar",
+      "reusable": true,
+      "width": 402,
+      "layout": "vertical",
+      "padding": [
+        0,
+        16,
+        12,
+        16
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "modr6",
+          "name": "glass/TabBarCapsule",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$glass",
+          "cornerRadius": 28,
+          "effect": [
+            {
+              "type": "background_blur",
+              "radius": 20
+            },
+            {
+              "type": "shadow",
+              "shadowType": "outer",
+              "color": "#0000001A",
+              "offset": {
+                "x": 0,
+                "y": 8
+              },
+              "blur": 24
+            }
+          ],
+          "padding": 6,
+          "children": [
+            {
+              "type": "frame",
+              "id": "AoVNG",
+              "name": "TabNet",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$brand-tint",
+              "cornerRadius": 22,
+              "layout": "vertical",
+              "gap": 2,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "Ws6da",
+                  "name": "TabNetIcon",
+                  "width": 22,
+                  "height": 22,
+                  "icon": "chart-pie",
+                  "library": "lucide",
+                  "fill": "$brand"
+                },
+                {
+                  "type": "text",
+                  "id": "i88UHJ",
+                  "name": "TabNetLabel",
+                  "fill": "$brand",
+                  "content": "순자산",
+                  "fontFamily": "$font",
+                  "fontSize": 10,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "LqAoA",
+              "name": "TabPortfolio",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 22,
+              "layout": "vertical",
+              "gap": 2,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "k6fvHJ",
+                  "name": "TabPortfolioIcon",
+                  "width": 22,
+                  "height": 22,
+                  "icon": "list",
+                  "library": "lucide",
+                  "fill": "$text-secondary"
+                },
+                {
+                  "type": "text",
+                  "id": "RCAa9",
+                  "name": "TabPortfolioLabel",
+                  "fill": "$text-secondary",
+                  "content": "포트폴리오",
+                  "fontFamily": "$font",
+                  "fontSize": 10,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xiCpN",
+              "name": "TabPerf",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 22,
+              "layout": "vertical",
+              "gap": 2,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "mF6Xg",
+                  "name": "TabPerfIcon",
+                  "width": 22,
+                  "height": 22,
+                  "icon": "chart-line",
+                  "library": "lucide",
+                  "fill": "$text-secondary"
+                },
+                {
+                  "type": "text",
+                  "id": "S6VkW",
+                  "name": "TabPerfLabel",
+                  "fill": "$text-secondary",
+                  "content": "성과",
+                  "fontFamily": "$font",
+                  "fontSize": 10,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MOevr",
+              "name": "TabJournal",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 22,
+              "layout": "vertical",
+              "gap": 2,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "jmsmw",
+                  "name": "TabJournalIcon",
+                  "width": 22,
+                  "height": 22,
+                  "icon": "book",
+                  "library": "lucide",
+                  "fill": "$text-secondary"
+                },
+                {
+                  "type": "text",
+                  "id": "gPL04",
+                  "name": "TabJournalLabel",
+                  "fill": "$text-secondary",
+                  "content": "일지",
+                  "fontFamily": "$font",
+                  "fontSize": 10,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "GxcXV",
+      "x": 520,
+      "y": -880,
+      "name": "HoldingRow",
+      "reusable": true,
+      "width": 370,
+      "padding": [
+        "$spacing-m",
+        "$spacing-l"
+      ],
+      "justifyContent": "space_between",
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "pafxp",
+          "name": "HoldingLeft",
+          "layout": "vertical",
+          "gap": 3,
+          "children": [
+            {
+              "type": "frame",
+              "id": "iUtAV",
+              "name": "HoldingTitleLine",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "J0zIk",
+                  "name": "HoldingName",
+                  "fill": "$text-primary",
+                  "content": "삼성전자",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-row",
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "bDcJz",
+                  "name": "HoldingTicker",
+                  "fill": "$text-secondary",
+                  "content": "005930",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "VEvnn",
+              "name": "HoldingSubline",
+              "fill": "$text-secondary",
+              "content": "10주 · ₩68,400",
+              "fontFamily": "$font",
+              "fontSize": "$font-caption"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "d9FNg",
+          "name": "HoldingRight",
+          "layout": "vertical",
+          "gap": "$spacing-xs",
+          "alignItems": "end",
+          "children": [
+            {
+              "type": "text",
+              "id": "JkIoL",
+              "name": "HoldingAmount",
+              "fill": "$text-primary",
+              "content": "₩725,000",
+              "fontFamily": "$font",
+              "fontSize": "$font-row",
+              "fontWeight": "600"
+            },
+            {
+              "id": "v6gP3",
+              "type": "ref",
+              "ref": "uBXoB",
+              "name": "HoldingPill",
+              "descendants": {
+                "M0plo": {
+                  "content": "+6.0%"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "T8ZpBh",
+      "x": 1000,
+      "y": 0,
+      "name": "순자산 탭",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "fill": "$bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "I8uHe",
+          "type": "ref",
+          "ref": "fq0Sb",
+          "name": "StatusBar"
+        },
+        {
+          "id": "b8Cnn",
+          "type": "ref",
+          "ref": "pFiEH",
+          "name": "NavBar",
+          "descendants": {
+            "kNs0a": {
+              "content": "순자산"
+            },
+            "SIeWo": {
+              "enabled": false
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "Tj1fe",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$spacing-l",
+          "padding": [
+            "$spacing-s",
+            "$spacing-l",
+            0,
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "NNE3O",
+              "name": "TotalAssetBlock",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KDa4W",
+                  "name": "AmountColumn",
+                  "layout": "vertical",
+                  "gap": "$spacing-s",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "wR1tb",
+                      "name": "AmountRow",
+                      "gap": 2,
+                      "alignItems": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "kLfJx",
+                          "name": "CurrencySymbol",
+                          "fill": "$text-secondary",
+                          "content": "₩",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-display",
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ALrOz",
+                          "name": "TotalAmount",
+                          "fill": "$text-primary",
+                          "content": "128,450,000",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-display",
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "id": "khKIW",
+                      "type": "ref",
+                      "ref": "uBXoB",
+                      "name": "DailyChangePill",
+                      "descendants": {
+                        "M0plo": {
+                          "content": "+₩1,240,000 (+0.98%)"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "P0pS8z",
+              "name": "AllocationCard",
+              "width": "fill_container",
+              "fill": "$surface",
+              "cornerRadius": "$radius-m",
+              "layout": "vertical",
+              "gap": "$spacing-m",
+              "padding": "$spacing-m",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "E0mMe",
+                  "name": "DonutChart",
+                  "width": 200,
+                  "height": 200,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "Vy7UE",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Sector국내주식",
+                      "innerRadius": 0.62,
+                      "startAngle": 90,
+                      "sweepAngle": -122.4,
+                      "fill": "$category-domestic",
+                      "width": 200,
+                      "height": 200
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "T3Czq",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Sector해외주식",
+                      "innerRadius": 0.62,
+                      "startAngle": -32.4,
+                      "sweepAngle": -93.6,
+                      "fill": "$category-foreign",
+                      "width": 200,
+                      "height": 200
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "c0MT5",
+                      "x": 0,
+                      "y": 0,
+                      "name": "SectorETF",
+                      "innerRadius": 0.62,
+                      "startAngle": -126,
+                      "sweepAngle": -64.8,
+                      "fill": "$category-etf",
+                      "width": 200,
+                      "height": 200
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "b1hm6h",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Sector코인",
+                      "innerRadius": 0.62,
+                      "startAngle": 169.2,
+                      "sweepAngle": -43.2,
+                      "fill": "$category-crypto",
+                      "width": 200,
+                      "height": 200
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "wRITb",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Sector현금",
+                      "innerRadius": 0.62,
+                      "startAngle": 126,
+                      "sweepAngle": -36,
+                      "fill": "$category-cash",
+                      "width": 200,
+                      "height": 200
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rcmD2",
+                      "x": 0,
+                      "y": 0,
+                      "name": "DonutCenter",
+                      "width": 200,
+                      "height": 200,
+                      "layout": "vertical",
+                      "gap": "$spacing-xs",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ub5vE",
+                          "name": "CenterCaption",
+                          "fill": "$text-secondary",
+                          "content": "총자산",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption"
+                        },
+                        {
+                          "type": "text",
+                          "id": "wP0QG",
+                          "name": "CenterAmount",
+                          "fill": "$text-primary",
+                          "content": "₩128,450,000",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-row",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "rectangle",
+                  "id": "VPvmg",
+                  "name": "Divider",
+                  "fill": "$separator",
+                  "width": "fill_container",
+                  "height": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "p8ZnLt",
+                  "name": "CategoryList",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "nb8SQ",
+                      "name": "Row국내주식",
+                      "width": "fill_container",
+                      "padding": [
+                        "$spacing-s",
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Z3PSGh",
+                          "name": "RowLeft국내주식",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "Io3TT",
+                              "name": "Dot국내주식",
+                              "fill": "$category-domestic",
+                              "width": 8,
+                              "height": 8
+                            },
+                            {
+                              "type": "text",
+                              "id": "w6q3m",
+                              "name": "Name국내주식",
+                              "fill": "$text-primary",
+                              "content": "국내주식",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-row"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "cCfrA",
+                          "name": "RowRight국내주식",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "n6TZq",
+                              "name": "RowValues국내주식",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Uv8Ti",
+                                  "name": "Amount국내주식",
+                                  "fill": "$text-primary",
+                                  "content": "₩43,676,000",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-row",
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "CMSMa",
+                                  "name": "Percent국내주식",
+                                  "fill": "$text-secondary",
+                                  "content": "34.0%",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-caption"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon",
+                              "id": "MLjRp",
+                              "name": "Chevron국내주식",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$text-secondary"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sDrl9",
+                      "name": "Row해외주식",
+                      "width": "fill_container",
+                      "padding": [
+                        "$spacing-s",
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Ifl7x",
+                          "name": "RowLeft해외주식",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "doAsP",
+                              "name": "Dot해외주식",
+                              "fill": "$category-foreign",
+                              "width": 8,
+                              "height": 8
+                            },
+                            {
+                              "type": "text",
+                              "id": "JT5J7",
+                              "name": "Name해외주식",
+                              "fill": "$text-primary",
+                              "content": "해외주식",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-row"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "XaeQ7",
+                          "name": "RowRight해외주식",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "mHyKx",
+                              "name": "RowValues해외주식",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "u206D",
+                                  "name": "Amount해외주식",
+                                  "fill": "$text-primary",
+                                  "content": "₩33,397,000",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-row",
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "r2itr",
+                                  "name": "Percent해외주식",
+                                  "fill": "$text-secondary",
+                                  "content": "26.0%",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-caption"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon",
+                              "id": "SVeou",
+                              "name": "Chevron해외주식",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$text-secondary"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rB1Wq",
+                      "name": "RowETF",
+                      "width": "fill_container",
+                      "padding": [
+                        "$spacing-s",
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "eQ89M",
+                          "name": "RowLeftETF",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "xPudS",
+                              "name": "DotETF",
+                              "fill": "$category-etf",
+                              "width": 8,
+                              "height": 8
+                            },
+                            {
+                              "type": "text",
+                              "id": "ooiBW",
+                              "name": "NameETF",
+                              "fill": "$text-primary",
+                              "content": "ETF",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-row"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "vN7wY",
+                          "name": "RowRightETF",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "T0ynn",
+                              "name": "RowValuesETF",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "T1C3Xf",
+                                  "name": "AmountETF",
+                                  "fill": "$text-primary",
+                                  "content": "₩23,121,000",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-row",
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "xFj3u",
+                                  "name": "PercentETF",
+                                  "fill": "$text-secondary",
+                                  "content": "18.0%",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-caption"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon",
+                              "id": "h2X65y",
+                              "name": "ChevronETF",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$text-secondary"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Atw38",
+                      "name": "Row코인",
+                      "width": "fill_container",
+                      "padding": [
+                        "$spacing-s",
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "RidI7",
+                          "name": "RowLeft코인",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "w61JM",
+                              "name": "Dot코인",
+                              "fill": "$category-crypto",
+                              "width": 8,
+                              "height": 8
+                            },
+                            {
+                              "type": "text",
+                              "id": "mTCQA",
+                              "name": "Name코인",
+                              "fill": "$text-primary",
+                              "content": "코인",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-row"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rZZcC",
+                          "name": "RowRight코인",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "UQcdg",
+                              "name": "RowValues코인",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Rc58X",
+                                  "name": "Amount코인",
+                                  "fill": "$text-primary",
+                                  "content": "₩15,414,500",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-row",
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "l2q9tQ",
+                                  "name": "Percent코인",
+                                  "fill": "$text-secondary",
+                                  "content": "12.0%",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-caption"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon",
+                              "id": "jnPl8",
+                              "name": "Chevron코인",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$text-secondary"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XycyY",
+                      "name": "Row현금",
+                      "width": "fill_container",
+                      "padding": [
+                        "$spacing-s",
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "hkrWd",
+                          "name": "RowLeft현금",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "ellipse",
+                              "id": "VgFbC",
+                              "name": "Dot현금",
+                              "fill": "$category-cash",
+                              "width": 8,
+                              "height": 8
+                            },
+                            {
+                              "type": "text",
+                              "id": "uuzcS",
+                              "name": "Name현금",
+                              "fill": "$text-primary",
+                              "content": "현금",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-row"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "GpBrG",
+                          "name": "RowRight현금",
+                          "gap": "$spacing-s",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "eN7Yi",
+                              "name": "RowValues현금",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "m10cj",
+                                  "name": "Amount현금",
+                                  "fill": "$text-primary",
+                                  "content": "₩12,841,500",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-row",
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "WerqK",
+                                  "name": "Percent현금",
+                                  "fill": "$text-secondary",
+                                  "content": "10.0%",
+                                  "fontFamily": "$font",
+                                  "fontSize": "$font-caption"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "icon",
+                              "id": "Q9I5e",
+                              "name": "Chevron현금",
+                              "width": 16,
+                              "height": 16,
+                              "icon": "chevron-right",
+                              "library": "lucide",
+                              "fill": "$text-secondary"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "k9dsB",
+          "type": "ref",
+          "ref": "Xd0Lw",
+          "name": "BottomAccessory",
+          "width": "fill_container",
+          "descendants": {
+            "w25kvu": {
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "bjQi7",
+                  "name": "SyncAndCurrency",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": "$spacing-m",
+                  "padding": [
+                    0,
+                    6,
+                    0,
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "xdwkm",
+                      "name": "SyncStatus",
+                      "gap": "$spacing-s",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "e4NVel",
+                          "name": "SyncIcon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "refresh-cw",
+                          "library": "lucide",
+                          "fill": "$text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "xGAx4",
+                          "name": "SyncLabel",
+                          "fill": "$text-secondary",
+                          "content": "오후 12:04 시세 기준",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Y1GBAq",
+                      "name": "CurrencySegment",
+                      "gap": 2,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "iOWQ4",
+                          "name": "SegmentKRW",
+                          "fill": "$brand-tint",
+                          "cornerRadius": 100,
+                          "padding": [
+                            "$spacing-s",
+                            "$spacing-m"
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "yuHCz",
+                              "name": "SegmentKRWLabel",
+                              "fill": "$brand",
+                              "content": "KRW",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-caption",
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "DobC8",
+                          "name": "SegmentUSD",
+                          "fill": "#00000000",
+                          "cornerRadius": 100,
+                          "padding": [
+                            "$spacing-s",
+                            "$spacing-m"
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Du5re",
+                              "name": "SegmentUSDLabel",
+                              "fill": "$text-secondary",
+                              "content": "USD",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-caption",
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "U6NjDL",
+          "type": "ref",
+          "ref": "BgjId",
+          "name": "TabBar"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "XUilQ",
+      "x": 2120,
+      "y": 0,
+      "name": "성과 탭",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "fill": "$bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "LBVkW",
+          "type": "ref",
+          "ref": "fq0Sb",
+          "name": "StatusBar",
+          "width": "fill_container"
+        },
+        {
+          "id": "GUcWj",
+          "type": "ref",
+          "ref": "pFiEH",
+          "name": "NavBar",
+          "width": "fill_container",
+          "descendants": {
+            "kNs0a": {
+              "content": "성과"
+            },
+            "SIeWo": {
+              "enabled": false
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "U2zQk",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$spacing-xl",
+          "padding": [
+            "$spacing-s",
+            "$spacing-l",
+            0,
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "GJPTL",
+              "name": "YTDBlock",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-xs",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "XJnes",
+                  "name": "YTDCaption",
+                  "fill": "$text-secondary",
+                  "content": "YTD 수익률 (입출금 제외)",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption"
+                },
+                {
+                  "type": "text",
+                  "id": "M7MkY",
+                  "name": "YTDValue",
+                  "fill": "$gain",
+                  "content": "+12.4%",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-display",
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "JcEHN",
+                  "name": "YTDDelta",
+                  "fill": "$text-secondary",
+                  "content": "연초 대비 +₩9,140,000",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-sub"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "XQeWz",
+              "name": "TrendChartCard",
+              "width": "fill_container",
+              "fill": "$surface",
+              "cornerRadius": "$radius-m",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "padding": "$spacing-l",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Epc48",
+                  "name": "ChartPlot",
+                  "clip": true,
+                  "width": 338,
+                  "height": 320,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "path",
+                      "id": "QkCCO",
+                      "x": 0,
+                      "y": 0,
+                      "name": "AreaGradient",
+                      "geometry": "M0 168c30-8 55-20 85-34 20-8 33 0 55 8 22 8 42-16 68-40 26-22 56-44 84-56 18-8 34-16 46-20l0 174-338 0z",
+                      "viewBox": [
+                        0,
+                        0,
+                        338,
+                        200
+                      ],
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 180,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#5856D64D",
+                            "position": 0
+                          },
+                          {
+                            "color": "#5856D600",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "width": 338,
+                      "height": 320
+                    },
+                    {
+                      "type": "path",
+                      "id": "yIjmB",
+                      "x": 0,
+                      "y": 0,
+                      "name": "BenchmarkLine",
+                      "opacity": 0.6,
+                      "geometry": "M0 170c40-4 80-12 120-18 40-6 85-16 125-26 40-10 70-18 93-24",
+                      "viewBox": [
+                        0,
+                        0,
+                        338,
+                        200
+                      ],
+                      "fill": "#00000000",
+                      "width": 338,
+                      "height": 320,
+                      "stroke": "$category-foreign",
+                      "strokeWidth": 1,
+                      "strokeLinecap": "round"
+                    },
+                    {
+                      "type": "path",
+                      "id": "U21ON",
+                      "x": 0,
+                      "y": 0,
+                      "name": "MyReturnLine",
+                      "geometry": "M0 168c30-8 55-20 85-34 20-8 33 0 55 8 22 8 42-16 68-40 26-22 56-44 84-56 18-8 34-16 46-20",
+                      "viewBox": [
+                        0,
+                        0,
+                        338,
+                        200
+                      ],
+                      "fill": "#00000000",
+                      "width": 338,
+                      "height": 320,
+                      "stroke": "$brand",
+                      "strokeWidth": 2,
+                      "strokeLinecap": "round"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Y6QN2u",
+                  "name": "AxisLabels",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Hlh7B",
+                      "name": "Axis1월",
+                      "fill": "$text-secondary",
+                      "content": "1월",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption"
+                    },
+                    {
+                      "type": "text",
+                      "id": "JV1tj",
+                      "name": "Axis4월",
+                      "fill": "$text-secondary",
+                      "content": "4월",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption"
+                    },
+                    {
+                      "type": "text",
+                      "id": "WQz0t",
+                      "name": "Axis7월",
+                      "fill": "$text-secondary",
+                      "content": "7월",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cdibb",
+              "name": "ControlsRow",
+              "width": "fill_container",
+              "gap": "$spacing-s",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "GvaJq",
+                  "name": "glass/UnitToggle",
+                  "fill": "$glass",
+                  "cornerRadius": 100,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 20
+                  },
+                  "gap": 2,
+                  "padding": 3,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "WP5HK",
+                      "name": "UnitDaily",
+                      "fill": "#00000000",
+                      "cornerRadius": 100,
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "mmqE5",
+                          "name": "UnitDailyLabel",
+                          "fill": "$text-secondary",
+                          "content": "일별",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "t5QcW0",
+                      "name": "UnitMonthly",
+                      "fill": "$surface",
+                      "cornerRadius": 100,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#00000014",
+                        "offset": {
+                          "x": 0,
+                          "y": 1
+                        },
+                        "blur": 3
+                      },
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FsRI2",
+                          "name": "UnitMonthlyLabel",
+                          "fill": "$text-primary",
+                          "content": "월별",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "u9I65",
+                  "name": "glass/PeriodSegment",
+                  "width": "fill_container",
+                  "fill": "$glass",
+                  "cornerRadius": 100,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 20
+                  },
+                  "gap": 2,
+                  "padding": 3,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "J7fwk",
+                      "name": "Period1M",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "cornerRadius": 100,
+                      "padding": [
+                        6,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "g24j01",
+                          "name": "Period1MLabel",
+                          "fill": "$text-secondary",
+                          "content": "1M",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "C0hl8R",
+                      "name": "Period3M",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "cornerRadius": 100,
+                      "padding": [
+                        6,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QriK9",
+                          "name": "Period3MLabel",
+                          "fill": "$text-secondary",
+                          "content": "3M",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "snBCI",
+                      "name": "Period6M",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "cornerRadius": 100,
+                      "padding": [
+                        6,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "hxaC0",
+                          "name": "Period6MLabel",
+                          "fill": "$text-secondary",
+                          "content": "6M",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "P8aPcT",
+                      "name": "PeriodYTD",
+                      "width": "fill_container",
+                      "fill": "$brand-tint",
+                      "cornerRadius": 100,
+                      "padding": [
+                        6,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "o8mm4",
+                          "name": "PeriodYTDLabel",
+                          "fill": "$brand",
+                          "content": "YTD",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gtR3I",
+                      "name": "Period1Y",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "cornerRadius": 100,
+                      "padding": [
+                        6,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lZ2FN",
+                          "name": "Period1YLabel",
+                          "fill": "$text-secondary",
+                          "content": "1Y",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "g3V7Cf",
+                      "name": "PeriodALL",
+                      "width": "fill_container",
+                      "fill": "#00000000",
+                      "cornerRadius": 100,
+                      "padding": [
+                        6,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ETvUQ",
+                          "name": "PeriodALLLabel",
+                          "fill": "$text-secondary",
+                          "content": "ALL",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "G0cS0E",
+          "type": "ref",
+          "ref": "Xd0Lw",
+          "name": "BottomAccessory",
+          "width": "fill_container",
+          "descendants": {
+            "w25kvu": {
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "EikF0",
+                  "name": "BenchmarkSelector",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "id": "Yh0FW",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "Chip코스피",
+                      "width": "fill_container",
+                      "justifyContent": "center",
+                      "fill": "$surface-secondary",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "코스피",
+                          "fill": "$text-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "CPulp",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "ChipS&P500",
+                      "width": "fill_container",
+                      "justifyContent": "center",
+                      "fill": "$category-foreign",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "S&P500",
+                          "fill": "#FFFFFF"
+                        }
+                      }
+                    },
+                    {
+                      "id": "cIfCt",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "Chip나스닥",
+                      "width": "fill_container",
+                      "justifyContent": "center",
+                      "fill": "$surface-secondary",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "나스닥",
+                          "fill": "$text-secondary"
+                        }
+                      }
+                    },
+                    {
+                      "id": "hd8lt",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "ChipBTC",
+                      "width": "fill_container",
+                      "justifyContent": "center",
+                      "fill": "$surface-secondary",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "BTC",
+                          "fill": "$text-secondary"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "VfnA9",
+          "type": "ref",
+          "ref": "BgjId",
+          "name": "TabBar",
+          "width": "fill_container",
+          "descendants": {
+            "AoVNG": {
+              "fill": "#00000000"
+            },
+            "Ws6da": {
+              "fill": "$text-secondary"
+            },
+            "i88UHJ": {
+              "fill": "$text-secondary"
+            },
+            "xiCpN": {
+              "fill": "$brand-tint"
+            },
+            "mF6Xg": {
+              "fill": "$brand"
+            },
+            "S6VkW": {
+              "fill": "$brand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "gnKPk",
+      "x": 1560,
+      "y": 0,
+      "name": "포트폴리오 탭",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "fill": "$bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "B6DeH",
+          "type": "ref",
+          "ref": "fq0Sb",
+          "name": "StatusBar"
+        },
+        {
+          "id": "L3xKi",
+          "type": "ref",
+          "ref": "pFiEH",
+          "name": "NavBar",
+          "descendants": {
+            "kNs0a": {
+              "content": "포트폴리오"
+            },
+            "SIeWo": {
+              "type": "frame",
+              "id": "j91gT",
+              "x": 322,
+              "y": 16.5,
+              "name": "NavActions",
+              "enabled": false,
+              "gap": "$spacing-l",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "KFiRj",
+                  "name": "NavTransferIcon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "arrow-left-right",
+                  "library": "lucide",
+                  "fill": "$brand"
+                },
+                {
+                  "type": "icon",
+                  "id": "VN0Et",
+                  "name": "NavAddIcon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "plus",
+                  "library": "lucide",
+                  "fill": "$brand"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "gzPj3",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$spacing-m",
+          "padding": [
+            "$spacing-m",
+            "$spacing-l",
+            0,
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "so1Mh",
+              "name": "SummaryBar",
+              "width": "fill_container",
+              "fill": "$surface",
+              "cornerRadius": "$radius-m",
+              "padding": [
+                "$spacing-m",
+                "$spacing-l"
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "rLotz",
+                  "name": "SummaryLeft",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "aIdHt",
+                      "name": "SummaryLabel",
+                      "fill": "$text-secondary",
+                      "content": "총 평가금액",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption",
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "PcOFE",
+                      "name": "SummaryAmount",
+                      "fill": "$text-primary",
+                      "content": "₩115,570,000",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "id": "yGQUt",
+                  "type": "ref",
+                  "ref": "uBXoB",
+                  "name": "SummaryChangePill",
+                  "descendants": {
+                    "M0plo": {
+                      "content": "+₩8,420,000 (+7.86%)"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Vx5V7",
+              "name": "국내주식 섹션",
+              "width": "fill_container",
+              "fill": "$surface",
+              "cornerRadius": "$radius-m",
+              "layout": "vertical",
+              "padding": [
+                "$spacing-s",
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "lAeSR",
+                  "name": "SectionHeaderWrap",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    "$spacing-l"
+                  ],
+                  "children": [
+                    {
+                      "id": "JLac4",
+                      "type": "ref",
+                      "ref": "XFnrJ",
+                      "name": "SectionHeader 국내주식",
+                      "width": "fill_container",
+                      "descendants": {
+                        "pUxgb": {
+                          "fill": "$category-domestic"
+                        },
+                        "dRjcS": {
+                          "content": "국내주식"
+                        },
+                        "p9xU6X": {
+                          "content": "₩43,676,000"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "ndeqc",
+                  "type": "ref",
+                  "ref": "GxcXV",
+                  "name": "삼성전자 Row",
+                  "width": "fill_container",
+                  "descendants": {
+                    "J0zIk": {
+                      "content": "삼성전자"
+                    },
+                    "bDcJz": {
+                      "content": "005930"
+                    },
+                    "VEvnn": {
+                      "content": "10주 · ₩61,300"
+                    },
+                    "JkIoL": {
+                      "content": "₩671,000"
+                    },
+                    "v6gP3/M0plo": {
+                      "content": "+9.5%"
+                    }
+                  }
+                },
+                {
+                  "id": "gWzUf",
+                  "type": "ref",
+                  "ref": "GxcXV",
+                  "name": "SK하이닉스 Row",
+                  "width": "fill_container",
+                  "descendants": {
+                    "J0zIk": {
+                      "content": "SK하이닉스"
+                    },
+                    "bDcJz": {
+                      "content": "000660"
+                    },
+                    "VEvnn": {
+                      "content": "15주 · ₩198,400"
+                    },
+                    "JkIoL": {
+                      "content": "₩3,255,000"
+                    },
+                    "v6gP3/M0plo": {
+                      "content": "+9.4%"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xHrYJ",
+              "name": "해외주식 섹션",
+              "width": "fill_container",
+              "fill": "$surface",
+              "cornerRadius": "$radius-m",
+              "layout": "vertical",
+              "padding": [
+                "$spacing-s",
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ATceS",
+                  "name": "SectionHeaderWrap",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    "$spacing-l"
+                  ],
+                  "children": [
+                    {
+                      "id": "Y0IFu",
+                      "type": "ref",
+                      "ref": "XFnrJ",
+                      "name": "SectionHeader 해외주식",
+                      "width": "fill_container",
+                      "descendants": {
+                        "pUxgb": {
+                          "fill": "$category-foreign"
+                        },
+                        "dRjcS": {
+                          "content": "해외주식"
+                        },
+                        "p9xU6X": {
+                          "content": "$4,672.44"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "jnHM2",
+                  "type": "ref",
+                  "ref": "GxcXV",
+                  "name": "애플 Row",
+                  "width": "fill_container",
+                  "descendants": {
+                    "J0zIk": {
+                      "content": "애플"
+                    },
+                    "bDcJz": {
+                      "content": "AAPL"
+                    },
+                    "VEvnn": {
+                      "content": "12주 · $187.40"
+                    },
+                    "JkIoL": {
+                      "content": "$2,570.28"
+                    },
+                    "v6gP3/M0plo": {
+                      "content": "+14.3%"
+                    }
+                  }
+                },
+                {
+                  "id": "qomvZ",
+                  "type": "ref",
+                  "ref": "GxcXV",
+                  "name": "테슬라 Row",
+                  "width": "fill_container",
+                  "descendants": {
+                    "J0zIk": {
+                      "content": "테슬라"
+                    },
+                    "bDcJz": {
+                      "content": "TSLA"
+                    },
+                    "VEvnn": {
+                      "content": "8주 · $291.10"
+                    },
+                    "JkIoL": {
+                      "content": "$2,102.16"
+                    },
+                    "v6gP3": {
+                      "fill": "$loss-tint"
+                    },
+                    "v6gP3/M0plo": {
+                      "content": "-9.7%",
+                      "fill": "$loss"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iH7Iq",
+              "name": "현금 섹션",
+              "width": "fill_container",
+              "fill": "$surface",
+              "cornerRadius": "$radius-m",
+              "layout": "vertical",
+              "padding": [
+                "$spacing-s",
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iG850",
+                  "name": "SectionHeaderWrap",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    "$spacing-l"
+                  ],
+                  "children": [
+                    {
+                      "id": "oBVPP",
+                      "type": "ref",
+                      "ref": "XFnrJ",
+                      "name": "SectionHeader 현금",
+                      "width": "fill_container",
+                      "descendants": {
+                        "pUxgb": {
+                          "fill": "$category-cash"
+                        },
+                        "dRjcS": {
+                          "content": "현금"
+                        },
+                        "p9xU6X": {
+                          "content": "₩12,300,000"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "TSuJD",
+                  "type": "ref",
+                  "ref": "GxcXV",
+                  "name": "원화 현금 Row",
+                  "width": "fill_container",
+                  "descendants": {
+                    "J0zIk": {
+                      "content": "원화 현금"
+                    },
+                    "bDcJz": {
+                      "content": "KRW"
+                    },
+                    "VEvnn": {
+                      "enabled": false
+                    },
+                    "JkIoL": {
+                      "content": "₩12,300,000"
+                    },
+                    "v6gP3": {
+                      "enabled": false
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "x454d",
+          "type": "ref",
+          "ref": "Xd0Lw",
+          "name": "BottomAccessory",
+          "width": "fill_container",
+          "descendants": {
+            "w25kvu": {
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "kyiZ5",
+                  "name": "AddActions",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": 6,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "p7R54",
+                      "name": "AddHoldingButton",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "$brand",
+                      "cornerRadius": 22,
+                      "gap": "$spacing-s",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "vIJM7",
+                          "name": "AddIcon",
+                          "width": 20,
+                          "height": 20,
+                          "icon": "plus",
+                          "library": "lucide",
+                          "fill": "#FFFFFF"
+                        },
+                        {
+                          "type": "text",
+                          "id": "sVZN2",
+                          "name": "AddLabel",
+                          "fill": "#FFFFFF",
+                          "content": "종목 추가",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-sub",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "YdfQu",
+                      "name": "CashFlowButton",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "#00000000",
+                      "cornerRadius": 22,
+                      "gap": "$spacing-s",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "GQQl6",
+                          "name": "CashFlowIcon",
+                          "width": 20,
+                          "height": 20,
+                          "icon": "arrow-left-right",
+                          "library": "lucide",
+                          "fill": "$text-primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ti14h",
+                          "name": "CashFlowLabel",
+                          "fill": "$text-primary",
+                          "content": "입출금 기록",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-sub",
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "x6upCx",
+          "type": "ref",
+          "ref": "BgjId",
+          "name": "TabBar",
+          "descendants": {
+            "AoVNG": {
+              "fill": "#00000000"
+            },
+            "Ws6da": {
+              "fill": "$text-secondary"
+            },
+            "i88UHJ": {
+              "fill": "$text-secondary"
+            },
+            "LqAoA": {
+              "fill": "$brand-tint"
+            },
+            "k6fvHJ": {
+              "fill": "$brand"
+            },
+            "RCAa9": {
+              "fill": "$brand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TDKY2",
+      "x": 2680,
+      "y": 0,
+      "name": "매매일지 탭",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "fill": "$bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "jN867",
+          "type": "ref",
+          "ref": "fq0Sb",
+          "name": "StatusBar",
+          "width": "fill_container"
+        },
+        {
+          "id": "aQGHO",
+          "type": "ref",
+          "ref": "pFiEH",
+          "name": "NavBar",
+          "width": "fill_container",
+          "descendants": {
+            "kNs0a": {
+              "content": "매매일지"
+            },
+            "SIeWo": {
+              "enabled": false
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "W4dybH",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$spacing-m",
+          "padding": [
+            "$spacing-s",
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "zkobt",
+              "name": "SearchBar",
+              "width": "fill_container",
+              "fill": "$surface-secondary",
+              "cornerRadius": "$radius-s",
+              "gap": "$spacing-s",
+              "padding": "$spacing-m",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "AvvQg",
+                  "name": "SearchIcon",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "search",
+                  "library": "lucide",
+                  "fill": "$text-secondary"
+                },
+                {
+                  "type": "text",
+                  "id": "zUUsp",
+                  "name": "SearchPlaceholder",
+                  "fill": "$text-secondary",
+                  "content": "제목·본문 검색",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-row"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "MDBb6",
+              "name": "StockFilterChips",
+              "width": "fill_container",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "id": "i7YBe",
+                  "type": "ref",
+                  "ref": "sVklS",
+                  "name": "ChipAll",
+                  "fill": "$brand",
+                  "descendants": {
+                    "jzNW7": {
+                      "content": "전체",
+                      "fill": "#FFFFFF"
+                    }
+                  }
+                },
+                {
+                  "id": "s0Cxu",
+                  "type": "ref",
+                  "ref": "sVklS",
+                  "name": "Chip삼성전자",
+                  "descendants": {
+                    "jzNW7": {
+                      "content": "삼성전자"
+                    }
+                  }
+                },
+                {
+                  "id": "bYeiX",
+                  "type": "ref",
+                  "ref": "sVklS",
+                  "name": "ChipAAPL",
+                  "descendants": {
+                    "jzNW7": {
+                      "content": "AAPL"
+                    }
+                  }
+                },
+                {
+                  "id": "XJMzi",
+                  "type": "ref",
+                  "ref": "sVklS",
+                  "name": "ChipBTC",
+                  "descendants": {
+                    "jzNW7": {
+                      "content": "BTC"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "eqWUl",
+              "name": "JournalList",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-m",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "kgpvc",
+                  "name": "JournalCell1",
+                  "width": "fill_container",
+                  "fill": "$surface",
+                  "cornerRadius": "$radius-m",
+                  "layout": "vertical",
+                  "gap": "$spacing-xs",
+                  "padding": "$spacing-l",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ushHa",
+                      "name": "CellDate",
+                      "fill": "$text-secondary",
+                      "content": "오늘",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption"
+                    },
+                    {
+                      "type": "text",
+                      "id": "bO13M",
+                      "name": "CellTitle",
+                      "fill": "$text-primary",
+                      "content": "BTC 일부 익절",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ylqS5",
+                      "name": "CellPreview",
+                      "fill": "$text-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "목표가 도달, 물량 30% 익절 후 관망…",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-sub"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "F2KUk",
+                      "name": "TagRow",
+                      "gap": "$spacing-xs",
+                      "padding": [
+                        "$spacing-xs",
+                        0,
+                        0,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "z8pTr",
+                          "name": "TagPillBTC",
+                          "fill": "$surface-secondary",
+                          "cornerRadius": 100,
+                          "padding": [
+                            "$spacing-xs",
+                            "$spacing-s"
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "f8Gr7",
+                              "name": "TagLabel",
+                              "fill": "$text-secondary",
+                              "content": "BTC",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-caption",
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "XgszD",
+                  "name": "JournalCell2",
+                  "width": "fill_container",
+                  "fill": "$surface",
+                  "cornerRadius": "$radius-m",
+                  "layout": "vertical",
+                  "gap": "$spacing-xs",
+                  "padding": "$spacing-l",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KV2YI",
+                      "name": "CellDate",
+                      "fill": "$text-secondary",
+                      "content": "어제",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption"
+                    },
+                    {
+                      "type": "text",
+                      "id": "film3",
+                      "name": "CellTitle",
+                      "fill": "$text-primary",
+                      "content": "관망 메모",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Q3FjfB",
+                      "name": "CellPreview",
+                      "fill": "$text-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "변동성 확대 구간, 신규 진입 없이 유지…",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-sub"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mCtU6",
+                  "name": "JournalCell3",
+                  "width": "fill_container",
+                  "fill": "$surface",
+                  "cornerRadius": "$radius-m",
+                  "layout": "vertical",
+                  "gap": "$spacing-xs",
+                  "padding": "$spacing-l",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Qsafk",
+                      "name": "CellDate",
+                      "fill": "$text-secondary",
+                      "content": "7월 25일 (금)",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Wfauw",
+                      "name": "CellTitle",
+                      "fill": "$text-primary",
+                      "content": "삼성전자 추가 매수",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ip1x6",
+                      "name": "CellPreview",
+                      "fill": "$text-secondary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "실적 발표 후 조정 구간이라 판단, 분할…",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-sub"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xLCXv",
+                      "name": "TagRow",
+                      "gap": "$spacing-xs",
+                      "padding": [
+                        "$spacing-xs",
+                        0,
+                        0,
+                        0
+                      ],
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "v6iwnQ",
+                          "name": "TagPill삼성전자",
+                          "fill": "$surface-secondary",
+                          "cornerRadius": 100,
+                          "padding": [
+                            "$spacing-xs",
+                            "$spacing-s"
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "EEcte",
+                              "name": "TagLabel",
+                              "fill": "$text-secondary",
+                              "content": "삼성전자",
+                              "fontFamily": "$font",
+                              "fontSize": "$font-caption",
+                              "fontWeight": "600"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "i2tHgY",
+          "type": "ref",
+          "ref": "Xd0Lw",
+          "name": "BottomAccessory",
+          "width": "fill_container",
+          "descendants": {
+            "w25kvu": {
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "cfHUb",
+                  "name": "ComposeBar",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": "$spacing-m",
+                  "padding": [
+                    0,
+                    0,
+                    0,
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "zWpW6",
+                      "name": "ComposePrompt",
+                      "gap": "$spacing-s",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "fA1ku",
+                          "name": "ComposeHintIcon",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "sparkles",
+                          "library": "lucide",
+                          "fill": "$text-secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "NsjFp",
+                          "name": "ComposeHintLabel",
+                          "fill": "$text-secondary",
+                          "content": "오늘의 매매를 기록해보세요",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-sub",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "o3nuu3",
+                      "name": "WriteButton",
+                      "width": 44,
+                      "height": 44,
+                      "fill": "$brand",
+                      "cornerRadius": 22,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "AeqZR",
+                          "name": "WriteIcon",
+                          "width": 20,
+                          "height": 20,
+                          "icon": "pen-line",
+                          "library": "lucide",
+                          "fill": "#FFFFFF"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": "EeFj6",
+          "type": "ref",
+          "ref": "BgjId",
+          "name": "TabBar",
+          "width": "fill_container",
+          "descendants": {
+            "AoVNG": {
+              "fill": "#00000000"
+            },
+            "Ws6da": {
+              "fill": "$text-secondary"
+            },
+            "i88UHJ": {
+              "fill": "$text-secondary"
+            },
+            "MOevr": {
+              "fill": "$brand-tint"
+            },
+            "jmsmw": {
+              "fill": "$brand"
+            },
+            "gPL04": {
+              "fill": "$brand"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "reioU",
+      "x": 1560,
+      "y": 1000,
+      "name": "종목 추가 sheet",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "X8NsHw",
+          "name": "DimArea",
+          "width": "fill_container",
+          "height": 350,
+          "fill": [
+            "$bg",
+            "#00000066"
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "c44hp",
+          "name": "Sheet",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$surface",
+          "cornerRadius": [
+            "$radius-l",
+            "$radius-l",
+            0,
+            0
+          ],
+          "layout": "vertical",
+          "gap": "$spacing-l",
+          "padding": [
+            "$spacing-s",
+            "$spacing-l",
+            "$spacing-xl",
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "B44qR8",
+              "name": "GrabberWrap",
+              "width": "fill_container",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 100,
+                  "id": "WOEaX",
+                  "name": "Grabber",
+                  "fill": "$separator",
+                  "width": 36,
+                  "height": 5
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "IJth9",
+              "name": "SheetTitle",
+              "fill": "$text-primary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "종목 추가 (3/3)",
+              "textAlign": "center",
+              "fontFamily": "$font",
+              "fontSize": "$font-row",
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "gWtzx",
+              "name": "SelectedStockWrap",
+              "width": "fill_container",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "gwVoT",
+                  "name": "SelectedStock",
+                  "gap": "$spacing-s",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "cAzNB",
+                      "name": "SelectedDot",
+                      "fill": "$category-foreign",
+                      "width": 8,
+                      "height": 8
+                    },
+                    {
+                      "type": "text",
+                      "id": "dMm2P",
+                      "name": "SelectedLabel",
+                      "fill": "$text-secondary",
+                      "content": "AAPL · 해외주식",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-sub",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PplUX",
+              "name": "수량 Field",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Y3eYvr",
+                  "name": "수량Label",
+                  "fill": "$text-secondary",
+                  "content": "수량",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "LYePd",
+                  "name": "수량Input",
+                  "width": "fill_container",
+                  "fill": "$surface-secondary",
+                  "cornerRadius": "$radius-s",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "q6bVWX",
+                      "name": "수량Value",
+                      "fill": "$text-primary",
+                      "content": "12",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "h7NVz",
+                      "name": "수량Unit",
+                      "fill": "$text-secondary",
+                      "content": "주",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c90E2",
+              "name": "평단가 Field",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "FvKIV",
+                  "name": "평단가Label",
+                  "fill": "$text-secondary",
+                  "content": "평단가",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "O1hKHQ",
+                  "name": "평단가Input",
+                  "width": "fill_container",
+                  "fill": "$surface-secondary",
+                  "cornerRadius": "$radius-s",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ijGIu",
+                      "name": "평단가Value",
+                      "fill": "$text-primary",
+                      "content": "$187.40",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "y7rTu",
+                      "name": "평단가Unit",
+                      "fill": "$text-secondary",
+                      "content": "USD",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "W9wed9",
+              "name": "ManualPriceRow",
+              "width": "fill_container",
+              "padding": [
+                "$spacing-xs",
+                0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "A5eekJ",
+                  "name": "ManualPriceLabel",
+                  "fill": "$text-secondary",
+                  "content": "현재가 수동 입력",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-sub",
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "icon",
+                  "id": "BM3f2",
+                  "name": "ManualPriceChevron",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "chevron-down",
+                  "library": "lucide",
+                  "fill": "$text-secondary"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "JIET0",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "boBIw",
+              "name": "Buttons",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "kRPyg",
+                  "name": "glass/SaveButton",
+                  "width": "fill_container",
+                  "height": 52,
+                  "fill": "$brand",
+                  "cornerRadius": 100,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qpBfc",
+                      "name": "SaveLabel",
+                      "fill": "#FFFFFF",
+                      "content": "저장",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "vw8pN",
+                  "name": "glass/CancelButton",
+                  "width": "fill_container",
+                  "height": 52,
+                  "fill": "$glass",
+                  "cornerRadius": 100,
+                  "stroke": "$separator",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 20
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "L07sN1",
+                      "name": "CancelLabel",
+                      "fill": "$text-primary",
+                      "content": "취소",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "pbEqw",
+      "x": 2680,
+      "y": 1000,
+      "name": "일지 작성",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "fill": "$bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "GqIf2",
+          "type": "ref",
+          "ref": "fq0Sb",
+          "name": "StatusBar",
+          "width": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "H9ePU",
+          "name": "TopBar",
+          "width": "fill_container",
+          "padding": [
+            "$spacing-s",
+            "$spacing-l"
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "vN1Vo",
+              "name": "CloseButton",
+              "fill": "$text-secondary",
+              "content": "닫기",
+              "fontFamily": "$font",
+              "fontSize": "$font-row"
+            },
+            {
+              "type": "frame",
+              "id": "kKpzv",
+              "name": "glass/SaveButton",
+              "opacity": 0.6,
+              "fill": "$brand",
+              "cornerRadius": 100,
+              "effect": {
+                "type": "background_blur",
+                "radius": 20
+              },
+              "padding": [
+                "$spacing-s",
+                "$spacing-l"
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "eKTrN",
+                  "name": "SaveLabel",
+                  "fill": "#FFFFFF",
+                  "content": "저장",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-sub",
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "J1pOK",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$spacing-l",
+          "padding": [
+            "$spacing-l",
+            "$spacing-l",
+            "$spacing-xl",
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "OpuUy",
+              "name": "AutoDate",
+              "fill": "$text-secondary",
+              "content": "2026년 7월 27일 (월) 14:32",
+              "fontFamily": "$font",
+              "fontSize": "$font-caption"
+            },
+            {
+              "type": "text",
+              "id": "CMOF9",
+              "name": "TitlePlaceholder",
+              "fill": "$text-secondary",
+              "content": "제목",
+              "fontFamily": "$font",
+              "fontSize": "$font-section",
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "OWQJ8",
+              "name": "BodyEditor",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tGgL2",
+                  "name": "BodyPlaceholder",
+                  "fill": "$text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "매수/매도 판단 근거를 남겨보세요",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-row"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "My9bN",
+              "name": "StockTagSection",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "KL9o4",
+                  "name": "TagCaption",
+                  "fill": "$text-secondary",
+                  "content": "연결 종목 (선택)",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption"
+                },
+                {
+                  "type": "frame",
+                  "id": "h2UCS",
+                  "name": "TagChips",
+                  "gap": "$spacing-s",
+                  "children": [
+                    {
+                      "id": "Pn9CK",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "Chip삼성전자",
+                      "fill": "$brand",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "삼성전자",
+                          "fill": "#FFFFFF"
+                        }
+                      }
+                    },
+                    {
+                      "id": "wqgfr",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "ChipAAPL",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "AAPL"
+                        }
+                      }
+                    },
+                    {
+                      "id": "EPopD",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "ChipTSLA",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "TSLA"
+                        }
+                      }
+                    },
+                    {
+                      "id": "QqLAG",
+                      "type": "ref",
+                      "ref": "sVklS",
+                      "name": "ChipBTC",
+                      "descendants": {
+                        "jzNW7": {
+                          "content": "BTC"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Kympp",
+      "x": 1560,
+      "y": 2000,
+      "name": "입출금 기록",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "fill": "$bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "dcLOg",
+          "type": "ref",
+          "ref": "fq0Sb",
+          "name": "StatusBar"
+        },
+        {
+          "type": "frame",
+          "id": "YsYuS",
+          "name": "NavBarCompact",
+          "width": "fill_container",
+          "padding": [
+            10,
+            "$spacing-l"
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "dm7Mm",
+              "name": "BackGroup",
+              "width": 110,
+              "gap": 2,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "qQAHk",
+                  "name": "BackChevron",
+                  "width": 22,
+                  "height": 22,
+                  "icon": "chevron-left",
+                  "library": "lucide",
+                  "fill": "$brand"
+                },
+                {
+                  "type": "text",
+                  "id": "qNqL0",
+                  "name": "BackLabel",
+                  "fill": "$brand",
+                  "content": "포트폴리오",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-row",
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ilIsK",
+              "name": "TitleWrap",
+              "width": "fill_container",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pTmrX",
+                  "name": "NavTitle",
+                  "fill": "$text-primary",
+                  "content": "입출금 기록",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-row",
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "igMBF",
+              "name": "ActionGroup",
+              "width": 110,
+              "justifyContent": "end",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "HeFmq",
+                  "name": "AddIcon",
+                  "width": 24,
+                  "height": 24,
+                  "icon": "plus",
+                  "library": "lucide",
+                  "fill": "$brand"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "PtNdH",
+          "name": "Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": "$spacing-s",
+          "padding": [
+            "$spacing-m",
+            "$spacing-l",
+            0,
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "fTRQn",
+              "name": "MonthHeader",
+              "fill": "$text-secondary",
+              "content": "2026년 7월",
+              "fontFamily": "$font",
+              "fontSize": "$font-sub",
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "lGyrE",
+              "name": "TransactionCard",
+              "width": "fill_container",
+              "fill": "$surface",
+              "cornerRadius": "$radius-m",
+              "layout": "vertical",
+              "padding": [
+                "$spacing-xs",
+                0
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Hg96a",
+                  "name": "입금 Row 1",
+                  "width": "fill_container",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GA99J",
+                      "name": "RowLeft",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Ftd4n",
+                          "name": "RowType",
+                          "fill": "$text-primary",
+                          "content": "입금",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-row",
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "AHLiq",
+                          "name": "RowMeta",
+                          "fill": "$text-secondary",
+                          "content": "7월 24일 · 월급 이체",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "X6cUE",
+                      "name": "RowAmount",
+                      "fill": "$text-primary",
+                      "content": "₩3,000,000",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yEala",
+                  "name": "SeparatorWrap",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    "$spacing-l"
+                  ],
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "p2kmrR",
+                      "name": "Separator",
+                      "fill": "$separator",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zxWi6",
+                  "name": "출금 Row 2",
+                  "width": "fill_container",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Dlskb",
+                      "name": "RowLeft",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QiLkJ",
+                          "name": "RowType",
+                          "fill": "$text-primary",
+                          "content": "출금",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-row",
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Y6OCQ",
+                          "name": "RowMeta",
+                          "fill": "$text-secondary",
+                          "content": "7월 18일 · 생활비 인출",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "M6NGPS",
+                      "name": "RowAmount",
+                      "fill": "$text-primary",
+                      "content": "−₩450,000",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "VovPC",
+                  "name": "SeparatorWrap",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    "$spacing-l"
+                  ],
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "Y7k1d9",
+                      "name": "Separator",
+                      "fill": "$separator",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qKwze",
+                  "name": "입금 Row 3",
+                  "width": "fill_container",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "L01jDH",
+                      "name": "RowLeft",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "tjbjw",
+                          "name": "RowType",
+                          "fill": "$text-primary",
+                          "content": "입금",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-row",
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "N5SZl",
+                          "name": "RowMeta",
+                          "fill": "$text-secondary",
+                          "content": "7월 10일 · 배당금",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "x6nK8E",
+                      "name": "RowAmount",
+                      "fill": "$text-primary",
+                      "content": "₩127,500",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YLLey",
+                  "name": "SeparatorWrap",
+                  "width": "fill_container",
+                  "padding": [
+                    0,
+                    "$spacing-l"
+                  ],
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "h7D8N",
+                      "name": "Separator",
+                      "fill": "$separator",
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Q84VdC",
+                  "name": "출금 Row 4",
+                  "width": "fill_container",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "oxEmp",
+                      "name": "RowLeft",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "j2TPgB",
+                          "name": "RowType",
+                          "fill": "$text-primary",
+                          "content": "출금",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-row",
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "cTzZr",
+                          "name": "RowMeta",
+                          "fill": "$text-secondary",
+                          "content": "7월 2일 · 증권사 이체",
+                          "fontFamily": "$font",
+                          "fontSize": "$font-caption",
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "b19oWq",
+                      "name": "RowAmount",
+                      "fill": "$text-primary",
+                      "content": "−₩1,200,000",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Z37sm",
+      "x": 1560,
+      "y": 3000,
+      "name": "종목 수정 sheet",
+      "clip": true,
+      "width": 402,
+      "height": 874,
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "c6PGNP",
+          "name": "DimArea",
+          "width": "fill_container",
+          "height": 480,
+          "fill": [
+            "$bg",
+            "#00000066"
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "yM5n4",
+          "name": "Sheet",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$surface",
+          "cornerRadius": [
+            "$radius-l",
+            "$radius-l",
+            0,
+            0
+          ],
+          "layout": "vertical",
+          "gap": "$spacing-m",
+          "padding": [
+            "$spacing-s",
+            "$spacing-l",
+            "$spacing-xl",
+            "$spacing-l"
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "G0hZYY",
+              "name": "GrabberWrap",
+              "width": "fill_container",
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 100,
+                  "id": "mZcEX",
+                  "name": "Grabber",
+                  "fill": "$separator",
+                  "width": 36,
+                  "height": 5
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "Eo6OT",
+              "name": "SheetTitle",
+              "fill": "$text-primary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "삼성전자 수정",
+              "textAlign": "center",
+              "fontFamily": "$font",
+              "fontSize": "$font-row",
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "CF4QN",
+              "name": "수량 Field",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "iyEYc",
+                  "name": "수량Label",
+                  "fill": "$text-secondary",
+                  "content": "수량",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "aimgs",
+                  "name": "수량Input",
+                  "width": "fill_container",
+                  "fill": "$surface-secondary",
+                  "cornerRadius": "$radius-s",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "gCQPF",
+                      "name": "수량Value",
+                      "fill": "$text-primary",
+                      "content": "10",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "rIejM",
+                      "name": "수량Unit",
+                      "fill": "$text-secondary",
+                      "content": "주",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zQipk",
+              "name": "평단가 Field",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gyAyd",
+                  "name": "평단가Label",
+                  "fill": "$text-secondary",
+                  "content": "평단가",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "EzaeR",
+                  "name": "평단가Input",
+                  "width": "fill_container",
+                  "fill": "$surface-secondary",
+                  "cornerRadius": "$radius-s",
+                  "padding": [
+                    "$spacing-m",
+                    "$spacing-l"
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OgWQt",
+                      "name": "평단가Value",
+                      "fill": "$text-primary",
+                      "content": "₩61,300",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "EwZng",
+                      "name": "평단가Unit",
+                      "fill": "$text-secondary",
+                      "content": "KRW",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-caption",
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Y4wuj",
+              "name": "Spacer",
+              "width": "fill_container",
+              "height": "fill_container"
+            },
+            {
+              "type": "frame",
+              "id": "MSOgV",
+              "name": "Buttons",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": "$spacing-s",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "iK3bb",
+                  "name": "glass/SaveButton",
+                  "width": "fill_container",
+                  "height": 52,
+                  "fill": "$brand",
+                  "cornerRadius": 100,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JVzih",
+                      "name": "SaveLabel",
+                      "fill": "#FFFFFF",
+                      "content": "저장",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "wNOrG",
+                  "name": "glass/CancelButton",
+                  "width": "fill_container",
+                  "height": 52,
+                  "fill": "$glass",
+                  "cornerRadius": 100,
+                  "stroke": "$separator",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "background_blur",
+                    "radius": 20
+                  },
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "u3Und",
+                      "name": "CancelLabel",
+                      "fill": "$text-primary",
+                      "content": "취소",
+                      "fontFamily": "$font",
+                      "fontSize": "$font-row",
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Xd0Lw",
+      "x": 950,
+      "y": -840,
+      "name": "BottomAccessory",
+      "reusable": true,
+      "width": 402,
+      "layout": "vertical",
+      "padding": [
+        0,
+        16,
+        8,
+        16
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "w25kvu",
+          "name": "glass/AccessoryCapsule",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$glass",
+          "cornerRadius": 28,
+          "effect": [
+            {
+              "type": "background_blur",
+              "radius": 20
+            },
+            {
+              "type": "shadow",
+              "shadowType": "outer",
+              "color": "#0000001A",
+              "offset": {
+                "x": 0,
+                "y": 8
+              },
+              "blur": 24
+            }
+          ],
+          "padding": 6,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "EF6Ox",
+              "name": "AccessoryContent",
+              "slot": [],
+              "width": "fill_container",
+              "height": "fill_container",
+              "padding": [
+                0,
+                "$spacing-m"
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bk91I",
+                  "name": "SlotPlaceholder",
+                  "fill": "$text-secondary",
+                  "content": "Accessory content",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-sub",
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "gMyiS",
+      "x": 3240,
+      "y": 0,
+      "name": "Accessory Placement 대응",
+      "width": 600,
+      "fill": "$bg",
+      "cornerRadius": "$radius-l",
+      "layout": "vertical",
+      "gap": "$spacing-l",
+      "padding": "$spacing-xxl",
+      "children": [
+        {
+          "type": "text",
+          "id": "fZuqh",
+          "name": "StudyTitle",
+          "fill": "$text-primary",
+          "textGrowth": "fixed-width",
+          "width": 536,
+          "content": "BottomAccessory — .inline (탭바 최소화 시)",
+          "fontFamily": "$font",
+          "fontSize": "$font-section",
+          "fontWeight": "700"
+        },
+        {
+          "type": "text",
+          "id": "aVk2P",
+          "name": "StudyCaption",
+          "fill": "$text-secondary",
+          "textGrowth": "fixed-width",
+          "width": 536,
+          "content": "tabViewBottomAccessoryPlacement 가 .inline 이면 액세서리가 최소화된 탭바와 한 줄을 나눠 쓴다. 폭이 절반 이하로 줄어드니 .expanded 콘텐츠를 그대로 두면 안 되고 아래처럼 축약한다.",
+          "lineHeight": 1.5,
+          "fontFamily": "$font",
+          "fontSize": "$font-caption",
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "T4DSe6",
+          "name": "Row순자산",
+          "width": 536,
+          "gap": "$spacing-l",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "o9FsO1",
+              "name": "LabelCol순자산",
+              "width": 84,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "oY81d",
+                  "name": "CellLabel",
+                  "fill": "$text-secondary",
+                  "content": "순자산",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "I5fnV",
+              "name": "InlineCapsule순자산",
+              "width": 240,
+              "height": 56,
+              "fill": "$glass",
+              "cornerRadius": 28,
+              "effect": [
+                {
+                  "type": "background_blur",
+                  "radius": 20
+                },
+                {
+                  "type": "shadow",
+                  "shadowType": "outer",
+                  "color": "#0000001A",
+                  "offset": {
+                    "x": 0,
+                    "y": 8
+                  },
+                  "blur": 24
+                }
+              ],
+              "padding": 6,
+              "alignItems": "center"
+            },
+            {
+              "type": "text",
+              "id": "RjTpC",
+              "name": "Note순자산",
+              "fill": "$text-secondary",
+              "textGrowth": "fixed-width",
+              "width": 180,
+              "content": "통화 세그먼트만 유지, 갱신 시각은 캡션으로 축약",
+              "lineHeight": 1.45,
+              "fontFamily": "$font",
+              "fontSize": "$font-caption",
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cN9WF",
+          "name": "Row포트폴리오",
+          "width": 536,
+          "gap": "$spacing-l",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "p2SvIl",
+              "name": "LabelCol포트폴리오",
+              "width": 84,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bDhgw",
+                  "name": "CellLabel",
+                  "fill": "$text-secondary",
+                  "content": "포트폴리오",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "elaZY",
+              "name": "InlineCapsule포트폴리오",
+              "width": 240,
+              "height": 56,
+              "fill": "$glass",
+              "cornerRadius": 28,
+              "effect": [
+                {
+                  "type": "background_blur",
+                  "radius": 20
+                },
+                {
+                  "type": "shadow",
+                  "shadowType": "outer",
+                  "color": "#0000001A",
+                  "offset": {
+                    "x": 0,
+                    "y": 8
+                  },
+                  "blur": 24
+                }
+              ],
+              "padding": 6,
+              "alignItems": "center"
+            },
+            {
+              "type": "text",
+              "id": "El1Wz",
+              "name": "Note포트폴리오",
+              "fill": "$text-secondary",
+              "textGrowth": "fixed-width",
+              "width": 180,
+              "content": "주요 액션 1개만 남기고 입출금은 메뉴로 이동",
+              "lineHeight": 1.45,
+              "fontFamily": "$font",
+              "fontSize": "$font-caption",
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "LqkRA",
+          "name": "Row성과",
+          "width": 536,
+          "gap": "$spacing-l",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "WFija",
+              "name": "LabelCol성과",
+              "width": 84,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Q0fjL",
+                  "name": "CellLabel",
+                  "fill": "$text-secondary",
+                  "content": "성과",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "z3sQDI",
+              "name": "InlineCapsule성과",
+              "width": 240,
+              "height": 56,
+              "fill": "$glass",
+              "cornerRadius": 28,
+              "effect": [
+                {
+                  "type": "background_blur",
+                  "radius": 20
+                },
+                {
+                  "type": "shadow",
+                  "shadowType": "outer",
+                  "color": "#0000001A",
+                  "offset": {
+                    "x": 0,
+                    "y": 8
+                  },
+                  "blur": 24
+                }
+              ],
+              "padding": 6,
+              "alignItems": "center"
+            },
+            {
+              "type": "text",
+              "id": "Cavje",
+              "name": "Note성과",
+              "fill": "$text-secondary",
+              "textGrowth": "fixed-width",
+              "width": 180,
+              "content": "칩 4개 → 현재 벤치마크 + 메뉴 전개",
+              "lineHeight": 1.45,
+              "fontFamily": "$font",
+              "fontSize": "$font-caption",
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FASPW",
+          "name": "Row매매일지",
+          "width": 536,
+          "gap": "$spacing-l",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "KQJbb",
+              "name": "LabelCol매매일지",
+              "width": 84,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "XX8QJ",
+                  "name": "CellLabel",
+                  "fill": "$text-secondary",
+                  "content": "매매일지",
+                  "fontFamily": "$font",
+                  "fontSize": "$font-caption",
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Mud6g",
+              "name": "InlineCapsule매매일지",
+              "width": 240,
+              "height": 56,
+              "fill": "$glass",
+              "cornerRadius": 28,
+              "effect": [
+                {
+                  "type": "background_blur",
+                  "radius": 20
+                },
+                {
+                  "type": "shadow",
+                  "shadowType": "outer",
+                  "color": "#0000001A",
+                  "offset": {
+                    "x": 0,
+                    "y": 8
+                  },
+                  "blur": 24
+                }
+              ],
+              "padding": 6,
+              "alignItems": "center"
+            },
+            {
+              "type": "text",
+              "id": "IWKnB",
+              "name": "Note매매일지",
+              "fill": "$text-secondary",
+              "textGrowth": "fixed-width",
+              "width": 180,
+              "content": "힌트 문구 축약, 작성 버튼은 유지",
+              "lineHeight": 1.45,
+              "fontFamily": "$font",
+              "fontSize": "$font-caption",
+              "fontWeight": "normal"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "themes": {
+    "mode": [
+      "light",
+      "dark"
+    ]
+  },
+  "variables": {
+    "bg": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#F2F3F7",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#14161F",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "surface": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#FFFFFF",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#1D2029",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "surface-secondary": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#E9EBF1",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#272B36",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "text-primary": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#14181F",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#F2F4F8",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "text-secondary": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#6B7280",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#9AA1AE",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "brand": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#5856D6",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#6E6CFF",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "brand-tint": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#5856D61F",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#6E6CFF2E",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "separator": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#E2E4EA",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#2E3340",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "gain": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#F04452",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#FF6E6E",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "gain-tint": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#F044521F",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#FF6E6E2E",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "loss": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#3182F6",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#64A8FF",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "loss-tint": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#3182F61F",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#64A8FF2E",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "neutral": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#6B7280",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#9AA1AE",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "neutral-tint": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#6B72801F",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#9AA1AE2E",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "category-cash": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#8A93A6",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#98A2B8",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "category-domestic": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#5856D6",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#7C7AFF",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "category-foreign": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#06AED4",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#22C6E6",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "category-etf": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#A855F7",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#C084FC",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "category-crypto": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#F59E0B",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#FBBF24",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "glass": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#FFFFFF99",
+          "theme": {
+            "mode": "light"
+          }
+        },
+        {
+          "value": "#1D202999",
+          "theme": {
+            "mode": "dark"
+          }
+        }
+      ]
+    },
+    "spacing-xs": {
+      "type": "number",
+      "value": 4
+    },
+    "spacing-s": {
+      "type": "number",
+      "value": 8
+    },
+    "spacing-m": {
+      "type": "number",
+      "value": 12
+    },
+    "spacing-l": {
+      "type": "number",
+      "value": 16
+    },
+    "spacing-xl": {
+      "type": "number",
+      "value": 24
+    },
+    "spacing-xxl": {
+      "type": "number",
+      "value": 32
+    },
+    "radius-s": {
+      "type": "number",
+      "value": 8
+    },
+    "radius-m": {
+      "type": "number",
+      "value": 16
+    },
+    "radius-l": {
+      "type": "number",
+      "value": 24
+    },
+    "font-display": {
+      "type": "number",
+      "value": 34
+    },
+    "font-title": {
+      "type": "number",
+      "value": 28
+    },
+    "font-section": {
+      "type": "number",
+      "value": 20
+    },
+    "font-row": {
+      "type": "number",
+      "value": 17
+    },
+    "font-sub": {
+      "type": "number",
+      "value": 15
+    },
+    "font-caption": {
+      "type": "number",
+      "value": 13
+    },
+    "font": {
+      "type": "string",
+      "value": "Inter"
+    }
+  },
+  "fileToken": "625602e0-a663-4693-9c37-9c861cdc480a"
+}

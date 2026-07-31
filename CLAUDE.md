@@ -56,7 +56,32 @@ View ←→ ViewModel(@Observable) → UseCase(Protocol) → Repository → Data
 
 ## 빌드 명령 (요약)
 
-<!-- TODO: Hannun 빌드/실행 세팅 확정 후 작성 -->
+**Tuist 프로젝트다. `.xcodeproj`/`.xcworkspace` 를 직접 편집하지 않는다** — 생성물이라 덮어써진다.
+타깃·의존성 추가는 `Project.swift` 를 고치고 `make generate` 를 다시 돌린다.
+모든 `tuist` 호출은 `mise exec` 로 감싸여 있어 셸 activate 여부와 무관하게 `mise.toml` 의 버전이 쓰인다.
+
+| 명령 | 하는 일 |
+|------|---------|
+| `make bootstrap` | 최초 환경 구축 (mise 로 tuist 설치) |
+| `make generate` | 워크스페이스 생성. **`Project.swift` 를 고쳤거나 파일을 새로 만들면 필수** |
+| `make build-all` | 전 모듈 + 앱 빌드 |
+| `make build-<모듈>` | 해당 모듈만 빌드 (`core`/`design`/`domain`/`data`/`networth`/`portfolio`/`performance`/`journal`/`testsupport`/`app`) |
+| `make test-all` | 전체 테스트 |
+| `make test-<모듈>` | 해당 모듈만 테스트 (`core`/`domain`/`data`/`portfolio`/`performance`) |
+| `make inspect` | **암묵적 의존성 검사** — 아래 주의 참고 |
+| `make graph` | 의존성 그래프(`graph.png`) 생성 |
+| `make ci` | generate → build-all → test-all |
+| `make help` | 전체 타깃 목록 |
+
+> **`make inspect` 는 커밋 전에 돌린다.** 타깃이 `import` 하는 모듈은 전이 링크로 심볼이 풀려도
+> `Project.swift` 에 **명시 선언**돼야 한다. 테스트 타깃은 `.unitTests(for:path:extraDependencies:)`
+> 의 `extraDependencies` 에 적는다. 반대로 안 쓰는 `import` 를 남겨두면 이 검사가 실패한다.
+
+> 새 파일을 만든 직후 Xcode/SourceKit 이 `No such module` 을 띄우는 건 정상이다 —
+> `make generate` 전까지 프로젝트에 포함되지 않은 상태라서 그렇다. 실제 컴파일 에러가 아니다.
+
+외부 SPM 의존성은 **없다**(`Tuist/Package.swift` 미존재) — 네트워크는 `URLSession` + actor 로
+직접 구현한다. 그래서 `make install` 은 사실상 no-op 이고 `tuist install` 단계가 필요 없다.
 
 ## 상세 레퍼런스 (필요 시 Read)
 

@@ -1,0 +1,6 @@
+// 이 파일을 Hannun.debug.xcconfig 로 복사한 뒤 KIS 앱키/시크릿을 채운다.
+// 실제 파일은 .gitignore 대상이다 (설계 문서 §9.7).
+#include "Hannun.shared.xcconfig"
+
+KIS_APP_KEY =
+KIS_APP_SECRET =

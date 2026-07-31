@@ -1,0 +1,24 @@
+# ── Tuist 생성물 ──
+*.xcodeproj
+*.xcworkspace
+Derived/
+.tuist/
+Tuist/.build/
+graph.dot
+graph.png
+
+# ── 빌드 산출물 ──
+.derived-data/
+.derived-data-*/
+build/
+DerivedData/
+
+# ── 시크릿 (§9.7) — .example 템플릿만 커밋한다 ──
+App/Config/Hannun.debug.xcconfig
+App/Config/Hannun.release.xcconfig
+
+# ── macOS / Xcode ──
+.DS_Store
+xcuserdata/
+*.xcuserstate
+*.moved-aside

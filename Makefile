@@ -147,11 +147,29 @@ doctor: check-mise ## 개발 환경 진단
 
 .PHONY: install
 install: check-manifest ## SPM 의존성 설치 (tuist install)
-	@$(TUIST) install
+	@if [ -f Tuist/Package.swift ]; then \
+		$(TUIST) install; \
+	else \
+		echo "외부 SPM 의존성 없음 — 건너뜁니다 (Tuist/Package.swift 미존재)"; \
+	fi
 
 .PHONY: generate
-generate: check-manifest ## 워크스페이스/프로젝트 생성
+generate: check-manifest secrets ## 워크스페이스/프로젝트 생성
 	@$(TUIST) generate --no-open
+
+.PHONY: secrets
+secrets: ## xcconfig 시크릿 파일을 .example 에서 생성 (없을 때만)
+	@for cfg in debug release; do \
+		dst="App/Config/Hannun.$$cfg.xcconfig"; \
+		if [ ! -f "$$dst" ]; then \
+			cp "$$dst.example" "$$dst"; \
+			echo "생성: $$dst — KIS 앱키/시크릿을 채우세요 (설계 문서 §9.7)"; \
+		fi; \
+	done
+
+.PHONY: inspect
+inspect: check-manifest ## 암묵적 의존성 검사 (§3 금지 간선 차단)
+	@$(TUIST) inspect dependencies --only implicit
 
 .PHONY: gen
 gen: generate ## generate 별칭

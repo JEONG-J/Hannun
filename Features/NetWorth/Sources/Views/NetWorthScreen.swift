@@ -27,7 +27,9 @@ struct NetWorthScreen: View {
     }
 
     var body: some View {
-        NavigationStack {
+        @Bindable var viewModel = viewModel
+
+        return NavigationStack {
             ScrollView {
                 content
                     .padding(.horizontal, .spacingL)
@@ -35,19 +37,19 @@ struct NetWorthScreen: View {
             }
             .background(Color.backgroundPrimary)
             .navigationTitle(Constants.navigationTitle)
-            .safeAreaBar(edge: .bottom) { accessory }
+            // 액세서리 캡슐이 마지막 카드를 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
+            .safeAreaPadding(.bottom, .spacingXL)
+        }
+        // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
+        .tabAccessory(.netWorth) {
+            NetWorthAccessory(
+                freshness: viewModel.freshness,
+                baseCurrency: $viewModel.baseCurrency
+            )
         }
         .task(id: viewModel.baseCurrency) {
             await viewModel.load()
         }
-    }
-
-    /// 원래 자리는 `TabView` 의 `tabViewBottomAccessory` 다. 그 modifier 는 탭 콘텐츠에서
-    /// 위로 전파되지 않아(시뮬레이터에서 캡슐이 아예 그려지지 않는다) 탭 셸이 액세서리를
-    /// 직접 걸 때까지 같은 캡슐을 화면 하단 바로 띄운다.
-    private var accessory: some View {
-        NetWorthAccessory(freshness: viewModel.freshness, baseCurrency: $viewModel.baseCurrency)
-            .padding(.horizontal, .spacingL)
     }
 
     @ViewBuilder

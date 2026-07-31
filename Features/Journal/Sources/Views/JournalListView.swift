@@ -43,7 +43,8 @@ struct JournalListView: View {
                 .navigationDestination(for: JournalRoute.self, destination: detail(for:))
                 .searchable(text: $viewModel.searchText, prompt: Constants.searchPrompt)
         }
-        .safeAreaInset(edge: .bottom) {
+        // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
+        .tabAccessory(.journal) {
             JournalComposeAccessory { router.composeNewEntry() }
         }
         .fullScreenCover(item: $router.composition, content: compose(for:))
@@ -130,6 +131,8 @@ struct JournalListView: View {
         .listStyle(.plain)
         .listRowSpacing(.spacingM)
         .scrollContentBackground(.hidden)
+        // 액세서리 캡슐이 마지막 셀을 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
+        .safeAreaPadding(.bottom, .spacingXL)
     }
 
     // MARK: - Function

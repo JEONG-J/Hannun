@@ -49,7 +49,6 @@ struct PortfolioListView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.backgroundPrimary)
             .navigationTitle(Constants.screenTitle)
-            .safeAreaInset(edge: .bottom) { accessory }
             .alertPrompt(item: $viewModel.alertPrompt)
             .sheet(item: $router.holdingEditor) { mode in
                 HoldingEditorView(
@@ -170,6 +169,8 @@ struct PortfolioListView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .refreshable { await viewModel.refresh() }
+        // 액세서리 캡슐이 마지막 행을 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
+        .safeAreaPadding(.bottom, .spacingXL)
     }
 
     private var filteredEmpty: some View {
@@ -182,27 +183,6 @@ struct PortfolioListView: View {
 
             Spacer(minLength: 0)
         }
-    }
-
-    /// 탭바 액세서리 자리. 앱 타깃이 `tabViewBottomAccessory` 를 열어 주면 그쪽으로 옮긴다.
-    private var accessory: some View {
-        BottomAccessory {
-            AccessoryActionButton(Constants.addHoldingTitle, systemImageName: "plus") {
-                router.presentHoldingEditor(.create)
-            }
-
-            Spacer(minLength: .spacingS)
-
-            AccessoryActionButton(
-                Constants.cashFlowTitle,
-                systemImageName: "arrow.left.arrow.right",
-                style: .secondary
-            ) {
-                router.showCashFlowList()
-            }
-        }
-        .padding(.horizontal, .spacingL)
-        .padding(.bottom, .spacingS)
     }
 
     private var summaryChange: ChangePillContent? {
@@ -260,7 +240,6 @@ fileprivate enum Constants {
     static let screenTitle = "포트폴리오"
     static let allCategoriesTitle = "전체"
     static let addHoldingTitle = "종목 추가"
-    static let cashFlowTitle = "입출금 기록"
     static let editTitle = "수정"
     static let deleteTitle = "삭제"
     static let retryTitle = "다시 시도"

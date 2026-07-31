@@ -29,6 +29,13 @@ public struct PortfolioRootView: View {
                     destination(for: route)
                 }
         }
+        // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
+        .tabAccessory(.portfolio) {
+            PortfolioActionAccessory(
+                onAddHolding: { router.presentHoldingEditor(.create) },
+                onShowCashFlow: { router.showCashFlowList() }
+            )
+        }
         .environment(router)
     }
 

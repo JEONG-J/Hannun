@@ -25,9 +25,10 @@ public struct HannunTint: ShapeStyle {
     }
 
     public func resolve(in environment: EnvironmentValues) -> Color {
+        let boosted = environment.accessibilityReduceTransparency
         let opacity = environment.colorScheme == .dark
-            ? Constants.darkSchemeOpacity
-            : Constants.lightSchemeOpacity
+            ? (boosted ? Constants.darkSchemeBoostedOpacity : Constants.darkSchemeOpacity)
+            : (boosted ? Constants.lightSchemeBoostedOpacity : Constants.lightSchemeOpacity)
         return base.opacity(opacity)
     }
 }
@@ -38,11 +39,18 @@ public extension ShapeStyle where Self == HannunTint {
     static var gainTint: HannunTint { HannunTint(base: .gain) }
     static var lossTint: HannunTint { HannunTint(base: .loss) }
     static var neutralTint: HannunTint { HannunTint(base: .neutral) }
+
+    /// 벤치마크 칩처럼 원색이 호출부에서 정해지는 wash. 카테고리색 확장 진입점이다 —
+    /// 신규 raw 색 없이 파생 규칙(12%/18%, 투명도 감소 시 상향)만 넓힌다.
+    static func wash(_ base: Color) -> HannunTint { HannunTint(base: base) }
 }
 
 fileprivate enum Constants {
     static let lightSchemeOpacity: Double = 0.12
     static let darkSchemeOpacity: Double = 0.18
+    /// 투명도 감소에서는 유리 대신 불투명 면 위에 놓이므로 wash 를 진하게 민다.
+    static let lightSchemeBoostedOpacity: Double = 0.20
+    static let darkSchemeBoostedOpacity: Double = 0.28
 }
 
 #if DEBUG

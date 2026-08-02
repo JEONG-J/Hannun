@@ -44,9 +44,26 @@ final class PerformanceViewModel {
     /// 상단 큰 숫자. 스크럽 중이면 그 시점 값이 연초 대비 값을 대신한다.
     var headline: PerformanceHeadline? {
         if let scrubbedHeadline { return scrubbedHeadline }
-        guard let summary = summaryState.value else { return nil }
+        guard
+            let summary = summaryState.value,
+            case let .calculated(rate, gain) = summary
+        else { return nil }
 
-        return PerformanceHeadline(scrubbedDate: nil, rate: summary.rate, amount: summary.gain)
+        return PerformanceHeadline(scrubbedDate: nil, rate: rate, amount: gain)
+    }
+
+    /// 요약도 추이도 그릴 값이 하나도 없는 상태.
+    ///
+    /// 둘 다 확인하는 이유: 연초 기록만 없고 그 이전 기록은 있을 수 있다(기간을 1Y 로 두면
+    /// 작년 구간이 그려진다). 그 경우 YTD 만 못 낼 뿐 차트는 멀쩡하므로 감추면 안 된다.
+    /// 추이가 아직 로딩 중일 때도 감추지 않는다 — 잠깐 사라졌다 나타나는 깜빡임이 생긴다.
+    var hasNoRecords: Bool {
+        guard
+            case .loaded(.insufficientData) = summaryState,
+            case let .loaded(trend) = trendState
+        else { return false }
+
+        return trend.portfolio.count < 2
     }
 
     /// 차트에 겹칠 벤치마크. 선택이 없거나 조회에 실패한 지수면 아무것도 그리지 않는다.

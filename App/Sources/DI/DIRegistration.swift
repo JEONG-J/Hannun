@@ -20,6 +20,11 @@ enum DIRegistration {
     static func registerAll(into container: DIContainer) {
         let modelContainer = makeModelContainer()
 
+        #if DEBUG
+        // 저장소를 만든 직후, 어떤 Repository 도 읽기 전에 넣어야 첫 화면부터 데이터가 보인다.
+        DemoSeed.seedIfRequested(modelContainer)
+        #endif
+
         registerServices(into: container, modelContainer: modelContainer)
         registerPortfolioUseCases(into: container)
         registerNetWorthUseCases(into: container)

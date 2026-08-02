@@ -60,6 +60,11 @@ public extension View {
     ///         BenchmarkAccessory(viewModel: viewModel)
     ///     }
     /// ```
+    ///
+    /// - Important: 클로저 안에는 **참조(ViewModel·Router)만** 넘긴다. 이 클로저는 화면이
+    ///   처음 나타날 때 한 번 붙잡혀 계속 쓰이므로, 바깥에서 값을 꺼내 인자로 넘기면
+    ///   (`freshness: viewModel.freshness`) 그 시점 값이 굳어 이후 갱신이 반영되지 않는다.
+    ///   액세서리가 참조를 받아 **자기 body 안에서** 읽어야 Observation 이 추적한다.
     func tabAccessory<Accessory: View>(
         _ tab: AppTab,
         @ViewBuilder content: @escaping () -> Accessory

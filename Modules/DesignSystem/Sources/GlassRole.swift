@@ -12,6 +12,10 @@ import SwiftUI
 /// Glass 는 "콘텐츠 위에 떠 있는 기능 레이어"에만 붙인다. 콘텐츠 자체(카드·차트·리스트·
 /// 고밀도 숫자)는 불투명 서피스다. 시안의 `$glass`(`#FFFFFF99`)·`background_blur(20)`·
 /// shadow 는 Liquid Glass 의 모사이므로 직접 칠하지 않는다 — `.glassEffect` 에 내장돼 있다.
+///
+/// 탭바 하단 액세서리 **캡슐 자체**의 역할은 여기 없다. 시스템이
+/// `tabViewBottomAccessory(content:)` 컨테이너에 이미 재질과 크기를 입히므로 우리가 그릴 면이
+/// 아니다 — 안에서 한 번 더 얹으면 glass 위 glass 가 되어 테두리가 사라진다 (`BottomAccessory`).
 public enum GlassRole: CaseIterable, Sendable {
     /// 콘텐츠 영역의 필터 칩(벤치마크·종목·카테고리). 그룹은 `GlassEffectContainer` +
     /// `glassEffectUnion` 으로 묶어 오프스크린 렌더링을 줄인다.
@@ -21,10 +25,9 @@ public enum GlassRole: CaseIterable, Sendable {
     /// `Glass.tint(_:)` 는 알파 wash 가 아니라 채도를 그대로 먹이는 채움이다.
     /// **라벨은 `onBrand`** 를 쓴다 — `brand` 를 쓰면 배경과 같은 색이라 글자가 사라진다.
     case selectedFilterChip
-    /// 탭바 하단 액세서리 캡슐. **컨테이너 자체에만** 붙인다.
-    case accessoryCapsule
-    /// 액세서리 내부 세그먼트·칩(KRW/USD 통화 토글 포함). 캡슐이 이미 반투명이라
-    /// 여기에 glass 를 다시 얹으면 두 겹이 되어 가독성이 무너진다 — 불투명 fill 을 쓴다.
+    /// 액세서리 내부 세그먼트·칩의 **비선택** 상태(KRW/USD 통화 토글 포함). 시스템 캡슐의
+    /// 유리가 곧 배경이므로 채움을 얹지 않는다 — 채움은 선택(`selectedAccessoryControl`)과
+    /// 주 액션에만 있다. 투명도 감소·대비 증가의 스트로크 폴백은 `FilterChip` 이 처리한다.
     case accessoryControl
     /// 선택된 액세서리 내부 컨트롤. 라벨은 `brand` 를 쓴다.
     case selectedAccessoryControl
@@ -49,10 +52,8 @@ public extension GlassRole {
             .glass(.regular.interactive())
         case .selectedFilterChip:
             .glass(.regular.tint(.brand).interactive())
-        case .accessoryCapsule:
-            .glass(.regular)
         case .accessoryControl:
-            .solid(AnyShapeStyle(Color.surfaceSecondary))
+            .solid(AnyShapeStyle(Color.clear))
         case .selectedAccessoryControl:
             .solid(AnyShapeStyle(HannunTint.brandTint))
         case .accessoryPrimaryAction:
@@ -120,7 +121,7 @@ private struct GlassRolePreview: View {
             contentCard
             filterChips
             Spacer()
-            accessoryCapsule
+            systemAccessoryStandIn
         }
         .padding(.spacingL)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -159,7 +160,9 @@ private struct GlassRolePreview: View {
         }
     }
 
-    private var accessoryCapsule: some View {
+    /// 실제 앱에서는 시스템이 그리는 면이다. 여기서만 안쪽 컨트롤 대비를 눈으로 보려고
+    /// 같은 재질을 흉내 낸다 — 앱 코드에서 이렇게 직접 얹으면 glass 가 두 겹이 된다.
+    private var systemAccessoryStandIn: some View {
         HStack(spacing: .spacingS) {
             Text("오후 12:04 시세 기준")
                 .hannunFont(.caption)
@@ -181,9 +184,15 @@ private struct GlassRolePreview: View {
             }
         }
         .padding(.horizontal, .spacingL)
-        .frame(height: 56)
-        .hannunGlass(.accessoryCapsule)
+        .frame(height: Constants.systemAccessoryHeight)
+        .glassEffect(.regular, in: .capsule)
     }
+}
+
+fileprivate enum Constants {
+    /// 시스템 액세서리 컨테이너의 `.expanded` 높이 근사치. 프리뷰에서만 쓰는 값이라
+    /// 앱 코드가 참조할 일은 없다 — 실제 높이는 시스템이 정한다.
+    static let systemAccessoryHeight: CGFloat = 56
 }
 
 #Preview("Glass 매핑 · 라이트") {

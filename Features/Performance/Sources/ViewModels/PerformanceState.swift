@@ -10,25 +10,33 @@ import HannunCore
 import HannunDomain
 
 /// 연초 대비 순수 투자 성과 (PM-3).
-struct PerformanceSummary: Equatable, Sendable {
+///
+/// 계산할 기록이 아직 없는 상태를 값으로 들고 있는다 — 첫 기록을 기다리는 정상 상태라
+/// `Loadable.failed` 로 보내면 저장소 오류와 구분되지 않기 때문이다.
+enum PerformanceSummary: Equatable, Sendable {
 
-    // MARK: - Property
+    /// 기준 삼을 연초 자산이 없어 아직 수익률을 낼 수 없는 상태.
+    case insufficientData
 
-    /// 0.094 == +9.4%.
-    let rate: Decimal
-
-    /// 연초 대비 손익 금액. 입출금은 성과가 아니므로 빼고 남긴다.
-    let gain: Money
+    /// `rate` 는 0.094 == +9.4%, `gain` 은 입출금을 뺀 연초 대비 손익 금액.
+    case calculated(rate: Decimal, gain: Money)
 
     // MARK: - Function
 
-    init(_ ytdReturn: YTDReturn) {
-        rate = ytdReturn.rate
-        gain = Money(
-            amount: ytdReturn.closingBalance.amount
-                - ytdReturn.openingBalance.amount
-                - ytdReturn.netCashFlow.amount,
-            currency: ytdReturn.closingBalance.currency
+    init(_ ytdReturn: YTDReturn?) {
+        guard let ytdReturn else {
+            self = .insufficientData
+            return
+        }
+
+        self = .calculated(
+            rate: ytdReturn.rate,
+            gain: Money(
+                amount: ytdReturn.closingBalance.amount
+                    - ytdReturn.openingBalance.amount
+                    - ytdReturn.netCashFlow.amount,
+                currency: ytdReturn.closingBalance.currency
+            )
         )
     }
 }

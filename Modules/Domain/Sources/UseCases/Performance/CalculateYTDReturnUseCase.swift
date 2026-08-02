@@ -40,11 +40,13 @@ public struct YTDReturn: Equatable, Sendable {
 ///
 /// `(기말자산 − 기초자산 − 순입출금) / 기초자산` — 입출금은 투자 성과가 아니므로 빼고 본다.
 public protocol CalculateYTDReturnUseCaseProtocol: Sendable {
+    /// 기준 삼을 연초 자산이 없거나 0이면 nil. 기록이 아직 없는 것은 실패가 아니므로
+    /// 저장소 오류(throw)와 뭉개지 않고 값으로 구분한다.
     func execute(
         asOf date: Date,
         baseCurrency: Currency,
         exchangeRate: ExchangeRate
-    ) async throws -> YTDReturn
+    ) async throws -> YTDReturn?
 }
 
 public struct CalculateYTDReturnUseCase: CalculateYTDReturnUseCaseProtocol {
@@ -73,13 +75,11 @@ public struct CalculateYTDReturnUseCase: CalculateYTDReturnUseCaseProtocol {
         asOf date: Date,
         baseCurrency: Currency,
         exchangeRate: ExchangeRate
-    ) async throws -> YTDReturn {
+    ) async throws -> YTDReturn? {
         let yearStart = try startOfYear(containing: date)
         let snapshots = try await snapshotRepository.fetch(from: yearStart, to: date)
 
-        guard let opening = snapshots.first else {
-            throw AppError.validation("연초 기준 자산 기록이 없어 수익률을 계산할 수 없어요.")
-        }
+        guard let opening = snapshots.first else { return nil }
 
         let closing = try await fetchNetWorthUseCase.execute(
             baseCurrency: baseCurrency,
@@ -92,23 +92,25 @@ public struct CalculateYTDReturnUseCase: CalculateYTDReturnUseCaseProtocol {
         }
 
         let openingBalance = opening.total(in: baseCurrency)
-        return YTDReturn(
-            openingBalance: openingBalance,
-            closingBalance: closing,
-            netCashFlow: Money(amount: netCashFlow, currency: baseCurrency),
-            rate: try Self.rate(
+        guard
+            let rate = Self.rate(
                 opening: openingBalance.amount,
                 closing: closing.amount,
                 netCashFlow: netCashFlow
             )
+        else { return nil }
+
+        return YTDReturn(
+            openingBalance: openingBalance,
+            closingBalance: closing,
+            netCashFlow: Money(amount: netCashFlow, currency: baseCurrency),
+            rate: rate
         )
     }
 
-    /// 입출금을 제외한 수익률. 기초자산이 0 이면 나눌 수 없으므로 계산을 거부한다.
-    static func rate(opening: Decimal, closing: Decimal, netCashFlow: Decimal) throws -> Decimal {
-        guard opening > 0 else {
-            throw AppError.validation("연초 자산이 0이라 수익률을 계산할 수 없어요.")
-        }
+    /// 입출금을 제외한 수익률. 기초자산이 0 이면 나눌 수 없어 아직 낼 수 없다는 뜻으로 nil 이다.
+    static func rate(opening: Decimal, closing: Decimal, netCashFlow: Decimal) -> Decimal? {
+        guard opening > 0 else { return nil }
         return (closing - opening - netCashFlow) / opening
     }
 

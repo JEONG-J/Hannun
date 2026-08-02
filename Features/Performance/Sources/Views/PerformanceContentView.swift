@@ -15,6 +15,8 @@ struct PerformanceContentView: View {
 
     // MARK: - Property
 
+    @Environment(\.appRouter) private var appRouter
+
     @Bindable private var viewModel: PerformanceViewModel
 
     // MARK: - Body
@@ -31,8 +33,14 @@ struct PerformanceContentView: View {
                 }
 
                 headline
-                chartCard
-                controls
+
+                // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
+                // 쌓이면…" 안내가 같은 화면에 두 번 나오고, 기간·단위 컨트롤은 바꿔도
+                // 나올 값이 없어 눌러볼 수만 있는 장식이 된다.
+                if !viewModel.hasNoRecords {
+                    chartCard
+                    controls
+                }
             }
             .padding(.horizontal, .spacingL)
             .padding(.top, .spacingS)
@@ -49,7 +57,9 @@ struct PerformanceContentView: View {
         case .idle, .loading:
             PerformanceHeadlineView(Constants.placeholderHeadline)
                 .redacted(reason: .placeholder)
-        case .loaded:
+        case .loaded(.insufficientData):
+            noRecordsState
+        case .loaded(.calculated):
             if let headline = viewModel.headline {
                 PerformanceHeadlineView(headline)
             }
@@ -63,6 +73,20 @@ struct PerformanceContentView: View {
                 Task { await viewModel.refresh() }
             }
         }
+    }
+
+    /// 기록이 없어 계산할 수 없는 상태는 실패가 아니다 — 다시 시도 대신 첫 종목 등록으로 보낸다.
+    private var noRecordsState: some View {
+        EmptyStateView(
+            systemImageName: Constants.emptySymbolName,
+            title: Constants.emptyTitle,
+            message: Constants.emptyMessage,
+            actionTitle: Constants.emptyActionTitle
+        ) {
+            appRouter?.navigate(to: .portfolio(category: nil))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, .spacingXXL)
     }
 
     /// 차트는 콘텐츠라 glass 를 깔지 않는다 — 불투명 surface 카드 위에 얹는다 (UI 스펙 §4.3).
@@ -165,6 +189,10 @@ fileprivate enum Constants {
     )
     static let staleMessage = "갱신 실패 · 마지막으로 받아온 값입니다"
     static let insufficientDataMessage = "데이터가 쌓이면 추이가 표시됩니다"
+    static let emptySymbolName = "chart.line.uptrend.xyaxis"
+    static let emptyTitle = "아직 계산할 성과가 없어요"
+    static let emptyMessage = "보유 종목을 등록하면 연초 대비 수익률을 볼 수 있어요."
+    static let emptyActionTitle = "종목 추가"
     static let summaryFailureTitle = "수익률을 계산하지 못했어요"
     static let trendFailureTitle = "추이를 불러오지 못했어요"
     static let retryTitle = "다시 시도"
@@ -182,8 +210,8 @@ private struct PerformanceContentPreview: View {
     // MARK: - Body
 
     @MainActor
-    init() {
-        _viewModel = State(initialValue: .preview)
+    init(viewModel: PerformanceViewModel = .preview) {
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
@@ -203,5 +231,9 @@ private struct PerformanceContentPreview: View {
 #Preview("성과 본문 · 다크") {
     PerformanceContentPreview()
         .preferredColorScheme(.dark)
+}
+
+#Preview("성과 본문 · 기록 없음") {
+    PerformanceContentPreview(viewModel: .previewWithoutRecords)
 }
 #endif

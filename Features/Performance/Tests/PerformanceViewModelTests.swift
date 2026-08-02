@@ -26,9 +26,23 @@ struct PerformanceViewModelTests {
         await viewModel.loadIfNeeded()
 
         let sampledCount = PerformanceSampleData.trendPoints.count
-        #expect(viewModel.summaryState.value?.rate == PerformanceSampleData.ytdReturn.rate)
-        #expect(viewModel.summaryState.value?.gain == .krw(9_400_000))
+        #expect(
+            viewModel.summaryState.value
+                == .calculated(rate: PerformanceSampleData.ytdReturn.rate, gain: .krw(9_400_000))
+        )
         #expect(viewModel.trendState.value?.portfolio.count == sampledCount)
+        #expect(viewModel.isStale == false)
+    }
+
+    @Test("계산할 기록이 없으면 실패가 아니라 빈 요약으로 남는다")
+    func missingRecordsBecomeEmptySummary() async {
+        let viewModel = makeViewModel(ytd: { _ in nil })
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.summaryState.value == .insufficientData)
+        #expect(viewModel.summaryState.error == nil)
+        #expect(viewModel.headline == nil)
         #expect(viewModel.isStale == false)
     }
 
@@ -50,11 +64,11 @@ struct PerformanceViewModelTests {
 
     @Test("첫 조회 실패는 화면 상태로 알린다")
     func firstFailureSurfacesAsState() async {
-        let viewModel = makeViewModel(ytd: { _ in throw AppError.validation("기록 없음") })
+        let viewModel = makeViewModel(ytd: { _ in throw AppError.persistence("저장소 오류") })
 
         await viewModel.loadIfNeeded()
 
-        #expect(viewModel.summaryState == .failed(.validation("기록 없음")))
+        #expect(viewModel.summaryState == .failed(.persistence("저장소 오류")))
         #expect(viewModel.isStale == false)
     }
 
@@ -82,7 +96,10 @@ struct PerformanceViewModelTests {
         await viewModel.loadIfNeeded()
         await viewModel.refresh()
 
-        #expect(viewModel.summaryState.value?.gain == .krw(9_400_000))
+        #expect(
+            viewModel.summaryState.value
+                == .calculated(rate: PerformanceSampleData.ytdReturn.rate, gain: .krw(9_400_000))
+        )
         #expect(viewModel.isStale)
     }
 
@@ -309,7 +326,7 @@ struct PerformanceViewModelTests {
     }
 
     private func makeViewModel(
-        ytd: @escaping @Sendable (Date) async throws -> YTDReturn = { _ in
+        ytd: @escaping @Sendable (Date) async throws -> YTDReturn? = { _ in
             PerformanceSampleData.ytdReturn
         },
         trend: @escaping @Sendable (Date, Date, TrendGranularity) async throws

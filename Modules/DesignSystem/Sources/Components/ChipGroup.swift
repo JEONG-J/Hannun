@@ -58,7 +58,8 @@ public struct ChipGroup<Content: View>: View {
                 HStack(spacing: .spacingS) { content }
             }
         case .accessory:
-            HStack(spacing: .spacingXS) { content }
+            // 8pt — 44pt 히트 영역이 맞닿으면 포커스 링이 겹치고 경계 오탭이 는다.
+            HStack(spacing: .spacingS) { content }
         }
     }
 }

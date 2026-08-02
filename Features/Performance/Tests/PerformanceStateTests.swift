@@ -27,8 +27,7 @@ struct PerformanceSummaryTests {
             )
         )
 
-        #expect(summary.gain == .krw(9_400_000))
-        #expect(summary.rate == 0.094)
+        #expect(summary == .calculated(rate: 0.094, gain: .krw(9_400_000)))
     }
 
     @Test("출금이 있어도 성과만 남는다")
@@ -42,7 +41,12 @@ struct PerformanceSummaryTests {
             )
         )
 
-        #expect(summary.gain == .krw(5_000_000))
+        #expect(summary == .calculated(rate: 0.05, gain: .krw(5_000_000)))
+    }
+
+    @Test("계산 결과가 없으면 데이터 부족 상태가 된다")
+    func missingReturnBecomesInsufficientData() {
+        #expect(PerformanceSummary(nil) == .insufficientData)
     }
 }
 

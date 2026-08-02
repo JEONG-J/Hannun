@@ -17,7 +17,8 @@ struct BenchmarkAccessory: View {
 
     // MARK: - Property
 
-    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    @Environment(\.accessoryLayout) private var layout
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let viewModel: PerformanceViewModel
 
@@ -39,9 +40,12 @@ struct BenchmarkAccessory: View {
 
     // MARK: - Function
 
-    /// 탭바가 최소화됐거나 칩이 캡슐 폭(약 358pt)에 다 들어가지 않으면 Menu 로 접는다.
+    /// 탭바 최소화·AX 사이즈·칩 개수 초과 시 Menu 로 접는다. 개수 조건만으로는 폭 초과를
+    /// 받지 못하므로(현재 4 > 4 는 항상 거짓) 큰 글자를 타입 사이즈 조건이 받는다.
     private var collapsesToMenu: Bool {
-        placement == .inline || BenchmarkIndex.allCases.count > Constants.maximumChipCount
+        layout == .inline
+            || dynamicTypeSize.isAccessibilitySize
+            || BenchmarkIndex.allCases.count > Constants.maximumChipCount
     }
 
     private var chips: some View {
@@ -84,30 +88,40 @@ struct BenchmarkAccessory: View {
         }
     }
 
+    /// 원색 채움 + 흰 라벨은 카테고리색에서 대비 미달이라 폐기 — 선택 표시는 wash + dot,
+    /// 라벨은 어느 wash 위에서든 대비가 남는 잉크(textPrimary)로 고정한다.
     private var menuLabel: some View {
         HStack(spacing: .spacingXS) {
+            if let selected = viewModel.selectedBenchmark {
+                CategoryDot(color: selected.lineColor)
+                    .accessibilityHidden(true)
+            }
+
             Text(viewModel.selectedBenchmark?.title ?? Constants.emptySelectionTitle)
                 .hannunFont(.pillLabel)
                 .lineLimit(1)
+                .foregroundStyle(menuLabelColor)
 
             Image(systemName: Constants.chevronSymbolName)
                 .imageScale(.small)
+                .foregroundStyle(Color.textSecondary)
         }
-        .foregroundStyle(menuLabelColor)
+        .padding(.vertical, .spacingS)
         .padding(.horizontal, Constants.labelHorizontalPadding)
-        .frame(minHeight: .minimumTouchTarget)
         .background(menuLabelBackground, in: .capsule)
+        .frame(minHeight: .minimumTouchTarget)
+        .contentShape(.capsule)
     }
 
     private var menuLabelBackground: AnyShapeStyle {
         guard let color = viewModel.selectedBenchmark?.lineColor else {
-            return AnyShapeStyle(Color.surfaceSecondary)
+            return AnyShapeStyle(Color.clear)
         }
-        return AnyShapeStyle(color)
+        return AnyShapeStyle(HannunTint.wash(color))
     }
 
     private var menuLabelColor: Color {
-        viewModel.selectedBenchmark == nil ? .textSecondary : .onBrand
+        viewModel.selectedBenchmark == nil ? .textSecondary : .textPrimary
     }
 }
 
@@ -132,6 +146,15 @@ fileprivate enum Constants {
 
 #Preview("벤치마크 액세서리 · 다크") {
     BenchmarkAccessory(viewModel: .preview)
+        .padding(.spacingL)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.backgroundPrimary)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("벤치마크 액세서리 · 축약") {
+    BenchmarkAccessory(viewModel: .preview)
+        .accessoryLayout(.inline)
         .padding(.spacingL)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.backgroundPrimary)

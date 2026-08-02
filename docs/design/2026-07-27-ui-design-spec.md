@@ -21,6 +21,8 @@
   - 2026-07-27 초안 확정
   - 2026-07-27 §3.1 탭바 하단 액세서리 신설 — 포트폴리오 툴바 액션·매매일지 FAB 폐지,
     순자산 통화 토글·성과 벤치마크 칩을 액세서리로 이관
+  - 2026-08-01 액세서리 비주얼 재제안 반영 — 비선택 무채움·선택 wash+dot·주 액션 trailing
+    통일·캡션 무아이콘·접근성 폴백. 규격 원본: `docs/design/2026-08-01-bottom-accessory-visual-redesign.md`
 
 ## 1. 디자인 원칙
 
@@ -64,6 +66,20 @@ Glass는 "콘텐츠 위에 떠 있는 기능 레이어"에만 쓴다. 콘텐츠 
 > 선택 칩이 그 위에 얹힌 모양이 된다. 개별 캡슐 외형이 더 중요하다면 union 을 빼는 쪽을 택한다.
 > 구현: `Modules/DesignSystem/Sources/Components/FilterChip.swift`
 
+> **`FilterChip(tint:)` 은 채움색이 아니라 범례색이다.** 어느 레이어든 카테고리 원색으로
+> 칩을 가득 채우지 않는다 — 라이트에서 `onBrand` 라벨이 `categoryCrypto` 위 **1.9:1**,
+> 라벨을 잉크로 바꿔도 다크의 밝은 카테고리색 위에서 3:1 을 못 넘겨 두 스킴을 동시에
+> 만족하는 조합이 없다. 그래서 색은 **dot** 이 나른다.
+>
+> | 레이어 | 선택 채움 | dot(선택) | dot(비선택) | 라벨 |
+> |--------|-----------|-----------|-------------|------|
+> | 콘텐츠 | `brand` glass 고정 | `onBrand` | tint 원색 | `onBrand` / `textPrimary` |
+> | 액세서리 | tint wash (§2.1) | tint 원색 | `neutral` | `textPrimary` / `textSecondary` |
+>
+> 콘텐츠는 유리 대 brand 유리로 선택이 이미 갈리므로 dot 이 순수 범례고, 액세서리는 비선택이
+> 무채움이라 dot 이 선택 신호를 겸한다. 콘텐츠 선택 칩에서만 dot 을 `onBrand` 로 바꾸는 건
+> brand 채움 위 카테고리색이 최악 2:1 로 묻히기 때문이다.
+
 ## 2. 디자인 토큰
 
 ### 2.1 컬러
@@ -99,6 +115,9 @@ Glass는 "콘텐츠 위에 떠 있는 기능 레이어"에만 쓴다. 콘텐츠 
 >
 > **`brand` 를 라벨 색으로 쓰는 건 옅은 tint 배경 위에서만이다** (`HannunTint`, 알파 12/18% — §2.2).
 > 채움(`Glass.tint(brand)` · solid `brand`) 위에 `brand` 라벨을 얹으면 같은 색이라 글자가 사라진다.
+> 단 이 조항도 **라이트 한정**이다 — 실측상 다크에서는 유리 위 `brand` 라벨 ≈4.07:1,
+> `brandTint` wash 위 ≈3.25:1 로 모두 AA 미달이라, 다크의 라벨은 잉크(`textPrimary`)로 대체하고
+> brand 는 아이콘·스트로크(그래픽 3:1 기준)로만 쓴다 (2026-08-01 재제안 §3.1 검증표).
 
 #### 손익 색 (확정)
 
@@ -160,6 +179,11 @@ pill 배경 tint는 위 색의 12% 불투명도(라이트) / 18%(다크)를 쓴�
 | `spacingXL` | 24 | 섹션 간 간격 |
 | `spacingXXL` | 32 | 큰 숫자 블록 상하 여백 |
 
+> **비활성 상태 = 기준 색 + opacity 감쇠.** `neutral` 은 `textSecondary` 와 hex 가 완전히 같아
+> 색만으로는 비활성을 표현할 수 없다. 비활성 컨트롤은 비선택과 같은 색에 전체 `opacity 0.4`
+> (게이트 7 G6 에서 0.5~0.6 상향 후보와 함께 확정) + `disabled` 로 가른다 — §4.3 벤치마크
+> 비활성 표시가 첫 적용처다. `neutral` 토큰 자체의 정리(통합/값 재정의)는 별도 작업.
+
 | 반경 토큰 | 값(pt) | 용도 |
 |-----------|--------|------|
 | `radiusS` | 8 | 작은 배지·인풋 필드 |
@@ -178,12 +202,13 @@ design-system.md의 variant 표를 화면 요소에 대응시킨다. 구현 시 
 |-----------|---------|------|
 | 필터 칩(벤치마크·종목·카테고리) | `.regular.interactive()` | ChipGroup은 Container+Union 필수 |
 | 선택된 칩 | `.regular.tint(brand).interactive()` | 선택 상태를 tint로 구분. **라벨은 `onBrand`** — `tint` 는 알파 wash 가 아니라 채도 그대로의 채움이다 |
-| 탭바 하단 액세서리 캡슐 | `.regular` | 컨테이너 자체에만 적용 (§3.1) |
-| 액세서리 **내부** 세그먼트·칩 | **glass 금지** | 불투명 `surfaceSecondary` + 선택 시 brand tint |
+| 탭바 하단 액세서리 캡슐 | `.regular` | **시스템이 그린다** — 우리가 얹지 않는다 (§3.1) |
+| 액세서리 **내부** 세그먼트·칩 | **glass 금지** | 비선택 **무채움**(캡슐 유리가 배경) + 선택 시 원색 tint wash. 투명도 감소·대비 증가에서는 스트로크 경계 복원 (2026-08-01 재제안 §3) |
 | 액세서리 **내부** 주요 액션 버튼 | **glass 금지** | `brand` 채움(solid) + `onBrand` 라벨 |
+| 액세서리 **내부** 보조 액션 버튼 | **glass 금지** | `brand` 1pt 스트로크 캡슐 + 라이트 `brand`/다크 `textPrimary` 라벨 + `brand` 아이콘 |
 | KRW/USD 통화 토글 | `.regular.interactive()` | capsule. 순자산 탭에서는 액세서리 내부로 이동(§4.1) → glass 금지 규칙 적용 |
 | 기간 세그먼트(성과 탭) | `.regular.interactive()` | 차트 아래 인라인 배치 (액세서리 아님 — §4.3) |
-| 일지 작성 버튼 | `brand` 채움 | 액세서리 우측 44pt 원형 (FAB 대체 — §4.4) |
+| 일지 작성 버튼 | `brand` 채움 | 액세서리 우측 **라벨 캡슐**(expanded) / 아이콘 원형(inline) — FAB 대체, §4.4 |
 | sheet 저장(Primary) 버튼 | `.glassProminent` (ButtonStyle) | |
 | sheet 취소(Secondary) 버튼 | `.glass` (ButtonStyle) | |
 | 카드·차트·리스트·숫자 영역 | 적용 금지 | §1 규칙 — 불투명 `surfacePrimary` 사용 |
@@ -228,12 +253,31 @@ iOS 26 `TabView`는 탭바 바로 위에 떠 있는 Liquid Glass 액세서리를
 
 - 액세서리는 **`TabView`에 하나만** 붙는다 (탭별 modifier가 아님). 탭별 내용은
   `selection` 값으로 분기한다.
-- 캡슐 사양: 높이 56pt, `cornerRadius` 28(capsule), 좌우 마진 16pt, 탭바와 간격 8pt,
-  `padding` 6pt, `.regular` glass + 배경 블러 + 외부 그림자(0/8/24, 10% black).
+- **캡슐은 우리가 그리지 않는다.** 높이 56pt / capsule 라운드 / 좌우 마진 16pt /
+  탭바와 간격 8pt / `.regular` glass + 블러 + 그림자(0/8/24, 10% black) — 이 전부가
+  `tabViewBottomAccessory(content:)` **컨테이너의 기본 모습**이다. 시안의 떠 있는 캡슐은
+  그 컨테이너를 그려 둔 것이지 그 안에 넣을 또 하나의 캡슐이 아니다. 우리가 공급하는 건
+  **내용물뿐**이며, 내용물에는 배경도 높이도 주지 않는다.
+  - 안에서 `glassEffect` 를 다시 얹으면 glass 위 glass 라 캡슐 테두리가 사라져 내용이
+    배경에 그냥 떠 있는 것처럼 보인다.
+  - 높이를 56pt 로 고정하면 `.inline` 로 줄어든 컨테이너와 어긋난다.
+- 내용물의 좌우 `padding` 만 우리 몫이다 — `.expanded` 6pt / `.inline` 2pt
+  (`BottomAccessory`).
 - 내부 컨트롤 터치 타깃 **최소 44pt**. 캡슐 안쪽 가용 폭은 iPhone 기준 약 358pt이므로
   **1~2개의 액션 또는 최대 4개의 짧은 칩**까지가 한계다.
+- 자리는 **좌(상태·문구·보조 액션) / 우(주 액션·컨트롤)** 둘이다. **생성(주) 액션은 4탭 모두
+  trailing 의 brand 캡슐** — 탭을 넘어가도 한 문법으로 읽힌다. 폭이 모자라면 **좌측이 먼저
+  양보한다** — 우측이 잘리면 그 탭의 유일한 진입점이 사라진다. 좌측이 탭 가능한 보조 액션이면
+  잘리는 대신 `ViewThatFits` 아이콘 폴백으로 축약한다.
 - 내부 컨트롤에 glass 재적용 금지 (§2.4 경고). 세그먼트는 `.pickerStyle(.segmented)`
-  대신 불투명 커스텀 세그먼트로 만든다.
+  대신 커스텀 세그먼트로 만든다. **비선택 상태는 무채움**(시스템 캡슐 유리가 배경),
+  선택만 원색 tint wash — 고채도 채움(brand·카테고리 원색 solid)은 캡슐 하나에 최대 1개다.
+- **캡션에는 아이콘을 두지 않는다** — 눌리지 않는 `arrow.clockwise` 같은 어포던스 거짓말을
+  막고, "아이콘이 있으면 컨트롤"이라는 구분 신호를 지킨다. 값이 있는 캡션은 2톤
+  (값 = 13pt Semibold tabular `textPrimary` / 부속어 = 13pt Regular `textSecondary`).
+- **접근성 폴백**: 투명도 감소·대비 증가에서는 비선택 컨트롤에 `separator` 1pt 스트로크,
+  선택 컨트롤에 원색 스트로크를 복원한다. 선택형 컨트롤은 `.isSelected` trait 필수.
+  AX 사이즈에서는 캡션을 숨기지 않고 **축약 문구로 줄인다**.
 - 액세서리는 **보조 컨트롤 전용**이다. 파괴적 동작(삭제·초기화)이나 되돌리기 어려운
   동작은 넣지 않는다.
 
@@ -241,28 +285,44 @@ iOS 26 `TabView`는 탭바 바로 위에 떠 있는 Liquid Glass 액세서리를
 
 | 탭 | 좌측 | 우측 | 역할 |
 |----|------|------|------|
-| ① 순자산 | `arrow.trianglehead.2.clockwise` + "오후 12:04 시세 기준" | KRW / USD 세그먼트 | 시세 신선도 + 통화 전환 [NW-2] |
-| ② 포트폴리오 | **종목 추가** (brand 채움, `plus`) | 입출금 기록 (투명, `arrow.left.arrow.right`) | 생성 액션 2개 [PF-2, PF-5/6] |
-| ③ 성과 | 벤치마크 칩 4개 — 코스피 / S&P500 / 나스닥 / BTC | — | 비교 대상 전환 [PM-4] |
-| ④ 매매일지 | `sparkles` + "오늘의 매매를 기록해보세요" | 작성 버튼 44pt 원형 (brand, `pencil.line`) | 작성 유도 + 진입 [JR-2] |
+| ① 순자산 | "**12:04** 시세 기준" (2톤 캡션, 아이콘 없음) | KRW / USD 세그먼트 | 시세 신선도 + 통화 전환 [NW-2] |
+| ② 포트폴리오 | 입출금 기록 (brand 스트로크 캡슐, `arrow.left.arrow.right`) | **종목 추가** (brand 채움, `plus`) | 생성 액션 2개 [PF-2, PF-5/6] |
+| ③ 성과 | 벤치마크 칩 4개 — 코스피 / S&P500 / 나스닥 / BTC (상시 dot) | — | 비교 대상 전환 [PM-4] |
+| ④ 매매일지 | "오늘의 매매를 기록해보세요" (아이콘 없음) | **작성** (brand 라벨 캡슐, `pencil.line`) | 작성 유도 + 진입 [JR-2] |
 
 - 순자산: 통화 토글이 액세서리로 이동하므로 **큰 숫자 옆의 CurrencyToggle은 제거**한다(§4.1).
-- 성과: 선택된 칩만 카테고리 색 tint(예: S&P500 → `categoryForeign`), 나머지는
-  `surfaceSecondary`. 콘텐츠 영역의 벤치마크 칩 그룹은 제거하고 그만큼 차트를 키운다(§4.3).
+  캡션은 정적이다 — 수동 갱신은 화면의 pull-to-refresh 가 맡는다.
+- 성과: 선택된 칩만 카테고리 색 **tint wash**(예: S&P500 → `categoryForeign` 12/18%) + 원색 dot,
+  비선택은 무채움 + `neutral` dot. 콘텐츠 영역의 벤치마크 칩 그룹은 제거하고 그만큼 차트를 키운다(§4.3).
 - 매매일지: 좌측 힌트 문구는 장식이 아니라 **empty 상태의 CTA 역할**을 겸한다.
 
 #### `.expanded` / `.inline` 대응
 
 `tabBarMinimizeBehavior(.onScrollDown)`로 탭바가 최소화되면 액세서리가 축소 배치로
-전환된다. `@Environment(\.tabViewBottomAccessoryPlacement)` 값(`.expanded` / `.inline`)을
-읽어 아래처럼 축약한다. **축약해도 주 액션은 절대 사라지지 않는다.**
+전환된다. 아래처럼 축약하되 **축약해도 주 액션은 절대 사라지지 않는다.**
+
+내용 쪽에서 `@Environment(\.tabViewBottomAccessoryPlacement)` 를 **직접 읽지 않는다.**
+그 키는 액세서리 컨테이너 안에서만 값이 서고 밖에서 읽으면 조용히 `.expanded` 가 나온다 —
+게다가 **읽기 전용**이라 `TabView` 가 없는 프리뷰·테스트에서는 축약 분기를 띄울 방법이 없어
+아무도 못 본 채로 나가게 된다. `BottomAccessory` 가 한 번 읽어 `\.accessoryLayout`
+(`AccessoryLayout.expanded` / `.inline`)으로 내려보내고, 내용은 그 값만 본다.
+프리뷰에서는 `.accessoryLayout(.inline)` 로 강제해 눈으로 확인한다.
 
 | 탭 | `.expanded` | `.inline` (축약) |
 |----|-------------|------------------|
 | ① 순자산 | 갱신 시각 캡션 + KRW/USD 세그먼트 | "12:04 기준" + KRW/USD 세그먼트 |
-| ② 포트폴리오 | 종목 추가 + 입출금 기록 | 종목 추가만 전체 폭. 입출금은 툴바 메뉴로 |
-| ③ 성과 | 벤치마크 칩 4개 | 현재 벤치마크 1개 + chevron → Menu 전개 |
-| ④ 매매일지 | 힌트 문구 + 작성 버튼 | "매매 기록" + 작성 버튼 |
+| ② 포트폴리오 | 입출금 기록 + 종목 추가 | `ellipsis` → Menu 전개(입출금 기록) + 종목 추가(아이콘 원형) |
+| ③ 성과 | 벤치마크 칩 4개 | 현재 벤치마크(wash + dot) + chevron → Menu 전개 |
+| ④ 매매일지 | 힌트 문구 + 작성 캡슐 | "매매 기록" + 작성 버튼(아이콘 원형) |
+
+> inline 의 `ellipsis` overflow 는 유일 진입점이므로 시각적 바닥(저채도 `neutralTint` wash 원)을
+> 유지한다 — 게이트 7 G5(3초 내 발견) 실패 시 `surfaceSecondary` 원으로 되돌린다.
+
+> **축약은 액세서리 안에서 끝낸다.** 넘치는 항목은 툴바로 내보내지 않고 **액세서리 안 Menu 로
+> 접는다** — 이 절 도입부가 "포트폴리오 툴바 아이콘 2개와 매매일지 FAB 는 제거된다" 고 못박았으므로
+> 툴바로 되돌리면 그 결정을 되돌리는 셈이고, 같은 액션이 액세서리와 툴바 두 곳에 살아 있는
+> 상태가 된다. 성과 탭 벤치마크 칩이 4개를 넘을 때(§4.3)와 **같은 규칙**이라, 사용자는 앱 전체에서
+> "`ellipsis`/chevron 을 누르면 나머지가 나온다" 는 한 가지 축약 문법만 익히면 된다.
 
 #### API 주의사항
 
@@ -295,7 +355,7 @@ PerformanceContentView(viewModel: viewModel)
     .tabAccessory(.performance) {
         BottomAccessory { ChipGroup(appearance: .accessory) { … } }
     }
-```.
+```
 
 ## 4. 화면별 스펙
 
@@ -409,10 +469,13 @@ Robinhood(스크럽 시 상단 숫자 실시간 치환 + 햅틱).
 - **반드시 % 정규화** — 선택 기간 시작점=0%로 내 수익률과 벤치마크를 같은 축에 오버레이.
   금액 축과 지수 값을 같은 축에 겹치는 것 금지
 - 내 라인 굵게(brand, 2pt) / 벤치마크는 얇은 중립색 1pt 60% 불투명도
-- 기본 표시 벤치마크 0~1개. 칩 선택 색 = 라인 색 (칩이 범례 — 별도 범례 없음)
-- 액세서리 폭 제약상 칩은 **최대 4개까지만** 노출한다. 그 이상은 `.inline` 규칙과 동일하게
-  Menu로 전개한다
-- 벤치마크 조회 실패 시 해당 라인만 생략, 칩에 비활성 표시 [PM-4 제약]
+- 기본 표시 벤치마크 0~1개. **칩이 범례다** — 선택 칩은 카테고리 원색 dot + 같은 원색의
+  tint wash 캡슐 + `textPrimary` Semibold 라벨, 비선택은 `neutral` dot + 무채움 +
+  `textSecondary` Regular. dot 은 모든 칩에 상시 배치해 선택 전환 시 폭이 흔들리지 않는다.
+  (구 규격 "원색 가득 채움 + `onBrand` 라벨"은 카테고리색 대비 미달 — 최악 2.15:1 — 로 폐기)
+- 액세서리 폭 제약상 칩은 **최대 4개까지만** 노출한다. 개수 초과·AX 타입 사이즈에서는
+  `.inline` 규칙과 동일하게 Menu 로 전개한다 — 개수 조건만으로는 폭 초과를 받지 못한다
+- 벤치마크 조회 실패 시 해당 라인만 생략, 칩에 비활성 표시(opacity 감쇠 — §2.3) [PM-4 제약]
 
 스크럽: 드래그 시 상단 YTD 숫자가 해당 시점 값으로 실시간 치환 + 세로 인디케이터.
 데이터 포인트 스냅 시 selection 햅틱. 손을 떼면 현재 값으로 복귀 (§6 참조).
@@ -436,8 +499,9 @@ Robinhood(스크럽 시 상단 숫자 실시간 치환 + 햅틱).
 | 3 | 일지 리스트 | JournalCell 최신순 [JR-1] |
 
 **FAB 폐지 → 하단 액세서리 작성 바**(§3.1). 우하단 떠 있는 원형 버튼 대신 액세서리
-캡슐 안에 `sparkles` + "오늘의 매매를 기록해보세요" 힌트와 44pt brand 원형 작성 버튼을
-둔다. 근거: ① FAB는 마지막 셀을 가리는데 액세서리는 레이아웃에 자리를 잡는다
+캡슐 안에 "오늘의 매매를 기록해보세요" 힌트(아이콘 없음)와 **"작성" brand 라벨 캡슐**
+(`pencil.line`, inline 에서는 아이콘 원형으로 축약)을 둔다.
+근거: ① FAB는 마지막 셀을 가리는데 액세서리는 레이아웃에 자리를 잡는다
 ② 힌트 문구가 작성 동기를 만들어 빈 아이콘 버튼보다 CTA로 강하다 ③ 4개 탭이 동일한
 액션 위치를 갖게 되어 예측 가능성이 올라간다.
 
@@ -472,8 +536,9 @@ JournalCell: 날짜(`caption`, textSecondary, 보조) + 제목(`rowTitle`, 주) 
 | FilterChip · ChipGroup | 필터·다중 선택 — glass union 그룹 | 선택 / 비선택 / 비활성 · 콘텐츠용(glass) / 액세서리용(불투명) |
 | CurrencyToggle | KRW/USD 전환 세그먼트 — 순자산 액세서리 내부 | KRW 선택 / USD 선택 |
 | PeriodSegment | 기간 선택 1M~ALL 세그먼트 | 인라인 전용(성과 탭 차트 하단) |
-| BottomAccessory | 탭바 하단 glass 캡슐 컨테이너 — 56pt, capsule, blur+shadow | 탭 4종 콘텐츠 × `.expanded` / `.inline` |
-| AccessoryActionButton | 액세서리 내부 액션 버튼 (불투명) | primary(brand 채움) / secondary(투명) / 아이콘 44pt 원형 |
+| BottomAccessory | 시스템 캡슐에 담을 **내용물**의 좌/우 배치 — 캡슐 자체는 안 그린다 | 탭 4종 콘텐츠 × `.expanded` / `.inline` |
+| AccessoryCaption | 액세서리 좌측 보조 문구 — 우측 컨트롤을 밀지 않게 자른다 | 아이콘 있음 / 없음 · 축약 시 아이콘 제거 |
+| AccessoryActionButton | 액세서리 내부 액션 버튼 (불투명) | primary(brand 채움 라벨 캡슐) / secondary(brand 스트로크 캡슐, 아이콘 폴백) / 아이콘 44pt 원형 |
 | HoldingRow | 종목 행 2단 구조 | 기본 / 현금(평단가·pill 숨김) |
 | CategorySectionHeader | 카테고리 그룹 헤더 — 접기/펼치기 + 소계 | 펼침 / 접힘 |
 | JournalCell | 일지 리스트 셀 — 날짜·제목·미리보기·태그 | 태그 있음 / 없음 |
@@ -520,7 +585,10 @@ apple-design 스킬(Designing Fluid Interfaces) 기준. SwiftUI에 전달할 파
 - 햅틱은 의미 있는 순간만: 스크럽 스냅, 파괴적 작업 확인, 저장 완료. 시각 피드백과 같은
   프레임에 발화
 - Reduce Motion: 슬라이드·스프링을 짧은 크로스페이드로 대체, overshoot 전면 제거.
-  Reduce Transparency: glass 서피스를 불투명 `surfaceSecondary`로 대체
+  Reduce Transparency: glass 서피스를 불투명 `surfaceSecondary`로 대체.
+  **액세서리 내부 컨트롤**은 시스템 캡슐이 불투명해지는 대신 — 비선택에 `separator` 1pt
+  스트로크, 선택에 원색 스트로크를 복원하고 wash 알파를 상향(12/18% → 20/28%)한다.
+  대비 증가(Increase Contrast)도 같은 스트로크 승격을 쓴다 (`FilterChip`·`HannunTint`)
 - 숫자 큰 폭 변경(통화 토글) 시 밝기 급변 없음 — 색 유지, 값만 전환
 
 ## 7. Pencil 제작 가이드

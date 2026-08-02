@@ -58,13 +58,8 @@ private struct CurrencyTogglePreview: View {
             )
 
             BottomAccessory {
-                Text("오후 12:04 시세 기준")
-                    .hannunFont(.caption)
-                    .foregroundStyle(Color.textSecondary)
-                    .padding(.leading, .spacingS)
-
-                Spacer(minLength: .spacingS)
-
+                AccessoryCaption("오후 12:04 시세 기준")
+            } trailing: {
                 CurrencyToggle(selection: $selection)
             }
         }

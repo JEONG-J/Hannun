@@ -15,7 +15,8 @@ import SwiftUI
 struct JournalComposeAccessory: View {
     // MARK: - Property
 
-    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    @Environment(\.accessoryLayout) private var layout
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let action: () -> Void
 
@@ -23,29 +24,41 @@ struct JournalComposeAccessory: View {
 
     var body: some View {
         BottomAccessory {
-            Label(hintText, systemImage: Constants.hintSymbolName)
-                .hannunFont(.caption)
-                .foregroundStyle(Color.textSecondary)
-                .lineLimit(1)
-                .padding(.leading, .spacingS)
-
-            Spacer(minLength: .spacingS)
-
-            AccessoryActionButton(systemImageName: Constants.composeSymbolName, action: action)
+            AccessoryCaption(hintText)
+        } trailing: {
+            // 생성 = 우측 brand 라벨 캡슐 — 포트폴리오와 같은 문법이다. 축약에서는
+            // 아이콘 원형으로 줄이되 VoiceOver 라벨은 같은 의미를 유지한다.
+            if layout == .inline {
+                AccessoryActionButton(
+                    systemImageName: Constants.composeSymbolName,
+                    accessibilityLabel: Constants.composeAccessibilityLabel,
+                    action: action
+                )
+            } else {
+                AccessoryActionButton(
+                    Constants.composeTitle,
+                    systemImageName: Constants.composeSymbolName,
+                    action: action
+                )
+            }
         }
     }
 
-    /// 탭바가 최소화되면 힌트를 짧게 줄인다. 주 액션인 작성 버튼은 그대로 둔다 (§3.1).
+    /// 축약 문구는 inline 만이 아니라 AX 사이즈에서도 쓴다 — 힌트는 빈 상태의 CTA 라
+    /// 숨기는 대신 줄인다.
     private var hintText: String {
-        placement == .inline ? Constants.inlineHintText : Constants.hintText
+        layout == .inline || dynamicTypeSize.isAccessibilitySize
+            ? Constants.inlineHintText
+            : Constants.hintText
     }
 }
 
 fileprivate enum Constants {
     static let hintText = "오늘의 매매를 기록해보세요"
     static let inlineHintText = "매매 기록"
-    static let hintSymbolName = "sparkles"
     static let composeSymbolName = "pencil.line"
+    static let composeTitle = "작성"
+    static let composeAccessibilityLabel = "일지 작성"
 }
 
 #if DEBUG
@@ -59,6 +72,15 @@ fileprivate enum Constants {
 
 #Preview("일지 작성 액세서리 · 다크") {
     JournalComposeAccessory {}
+        .padding(.horizontal, .spacingL)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .background(Color.backgroundPrimary)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("일지 작성 액세서리 · 축약") {
+    JournalComposeAccessory {}
+        .accessoryLayout(.inline)
         .padding(.horizontal, .spacingL)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .background(Color.backgroundPrimary)

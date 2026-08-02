@@ -18,11 +18,11 @@ struct StubCalculateYTDReturnUseCase: CalculateYTDReturnUseCaseProtocol {
 
     // MARK: - Property
 
-    let result: @Sendable (Date) async throws -> YTDReturn
+    let result: @Sendable (Date) async throws -> YTDReturn?
 
     // MARK: - Function
 
-    init(result: @escaping @Sendable (Date) async throws -> YTDReturn) {
+    init(result: @escaping @Sendable (Date) async throws -> YTDReturn?) {
         self.result = result
     }
 
@@ -30,7 +30,7 @@ struct StubCalculateYTDReturnUseCase: CalculateYTDReturnUseCaseProtocol {
         asOf date: Date,
         baseCurrency: Currency,
         exchangeRate: ExchangeRate
-    ) async throws -> YTDReturn {
+    ) async throws -> YTDReturn? {
         try await result(date)
     }
 }
@@ -172,6 +172,20 @@ extension PerformanceViewModel {
         )
         viewModel.selectBenchmark(.sp500)
         return viewModel
+    }
+
+    /// 기록이 하나도 없는 첫 실행 상태. 요약도 추이도 계산할 근거가 없다.
+    @MainActor
+    static var previewWithoutRecords: PerformanceViewModel {
+        PerformanceViewModel(
+            calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase { _ in nil },
+            fetchNetWorthTrendUseCase: StubFetchNetWorthTrendUseCase { _, _, _ in [] },
+            compareBenchmarkUseCase: StubCompareBenchmarkUseCase { _, _, _ in
+                BenchmarkComparison(portfolio: [], benchmarks: [])
+            },
+            exchangeRateService: StubExchangeRateService(),
+            now: { PerformanceSampleData.now }
+        )
     }
 }
 

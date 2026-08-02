@@ -14,29 +14,33 @@ import SwiftUI
 ///
 /// 갱신에 실패하면 캡션이 그대로 `StaleBadge` 로 바뀐다. 콘텐츠 영역에 배지를 따로 띄우지
 /// 않는 이유는 이 캡션이 이미 "지금 보고 있는 숫자가 언제 것인지"를 말하는 자리이기 때문이다.
+///
+/// 값이 아니라 ViewModel 을 통째로 받는다. 액세서리는 `TabAccessoryHost` 가 **첫 등장 시점에
+/// 붙잡아 둔 클로저**로 그려지므로, 바깥에서 `freshness` 같은 값을 꺼내 넘기면 그 시점 값이
+/// 그대로 굳어 시세를 받아와도 캡션이 영영 "불러오는 중"에 머문다. 참조를 넘겨 이 안에서 읽으면
+/// Observation 이 추적해 정상적으로 다시 그려진다.
 struct NetWorthAccessory: View {
 
     // MARK: - Property
 
-    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    @Environment(\.accessoryLayout) private var layout
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private let freshness: QuoteFreshness
-    @Binding private var baseCurrency: Currency
+    @Bindable private var viewModel: NetWorthViewModel
+
+    private var freshness: QuoteFreshness { viewModel.freshness }
 
     // MARK: - Body
 
-    init(freshness: QuoteFreshness, baseCurrency: Binding<Currency>) {
-        self.freshness = freshness
-        _baseCurrency = baseCurrency
+    init(viewModel: NetWorthViewModel) {
+        _viewModel = Bindable(viewModel)
     }
 
     var body: some View {
         BottomAccessory {
             caption
-
-            Spacer(minLength: .spacingS)
-
-            CurrencyToggle(selection: $baseCurrency)
+        } trailing: {
+            CurrencyToggle(selection: $viewModel.baseCurrency)
         }
     }
 
@@ -44,42 +48,27 @@ struct NetWorthAccessory: View {
     private var caption: some View {
         switch freshness {
         case .unknown:
-            captionText(Constants.pendingCaption)
+            AccessoryCaption(Constants.pendingCaption)
 
         case let .fresh(date):
-            if isInline {
-                captionText(Constants.inlineCaption(at: timeText(date)))
-            } else {
-                Label(
-                    Constants.expandedCaption(at: timeText(date)),
-                    systemImage: Constants.refreshSymbolName
-                )
-                .hannunFont(.caption)
-                .foregroundStyle(Color.textSecondary)
-                .lineLimit(1)
-                .padding(.leading, .spacingS)
-            }
+            AccessoryCaption(
+                value: date.formatted(date: .omitted, time: .shortened),
+                suffix: captionSuffix
+            )
 
         case let .stale(since):
             staleBadge(since: since)
-                .padding(.leading, .spacingS)
         }
     }
 
     // MARK: - Function
 
-    private func captionText(_ text: String) -> some View {
-        Text(text)
-            .hannunFont(.caption)
-            .foregroundStyle(Color.textSecondary)
-            .lineLimit(1)
-            .padding(.leading, .spacingS)
-    }
-
-    private var isInline: Bool { placement == .inline }
-
-    private func timeText(_ date: Date) -> String {
-        date.formatted(date: .omitted, time: .shortened)
+    /// 축약 문구는 inline 만이 아니라 AX 사이즈에서도 쓴다 — 캡션을 숨기는 대신 줄인다.
+    /// "시세"를 빼도 통화 토글이 바로 옆에 있어 무슨 기준인지는 이미 읽힌다.
+    private var captionSuffix: String {
+        layout == .inline || dynamicTypeSize.isAccessibilitySize
+            ? Constants.inlineCaptionSuffix
+            : Constants.expandedCaptionSuffix
     }
 
     /// 시세를 한 번도 받지 못한 종목만 낡았다면 "몇 분 전"을 말할 근거가 없다.
@@ -99,11 +88,9 @@ struct NetWorthAccessory: View {
 }
 
 fileprivate enum Constants {
-    static let refreshSymbolName = "arrow.clockwise"
     static let pendingCaption = "시세 불러오는 중"
     static let unavailableQuoteMessage = "갱신 실패 · 시세 없는 종목 포함"
     static let secondsPerMinute: TimeInterval = 60
-
-    static func expandedCaption(at time: String) -> String { "\(time) 시세 기준" }
-    static func inlineCaption(at time: String) -> String { "\(time) 기준" }
+    static let expandedCaptionSuffix = "시세 기준"
+    static let inlineCaptionSuffix = "기준"
 }

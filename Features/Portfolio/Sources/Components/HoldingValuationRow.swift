@@ -118,10 +118,13 @@ private struct HoldingValuationRowPreview: View {
         VStack(spacing: 0) {
             HoldingValuationRow(valuation: stock, metric: metric) { metric = metric.next }
 
+            // 구분선은 행이 소유한 좌우 여백에서 끊는다 (시안 §6.2).
             Divider()
+                .padding(.horizontal, .spacingL)
 
             HoldingValuationRow(valuation: cash, metric: metric) {}
         }
+        .padding(.vertical, .spacingS)
         .background(Color.surfacePrimary, in: .hannunContainer())
         .padding(.spacingL)
         .background(Color.backgroundPrimary)

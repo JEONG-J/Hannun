@@ -35,6 +35,34 @@ enum HoldingMetric: CaseIterable {
     }
 }
 
+/// 카드 안 종목 행을 어떤 순서로 놓을지 (PF-1).
+///
+/// 카테고리 카드끼리의 순서는 여기서 바꾸지 않는다 — 순자산 탭 도넛 섹터와 같은 고정 순서라야
+/// 같은 색이 두 화면에서 같은 자산을 가리킨다.
+enum HoldingSortOrder: CaseIterable, Identifiable {
+    case marketValue
+    case returnRate
+    case name
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .marketValue: "평가금액순"
+        case .returnRate: "수익률순"
+        case .name: "가나다순"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .marketValue: "wonsign.circle"
+        case .returnRate: "percent"
+        case .name: "textformat"
+        }
+    }
+}
+
 /// 보유 종목 목록 화면 (PF-1, PF-4).
 @MainActor
 @Observable
@@ -52,23 +80,30 @@ final class PortfolioListViewModel {
     private(set) var lastLoadedAt: Date?
     private(set) var didLastRefreshFail = false
 
+    /// 검색 시작 시점을 알아야 접힌 카드를 펼 수 있어서 `search(_:)` 로만 바꾼다.
+    private(set) var searchText = ""
+
+    var sortOrder: HoldingSortOrder = .marketValue
     var selectedCategory: AssetCategory?
     var alertPrompt: AlertPrompt?
 
     private var collapsedCategories: Set<AssetCategory> = []
 
-    /// 선택된 카테고리만 남긴 뒤 카테고리별로 묶은 결과.
+    /// 목록이 비었을 때 검색 때문인지 카테고리 필터 때문인지 갈라 말하려고 쓴다.
+    var isSearching: Bool { !query.isEmpty }
+
+    private var query: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// 카테고리 필터와 검색어를 통과한 종목만 카테고리별로 묶은 결과.
     var sections: [PortfolioSection] {
         guard let loaded = valuations.value else { return [] }
 
-        let visible = loaded.filter {
-            selectedCategory == nil || $0.holding.category == selectedCategory
-        }
+        let visible = loaded.filter(isVisible)
 
         return AssetCategory.allCases.compactMap { category in
-            let items = visible
-                .filter { $0.holding.category == category }
-                .sorted { $0.marketValue.amount > $1.marketValue.amount }
+            let items = sorted(visible.filter { $0.holding.category == category })
 
             guard !items.isEmpty else { return nil }
             return PortfolioSection(category: category, subtotal: total(of: items), valuations: items)
@@ -80,7 +115,10 @@ final class PortfolioListViewModel {
         total(of: sections.flatMap(\.valuations))
     }
 
+    /// 검색 중에는 "총" 이라고 말할 수 없다 — 요약 바가 더하는 건 걸러 낸 종목뿐이다.
     var summaryTitle: String {
+        if isSearching { return Constants.searchSummaryTitle }
+
         guard let selectedCategory else { return Constants.totalSummaryTitle }
         return selectedCategory.title + Constants.summaryTitleSuffix
     }
@@ -151,6 +189,17 @@ final class PortfolioListViewModel {
 
     func selectCategory(_ category: AssetCategory?) {
         selectedCategory = category
+    }
+
+    /// 검색을 시작하는 순간 접어 둔 카드를 전부 펼친다 — 찾은 종목이 접힌 카드 안에 숨으면
+    /// 검색이 아무것도 못 찾은 것처럼 보인다.
+    func search(_ text: String) {
+        let wasIdle = !isSearching
+        searchText = text
+
+        if wasIdle, isSearching {
+            collapsedCategories.removeAll()
+        }
     }
 
     func cycleMetric() {
@@ -231,6 +280,45 @@ final class PortfolioListViewModel {
         }
     }
 
+    /// 티커도 함께 본다 — "삼성" 으로도 "005930" 으로도 같은 종목에 닿아야 하기 때문이다.
+    private func isVisible(_ valuation: HoldingValuation) -> Bool {
+        let holding = valuation.holding
+
+        guard selectedCategory == nil || holding.category == selectedCategory else { return false }
+        guard !query.isEmpty else { return true }
+
+        return holding.name.localizedStandardContains(query)
+            || holding.ticker.localizedStandardContains(query)
+    }
+
+    private func sorted(_ items: [HoldingValuation]) -> [HoldingValuation] {
+        switch sortOrder {
+        case .marketValue:
+            items.sorted { $0.marketValue.amount > $1.marketValue.amount }
+        case .returnRate:
+            items.sorted(by: hasHigherReturnRate)
+        case .name:
+            items.sorted {
+                $0.holding.name.localizedStandardCompare($1.holding.name) == .orderedAscending
+            }
+        }
+    }
+
+    /// 수익률이 없는 현금은 0% 로 치지 않고 뒤로 보낸다 — 손실 종목 위에 놓이면
+    /// "현금이 더 잘했다" 로 읽히는데, 애초에 비교 대상이 아니다.
+    private func hasHigherReturnRate(_ lhs: HoldingValuation, _ rhs: HoldingValuation) -> Bool {
+        switch (lhs.returnRate, rhs.returnRate) {
+        case let (left?, right?):
+            left > right
+        case (nil, .some):
+            false
+        case (.some, nil):
+            true
+        case (nil, nil):
+            lhs.marketValue.amount > rhs.marketValue.amount
+        }
+    }
+
     private func total(of valuations: [HoldingValuation]) -> Money {
         let amount = valuations.reduce(Decimal.zero) { $0 + $1.marketValue.amount }
         return Money(amount: amount, currency: ValuationSettings.baseCurrency)
@@ -240,6 +328,7 @@ final class PortfolioListViewModel {
 fileprivate enum Constants {
     static let featureName = "포트폴리오"
     static let totalSummaryTitle = "총 평가금액"
+    static let searchSummaryTitle = "검색 결과 평가금액"
     static let summaryTitleSuffix = " 평가금액"
     static let deleteMessage = "보유 기록이 사라집니다. 되돌릴 수 없어요."
 }

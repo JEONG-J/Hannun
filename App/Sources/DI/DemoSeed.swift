@@ -44,6 +44,9 @@ enum DemoSeed {
 
     /// 상승 빨강·하락 파랑 규칙을 한 화면에서 확인하려고 손실 종목(비트코인)을 섞어 둔다.
     ///
+    /// 국내주식만 두 종목인 이유는 카테고리 카드의 행 구조 때문이다 — 한 카드에 행이 둘은
+    /// 있어야 행 사이 구분선과 카드 안 정렬이 화면에서 보인다.
+    ///
     /// 현재가를 `manualPrice` 로 고정하는 이유는 시세 폴백 순서 때문이다 — 시뮬레이터에서
     /// KIS·업비트 응답이 비면 평단가로 내려가서 손익이 전부 0 으로 보인다.
     private static func insertHoldings(into context: ModelContext) -> [String: Holding] {
@@ -62,6 +65,16 @@ enum DemoSeed {
                 quantity: 120,
                 averagePrice: 71_500,
                 manualPrice: 84_300,
+                createdAt: date(2026, 1, 8),
+                updatedAt: date(2026, 7, 30)
+            ),
+            HoldingRecord(
+                category: .domesticStock,
+                name: "SK하이닉스",
+                ticker: "000660",
+                quantity: 15,
+                averagePrice: 198_400,
+                manualPrice: 217_000,
                 createdAt: date(2026, 1, 8),
                 updatedAt: date(2026, 7, 30)
             ),

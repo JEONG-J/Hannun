@@ -44,6 +44,9 @@ enum HoldingSortOrder: CaseIterable, Identifiable {
     case returnRate
     case name
 
+    /// 목록을 처음 여는 순서. 툴바가 "정렬을 건드렸는지" 를 이 값과 견주어 판단한다.
+    static let initial: Self = .marketValue
+
     var id: Self { self }
 
     var title: String {
@@ -83,7 +86,7 @@ final class PortfolioListViewModel {
     /// 검색 시작 시점을 알아야 접힌 카드를 펼 수 있어서 `search(_:)` 로만 바꾼다.
     private(set) var searchText = ""
 
-    var sortOrder: HoldingSortOrder = .marketValue
+    var sortOrder: HoldingSortOrder = .initial
     var selectedCategory: AssetCategory?
     var alertPrompt: AlertPrompt?
 
@@ -91,6 +94,10 @@ final class PortfolioListViewModel {
 
     /// 목록이 비었을 때 검색 때문인지 카테고리 필터 때문인지 갈라 말하려고 쓴다.
     var isSearching: Bool { !query.isEmpty }
+
+    /// 기본 순서를 벗어났는지. 정렬은 행 순서만 조용히 바꾸므로 메뉴를 열기 전에는 무엇으로
+    /// 정렬 중인지 알 방법이 없다 — 툴바 아이콘이 이 값으로 그 사실을 대신 알린다.
+    var isSortAdjusted: Bool { sortOrder != .initial }
 
     private var query: String {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -267,6 +274,9 @@ final class PortfolioListViewModel {
             )
 
             valuations = .loaded(loaded)
+            // 종목이 하나도 없으면 화면에서 검색창 자체가 사라진다. 검색어를 남겨 두면 다음에
+            // 종목을 넣었을 때 보이지 않는 검색어가 그 종목을 걸러 낸다.
+            if loaded.isEmpty { searchText = "" }
             lastLoadedAt = Date()
             didLastRefreshFail = false
         } catch {

@@ -47,7 +47,7 @@ struct PortfolioListView: View {
     var body: some View {
         @Bindable var router = router
 
-        content
+        searchableContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.backgroundPrimary)
             .navigationTitle(Constants.screenTitle)
@@ -55,10 +55,6 @@ struct PortfolioListView: View {
                 sortToolbarItem
                 cashFlowToolbarItem
             }
-            .searchable(text: searchQuery, prompt: Constants.searchPrompt)
-            // 검색창을 펼친 채 두면 목록 위 한 줄을 상시로 먹는다. 최소화하면 오른쪽 위
-            // 돋보기 버튼으로 접혀 시안의 콘텐츠 열이 그대로 남는다.
-            .searchToolbarBehavior(.minimize)
             .alertPrompt(item: $viewModel.alertPrompt)
             .sheet(item: $router.holdingEditor) { mode in
                 HoldingEditorView(
@@ -79,22 +75,54 @@ struct PortfolioListView: View {
             }
     }
 
+    /// 종목이 하나도 없으면 검색창을 아예 달지 않는다 — 신규 설치 사용자가 처음 보는 화면이
+    /// 그 화면인데, 거기 놓인 돋보기는 눌러도 걸릴 게 없다.
+    ///
+    /// 분기를 `content` 만 감싸는 안쪽에 두는 이유는 `task`·`sheet` 때문이다. 바깥 modifier
+    /// 체인이 그대로 남아야 첫 종목이 들어와 검색창이 생길 때 화면 로딩이 다시 돌지 않는다.
+    @ViewBuilder
+    private var searchableContent: some View {
+        if viewModel.hasHoldings {
+            content
+                .searchable(text: searchQuery, prompt: Constants.searchPrompt)
+                // 검색창을 펼친 채 두면 목록 위 한 줄을 상시로 먹는다. 최소화하면 오른쪽 위
+                // 돋보기 버튼으로 접혀 시안의 콘텐츠 열이 그대로 남는다.
+                .searchToolbarBehavior(.minimize)
+        } else {
+            content
+        }
+    }
+
     /// 정렬은 "지금 보고 있는 목록이 어떤 상태인가" 라 왼쪽에 둔다. 오른쪽 검색·입출금은
-    /// 새 작업을 여는 컨트롤이라 성격이 다르다.
+    /// 새 작업을 여는 컨트롤이라 성격이 다르다. 정렬할 종목이 없으면 검색과 함께 사라진다.
+    @ToolbarContentBuilder
     private var sortToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Menu {
-                Picker(Constants.sortTitle, selection: $viewModel.sortOrder) {
-                    ForEach(HoldingSortOrder.allCases) { order in
-                        Label(order.title, systemImage: order.symbolName)
-                            .tag(order)
+        if viewModel.hasHoldings {
+            ToolbarItem(placement: .topBarLeading) {
+                Menu {
+                    Picker(Constants.sortTitle, selection: $viewModel.sortOrder) {
+                        ForEach(HoldingSortOrder.allCases) { order in
+                            Label(order.title, systemImage: order.symbolName)
+                                .tag(order)
+                        }
                     }
+                    .pickerStyle(.inline)
+                } label: {
+                    Label(Constants.sortTitle, systemImage: sortSymbolName)
                 }
-                .pickerStyle(.inline)
-            } label: {
-                Label(Constants.sortTitle, systemImage: Constants.sortSymbolName)
+                // 아이콘만으로는 "정렬을 건드렸다" 까지만 말한다. 무엇으로 정렬했는지는
+                // 눈으로 메뉴를 열어 봐야 알 수 있어서, 음성으로는 값을 직접 읽어 준다.
+                .accessibilityValue(viewModel.sortOrder.title)
             }
         }
+    }
+
+    /// 기본 순서를 벗어나면 채운 아이콘으로 바꾼다 — 정렬은 카드 안 행 순서만 조용히 바꾸므로
+    /// 표시가 없으면 "왜 순서가 이렇지" 로 남는다.
+    private var sortSymbolName: String {
+        viewModel.isSortAdjusted
+            ? Constants.adjustedSortSymbolName
+            : Constants.sortSymbolName
     }
 
     /// `searchText` 를 직접 묶지 않는 이유는 검색이 시작될 때 접힌 카드를 펴야 하기 때문이다.
@@ -270,7 +298,8 @@ fileprivate enum Constants {
     static let cashFlowSymbolName = "arrow.left.arrow.right"
     static let searchPrompt = "종목명·티커 검색"
     static let sortTitle = "정렬"
-    static let sortSymbolName = "arrow.up.arrow.down"
+    static let sortSymbolName = "arrow.up.arrow.down.circle"
+    static let adjustedSortSymbolName = "arrow.up.arrow.down.circle.fill"
     static let allCategoriesTitle = "전체"
     static let addHoldingTitle = "종목 추가"
     static let retryTitle = "다시 시도"

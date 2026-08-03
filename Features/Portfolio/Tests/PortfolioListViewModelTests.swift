@@ -181,6 +181,45 @@ struct PortfolioListViewModelTests {
         #expect(viewModel.sections.first?.valuations.map(\.holding.name) == ["손실", "이익"])
     }
 
+    @Test("기본 순서를 벗어날 때만 정렬을 건드렸다고 본다")
+    func marksSortAdjustedOutsideInitialOrder() {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository()
+        )
+
+        #expect(viewModel.sortOrder == .initial)
+        #expect(viewModel.isSortAdjusted == false)
+
+        viewModel.sortOrder = .returnRate
+        #expect(viewModel.isSortAdjusted)
+
+        viewModel.sortOrder = .initial
+        #expect(viewModel.isSortAdjusted == false)
+    }
+
+    /// 검색창은 종목이 있을 때만 화면에 붙는다. 마지막 종목을 지운 뒤에도 검색어가 남아
+    /// 있으면, 다음에 넣은 종목이 보이지 않는 검색어에 걸려 사라진다.
+    @Test("마지막 종목이 사라지면 검색어도 함께 지운다")
+    func clearsSearchWhenLastHoldingDisappears() async {
+        let repository = InMemoryHoldingRepository(records)
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: repository,
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.search("삼성")
+        #expect(viewModel.isSearching)
+
+        for id in [cashID, domesticID, overseasID] {
+            await viewModel.delete(id: id)
+        }
+
+        #expect(viewModel.hasHoldings == false)
+        #expect(viewModel.searchText.isEmpty)
+        #expect(viewModel.isSearching == false)
+    }
+
     @Test("검색어는 종목명과 티커를 모두 본다", arguments: ["삼성", "005930", "005"])
     func searchesNameAndTicker(_ keyword: String) async {
         let viewModel = PortfolioTestFactory.listViewModel(

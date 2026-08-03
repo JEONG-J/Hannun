@@ -59,6 +59,33 @@ struct AmountFormatterTests {
         #expect(AmountFormatter.percentPlotValue(ratio: 0) == 0)
     }
 
+    /// 0 은 등락이 아니라 **기준선**이다. `+0%` 로 찍으면 오른 것처럼 읽힌다.
+    @Test("Y축 0 눈금에는 부호를 붙이지 않는다")
+    func axisBaselineLabelHasNoSign() {
+        #expect(AmountFormatter.percentAxisLabel(plotValue: 0) == "0%")
+        #expect(AmountFormatter.percentAxisLabel(plotValue: 5) == "+5%")
+        #expect(AmountFormatter.percentAxisLabel(plotValue: -5) == "-5%")
+    }
+
+    /// 진폭이 1% 도 안 되는 구간에서는 눈금이 전부 `0%` 로 뭉개지므로 정수로 자르지 않는다.
+    /// 반대로 정수 눈금에 `.0` 이 붙으면 축이 시끄러워진다 — 필요한 자리만 남긴다.
+    @Test("Y축 눈금은 소수 한 자리까지만 남긴다")
+    func axisLabelKeepsOneFractionDigitAtMost() {
+        #expect(AmountFormatter.percentAxisLabel(plotValue: 9.4) == "+9.4%")
+        #expect(AmountFormatter.percentAxisLabel(plotValue: 0.5) == "+0.5%")
+        #expect(AmountFormatter.percentAxisLabel(plotValue: 12.34) == "+12.3%")
+        #expect(AmountFormatter.percentAxisLabel(plotValue: 10) == "+10%")
+    }
+
+    /// 축 값은 `percentPlotValue(ratio:)` 가 옮긴 눈금 위에 있다 — 둘이 다른 배율을 쓰면
+    /// 라벨이 실제 선 위치와 어긋난다.
+    @Test("Y축 라벨은 플롯 값과 같은 눈금을 읽는다")
+    func axisLabelReadsPlotScale() {
+        let plotValue = AmountFormatter.percentPlotValue(ratio: 0.094)
+
+        #expect(AmountFormatter.percentAxisLabel(plotValue: plotValue) == "+9.4%")
+    }
+
     @Test("수량은 값에 맞춰 소수부를 줄인다")
     func quantityTrimsFractionDigits() {
         #expect(AmountFormatter.quantity(10) == "10")

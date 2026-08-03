@@ -174,6 +174,22 @@ extension PerformanceViewModel {
         return viewModel
     }
 
+    /// 지수는 골랐지만 비교를 꺼 둔 상태. 액세서리 범례 dot 이 중립으로 내려가는지 본다.
+    @MainActor
+    static var previewWithOverlayOff: PerformanceViewModel {
+        let viewModel = PerformanceViewModel.preview
+        viewModel.toggleBenchmarkOverlay()
+        return viewModel
+    }
+
+    /// 아직 아무 지수도 고르지 않은 상태. dot 자리가 비어 폭이 흔들리지 않는지 본다.
+    @MainActor
+    static var previewWithoutBenchmark: PerformanceViewModel {
+        let viewModel = PerformanceViewModel.preview
+        viewModel.selectBenchmark(nil)
+        return viewModel
+    }
+
     /// 기록이 하나도 없는 첫 실행 상태. 요약도 추이도 계산할 근거가 없다.
     @MainActor
     static var previewWithoutRecords: PerformanceViewModel {

@@ -29,7 +29,11 @@ public struct TrendPoint: Identifiable, Equatable, Sendable {
     }
 }
 
-/// 오버레이할 벤치마크 계열. 색은 선택된 칩 색과 반드시 같아야 한다 — 칩이 곧 범례다.
+/// 오버레이할 벤치마크 계열.
+///
+/// 색은 **카테고리 원색**이며 액세서리 dot 과 같은 토큰이어야 한다 — 그 dot 이 이 차트의
+/// 유일한 범례다(UI 스펙 §4.3). 중립색으로 그리면 dot 이 가리키는 선이 화면에 없어진다.
+/// 주선과의 위계는 색이 아니라 굵기(1pt)와 불투명도(60%)로 만든다.
 public struct TrendSeries: Identifiable, Equatable, Sendable {
 
     // MARK: - Property
@@ -53,6 +57,13 @@ public struct TrendSeries: Identifiable, Equatable, Sendable {
 ///
 /// 배경에 glass 를 깔지 않는다 — 차트는 콘텐츠지 떠 있는 기능 레이어가 아니다.
 /// 불투명 `surfacePrimary` 카드 위에 얹어 쓴다.
+///
+/// ## 축은 시안과 다르다
+///
+/// 시안(§6.3)에는 0% 기준선도 Y축 라벨도 없다. 정규화 값을 그리는 이상 둘 다 없으면
+/// 선 모양만 남아 "얼마나" 에 답하지 못한다 — 내려간 구간이 손실인지 고점 대비 조정인지,
+/// 벤치마크와 벌어진 간격이 1%p 인지 10%p 인지 읽히지 않는다. 대신 눈금선(grid)은 긋지
+/// 않아 시안의 빈 플롯을 최대한 지킨다: 라벨 3개와 기준선 하나가 전부다.
 public struct TrendLineChart: View {
 
     // MARK: - Property
@@ -91,6 +102,15 @@ public struct TrendLineChart: View {
 
     private var chart: some View {
         Chart {
+            // 정규화 기준(기간 시작 = 0%). 이 선이 없으면 내려간 구간이 손실인지 고점 대비
+            // 조정인지 구분되지 않는다. 데이터가 아니라 눈금이므로 점선으로 그어 실선인
+            // 두 계열과 섞이지 않게 한다.
+            RuleMark(y: .value(Constants.valueLabel, Constants.baselineValue))
+                .foregroundStyle(Color.neutral)
+                .lineStyle(
+                    StrokeStyle(lineWidth: Constants.baselineWidth, dash: Constants.baselineDash)
+                )
+
             ForEach(benchmarks) { series in
                 ForEach(series.points) { point in
                     LineMark(
@@ -125,8 +145,11 @@ public struct TrendLineChart: View {
             }
 
             if let selectedPoint {
+                // `separator` 는 흰 `surfacePrimary` 위에서 대비가 1.3:1 이라 스크럽 중인
+                // 위치가 보이지 않는다. 기준선과 같은 중립색을 쓰되 실선으로 그어 —
+                // 세로/실선 대 가로/점선이라 둘이 헷갈리지 않는다.
                 RuleMark(x: .value(Constants.dateLabel, selectedPoint.date))
-                    .foregroundStyle(Color.separator)
+                    .foregroundStyle(Color.neutral)
                     .lineStyle(StrokeStyle(lineWidth: Constants.indicatorLineWidth))
 
                 PointMark(
@@ -137,7 +160,20 @@ public struct TrendLineChart: View {
             }
         }
         .chartLegend(.hidden)
-        .chartYAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(
+                position: .trailing,
+                values: .automatic(desiredCount: Constants.axisLabelCount)
+            ) { value in
+                if let plotValue = value.as(Double.self) {
+                    AxisValueLabel {
+                        Text(AmountFormatter.percentAxisLabel(plotValue: plotValue))
+                            .font(.hannun(.caption, tabularFigures: true))
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
+            }
+        }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: Constants.axisLabelCount)) { _ in
                 AxisValueLabel()
@@ -193,6 +229,11 @@ fileprivate enum Constants {
     static let indicatorLineWidth: CGFloat = 1
     static let benchmarkOpacity = 0.6
     static let areaTopOpacity = 0.3
+    /// 정규화 기준. 값이 아니라 규칙이라 상수로 둔다.
+    static let baselineValue = 0.0
+    static let baselineWidth: CGFloat = 1
+    static let baselineDash: [CGFloat] = [4, 3]
+    /// X·Y 축 공통. 눈금이 이보다 촘촘하면 320pt 플롯에서 라벨이 서로 붙는다.
     static let axisLabelCount = 3
     static let dateLabel = "날짜"
     static let valueLabel = "수익률"
@@ -210,6 +251,10 @@ private struct TrendLineChartPreview: View {
     )
     private let benchmarkReturns = TrendLineChartPreview.series(
         seed: [0, 0.8, 1.6, 1.1, 2.4, 3.6, 3.2, 5.1]
+    )
+    /// 기준선을 플롯 한가운데 두는 표본. 0% 선이 실제로 손익을 가르는지 이 케이스로 본다.
+    private let losingReturns = TrendLineChartPreview.series(
+        seed: [0, -1.8, 0.6, -2.4, -4.1, -1.2, -3.6, -5.2]
     )
 
     @State private var selection: Date?
@@ -238,6 +283,14 @@ private struct TrendLineChartPreview: View {
                         points: benchmarkReturns
                     ),
                 ],
+                insufficientDataMessage: "데이터가 쌓이면 추이가 표시됩니다",
+                selection: $selection
+            )
+            .padding(.spacingL)
+            .background(Color.surfacePrimary, in: .hannunContainer())
+
+            TrendLineChart(
+                points: losingReturns,
                 insufficientDataMessage: "데이터가 쌓이면 추이가 표시됩니다",
                 selection: $selection
             )
@@ -278,5 +331,12 @@ private struct TrendLineChartPreview: View {
     ScrollView { TrendLineChartPreview() }
         .background(Color.backgroundPrimary)
         .preferredColorScheme(.dark)
+}
+
+/// 축 라벨이 커지면 플롯 폭이 줄어든다. 라벨끼리 겹치지 않는지 최대 사이즈로 확인한다.
+#Preview("추이 차트 · AX5") {
+    ScrollView { TrendLineChartPreview() }
+        .background(Color.backgroundPrimary)
+        .dynamicTypeSize(.accessibility5)
 }
 #endif

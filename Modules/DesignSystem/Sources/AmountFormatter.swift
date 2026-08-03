@@ -110,6 +110,24 @@ public enum AmountFormatter {
         NSDecimalNumber(decimal: ratio * Constants.percentScale).doubleValue
     }
 
+    /// 차트 Y축 눈금 라벨 — `+9%` · `0%` · `-3%`.
+    ///
+    /// `percentPlotValue(ratio:)` 가 옮겨 놓은 백분율 눈금을 그대로 받는다. 축은 라벨을 놓을
+    /// 폭이 좁아 소수부를 한 자리로 자르되, 진폭이 1% 도 안 되는 구간에서는 눈금이 전부
+    /// `0%` 로 뭉개지므로 정수로 고정하지는 않는다.
+    ///
+    /// 0 에는 부호를 붙이지 않는다 — 0% 는 등락이 아니라 **기준선**이고, `+0%` 는 오른 것처럼
+    /// 읽힌다.
+    public static func percentAxisLabel(plotValue: Double) -> String {
+        let rounded = (plotValue * Constants.axisRoundingScale).rounded()
+            / Constants.axisRoundingScale
+        let magnitude = abs(rounded).formatted(
+            .number.precision(.fractionLength(0...Constants.compactPercentFractionDigits))
+        )
+        let sign = sign(of: Decimal(rounded), showsPositiveSign: true)
+        return sign + magnitude + Constants.percentUnit
+    }
+
     /// 소수 자릿수를 값에 맞춰 줄인다 — 10주는 `10`, 0.0521 BTC 는 `0.0521` 로 찍힌다.
     public static func quantity(_ value: Decimal, unit: String? = nil) -> String {
         let number = value.formatted(
@@ -225,6 +243,9 @@ fileprivate enum Constants {
     /// 캡션 폭에서는 소수 한 자리까지가 정보, 그 아래는 노이즈다.
     static let compactPercentFractionDigits = 1
     static let percentScale: Decimal = 100
+    /// 축 라벨을 소수 한 자리에서 끊기 위한 반올림 배율.
+    static let axisRoundingScale: Double = 10
+    static let percentUnit = "%"
     static let percentagePointUnit = "%p"
     static let hundredMillion: Decimal = 100_000_000
     static let tenMillion: Decimal = 10_000_000

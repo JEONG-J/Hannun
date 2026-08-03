@@ -40,9 +40,12 @@ struct PerformanceContentView: View {
                     }
 
                 // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
-                // 쌓이면…" 안내가 같은 화면에 두 번 나온다.
+                // 쌓이면…" 안내가 같은 화면에 두 번 나온다. 캘린더도 같이 감춘다 — 기록이
+                // 없으면 어느 달로 넘겨도 빈 격자라 넘길 이유 자체가 없다.
                 if !viewModel.hasNoRecords {
                     chartCard
+
+                    MonthlyReturnCard(viewModel: viewModel)
                 }
             }
             .padding(.horizontal, .spacingL)

@@ -255,8 +255,13 @@ private struct CalendarHeatmapDayCell: View {
             .buttonStyle(.plain)
             .accessibilityLabel(accessibilityLabel)
         } else {
+            // 버튼이 아니어도 **프레임은 같아야 한다**. 이 갈래가 맨 텍스트면 높이가 글자
+            // 높이(약 15pt)로 주저앉는다. 기록이 하나라도 있는 주는 옆 셀이 44pt 로 행을
+            // 붙들어 티가 안 나지만, 한 주가 통째로 비면 그 줄만 눌려 격자가 어긋난다
+            // (앞뒤 빈 칸은 `Color.clear` 가 정사각형을 유지해 이 문제가 없다).
             dayNumberText
                 .foregroundStyle(Color.textSecondary)
+                .frame(minWidth: .minimumTouchTarget, minHeight: .minimumTouchTarget)
                 .accessibilityLabel(accessibilityLabel)
         }
     }

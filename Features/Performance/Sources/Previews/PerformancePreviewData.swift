@@ -153,6 +153,54 @@ enum PerformanceSampleData {
     }
 }
 
+/// 캘린더 카드 전용 표본 — 2026년 7월 하루치 기록들.
+///
+/// `PerformanceSampleData` 는 26일 간격 8개 점이라 한 달 격자에 한 칸밖에 남지 않는다.
+/// 캘린더가 실제로 무엇을 그리는지 보려면 일 단위 표본이 따로 필요하다.
+///
+/// 표본이 일부러 담고 있는 것:
+/// - **6월 30일** — 7월 1일의 전일 총자산을 만드는 하루. 결과에서는 걸러져야 한다.
+/// - **7일** — 전날과 누적 등락률이 같아 일간 수익률이 정확히 0% 인 날(`neutral`).
+/// - **12~18일** — 통째로 비운 한 주. 기록 없는 주가 어떻게 그려지는지 본다.
+enum PerformanceCalendarSampleData {
+
+    // MARK: - Property
+
+    /// 2026년 7월 1일 00:00 UTC.
+    static let monthStart = Date(timeIntervalSince1970: 1_782_864_000)
+
+    static let points: [NetWorthTrendPoint] = samples.map {
+        NetWorthTrendPoint(
+            date: date(offsetBy: $0.dayOffset),
+            total: .krw(Constants.openingTotal * (1 + $0.cumulativeRate))
+        )
+    }
+
+    static let comparison = BenchmarkComparison(
+        portfolio: samples.map {
+            BenchmarkPoint(date: date(offsetBy: $0.dayOffset), rate: $0.cumulativeRate)
+        },
+        benchmarks: []
+    )
+
+    /// `dayOffset` 0 이 7월 1일, -1 이 그 전날이다. `cumulativeRate` 는 6월 30일을 0 으로 둔
+    /// 누적 등락률 — 일간 수익률은 `DailyReturn.series` 가 이웃한 두 값의 차로 되돌린다.
+    private static let samples: [(dayOffset: Int, cumulativeRate: Decimal)] = [
+        (-1, 0), (0, 0.004), (1, 0.010), (2, 0.008), (3, 0.022),
+        (4, 0.021), (5, 0.030), (6, 0.030), (7, 0.012), (8, 0.004),
+        (9, 0.018), (10, 0.040),
+        (18, 0.036), (19, 0.050), (20, 0.049), (21, 0.062), (22, 0.041),
+        (23, 0.055), (24, 0.070), (25, 0.068), (26, 0.082), (27, 0.079),
+        (28, 0.094), (29, 0.090), (30, 0.104),
+    ]
+
+    // MARK: - Function
+
+    private static func date(offsetBy dayOffset: Int) -> Date {
+        monthStart.addingTimeInterval(Constants.secondsPerDay * Double(dayOffset))
+    }
+}
+
 extension PerformanceViewModel {
     /// 프리뷰용 인스턴스. 화면이 `.task` 로 `loadIfNeeded()` 를 부르면 표본이 채워진다.
     @MainActor
@@ -202,6 +250,43 @@ extension PerformanceViewModel {
         return viewModel
     }
 
+    /// 캘린더 카드 전용. 차트에는 같은 표본이 한 달치만 들어가 어울리지 않으므로 이 인스턴스는
+    /// `MonthlyReturnCard` 프리뷰에서만 쓴다.
+    @MainActor
+    static var previewWithCalendar: PerformanceViewModel {
+        PerformanceViewModel(
+            calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase { _ in
+                PerformanceSampleData.ytdReturn
+            },
+            fetchNetWorthTrendUseCase: StubFetchNetWorthTrendUseCase { _, _, _ in
+                PerformanceCalendarSampleData.points
+            },
+            compareBenchmarkUseCase: StubCompareBenchmarkUseCase { _, _, _ in
+                PerformanceCalendarSampleData.comparison
+            },
+            exchangeRateService: StubExchangeRateService(),
+            now: { PerformanceSampleData.now }
+        )
+    }
+
+    /// 캘린더 조회만 실패한 상태. 카드 안 실패 문구와 "다시 시도" 가 어떻게 보이는지 본다.
+    @MainActor
+    static var previewWithCalendarFailure: PerformanceViewModel {
+        PerformanceViewModel(
+            calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase { _ in
+                PerformanceSampleData.ytdReturn
+            },
+            fetchNetWorthTrendUseCase: StubFetchNetWorthTrendUseCase { _, _, _ in
+                throw AppError.network("시세 서버 응답 없음")
+            },
+            compareBenchmarkUseCase: StubCompareBenchmarkUseCase { _, _, _ in
+                PerformanceCalendarSampleData.comparison
+            },
+            exchangeRateService: StubExchangeRateService(),
+            now: { PerformanceSampleData.now }
+        )
+    }
+
     /// 기록이 하나도 없는 첫 실행 상태. 요약도 추이도 계산할 근거가 없다.
     @MainActor
     static var previewWithoutRecords: PerformanceViewModel {
@@ -220,6 +305,7 @@ extension PerformanceViewModel {
 fileprivate enum Constants {
     /// 26일. 8개 점이 한 해를 고르게 덮는 간격이다.
     static let interval: TimeInterval = 60 * 60 * 24 * 26
+    static let secondsPerDay: TimeInterval = 60 * 60 * 24
     static let openingTotal: Decimal = 120_000_000
 }
 #endif

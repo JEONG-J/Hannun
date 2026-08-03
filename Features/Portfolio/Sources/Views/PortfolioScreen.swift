@@ -41,33 +41,37 @@ struct PortfolioScreen: View {
     }
 
     var body: some View {
-        NavigationStack(path: $router.path) {
-            PortfolioListView(
-                viewModel: viewModel,
-                container: container,
-                errorHandler: errorHandler
-            )
-            .navigationDestination(for: PortfolioRoute.self) { route in
-                destination(for: route)
-            }
+        NavigationStack {
+            routedScreen
         }
         // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
-        // 등록 클로저가 `NavigationStack` 바깥에서 실행돼도 push 가 되는 이유는, 스택의
-        // path 를 들고 있는 라우터를 여기서 참조로 붙잡기 때문이다.
+        // 등록 클로저가 `NavigationStack` 바깥에서 실행돼도 화면이 바뀌는 이유는, 어떤 면을
+        // 걸지 들고 있는 라우터를 여기서 참조로 붙잡기 때문이다.
         .tabAccessory(.portfolio) {
-            PortfolioActionAccessory(viewModel: self.viewModel) {
-                self.router.showCashFlowList()
-            }
+            PortfolioActionAccessory(viewModel: self.viewModel, router: self.router)
         }
         .environment(router)
     }
 
     // MARK: - Function
 
+    /// 스택에 쌓지 않고 루트를 통째로 바꾼다. 두 화면이 각자 `navigationTitle` 과 툴바를
+    /// 들고 있어, 바뀌는 순간 상단이 함께 갈리는 것으로 "면이 넘어갔다"는 신호가 나온다.
+    ///
+    /// 입출금 기록은 이때마다 다시 만들어져 `task` 가 새로 돈다. 이 탭에 머무는 내내 살려
+    /// 둘 만큼 무거운 화면이 아니고, 오히려 종목을 손보고 돌아왔을 때 목록이 갱신돼 있는
+    /// 편이 맞다. 반대로 종목 목록의 검색어·정렬·필터는 탭 루트가 쥔 ViewModel 에 있어
+    /// 화면이 새로 만들어져도 그대로다.
     @ViewBuilder
-    private func destination(for route: PortfolioRoute) -> some View {
-        switch route {
-        case .cashFlowList:
+    private var routedScreen: some View {
+        switch router.route {
+        case .holdings:
+            PortfolioListView(
+                viewModel: viewModel,
+                container: container,
+                errorHandler: errorHandler
+            )
+        case .cashFlow:
             CashFlowListView(container: container, errorHandler: errorHandler)
         }
     }

@@ -43,11 +43,21 @@ import SwiftUI
 ///
 /// ## 동작이 하나뿐이면 캡슐째 버튼으로 쓴다
 ///
-/// 탭이 가진 동작이 하나이고 그게 **상태를 뒤집는 것**뿐이면, 이 컨테이너를 통째로 `Button`
-/// 라벨에 넣는다. 오른쪽 글자 하나만 눌리게 두면 좁은 과녁 하나를 위해 캡슐 나머지가 죽는다.
-/// 그때 오른쪽은 컨트롤이 아니라 **현재 상태를 적은 라벨**이므로 알약도 테두리도 씌우지 않는다
-/// (순자산 탭의 통화 전환). 열 대상이 여럿이거나 왼쪽·오른쪽이 서로 다른 곳으로 가는 탭에는
-/// 쓸 수 없다 — 캡슐 어디를 눌러도 같은 일이 일어나야 성립한다.
+/// 탭이 가진 동작이 하나이고 그게 **두 값을 뒤집는 것**뿐이면 — 통화든(순자산) 탭이 보여 주는
+/// 면이든(포트폴리오) — 이 컨테이너를 통째로 `Button` 라벨에 넣는다. 오른쪽 글자 하나만
+/// 눌리게 두면 좁은 과녁 하나를 위해 캡슐 나머지가 죽는다. 그때 오른쪽은 컨트롤이 아니라
+/// **글자 라벨**이므로 알약도 테두리도 씌우지 않는다 — 캡슐 자체가 과녁인데 그 안에 또 과녁을
+/// 그리면 "여기만 눌린다"는 거짓 신호가 된다. 열 대상이 여럿이거나 왼쪽·오른쪽이 서로 다른
+/// 곳으로 가는 탭에는 쓸 수 없다 — 캡슐 어디를 눌러도 같은 일이 일어나야 성립한다.
+///
+/// 라벨에 현재 값을 적을지 눌러서 갈 곳을 적을지는 **그 자리가 무엇의 이름인지**가 정한다.
+/// 순자산 오른쪽은 왼쪽 금액이 무슨 통화인지를 말하는 값이라 현재를 적고(KRW 화면에 USD 라고
+/// 쓰여 있을 수는 없다), 포트폴리오 오른쪽은 목적지 이름이라 갈 곳을 적는다. 어느 쪽이든
+/// 누르면 무엇이 되는지는 `accessibilityHint` 가 말한다.
+///
+/// 이건 어포던스를 새로 만드는 게 아니라 이미 있는 컨트롤의 **과녁을 캡슐 폭까지 넓히는**
+/// 일이다. 그래서 확장(시트가 열리는 스트립)의 `chevron.up` 규칙과 무관하고, 글리프도 붙이지
+/// 않는다 — 붙이면 누르면 무언가 열린다는 뜻이 되어 버린다.
 ///
 /// 이때 이 컨테이너에 `.frame(maxHeight: .infinity)` 와 `.contentShape(.rect)` 를 반드시
 /// 같이 건다. 버튼의 히트 영역은 라벨이 **그린 픽셀**이라, 없으면 왼쪽 문구와 오른쪽 라벨
@@ -132,6 +142,7 @@ private struct BottomAccessoryPreview: View {
     private let layout: AccessoryLayout
 
     @State private var currency: Currency = .krw
+    @State private var showsCashFlow = false
     @State private var isComparing = true
 
     // MARK: - Body
@@ -163,7 +174,7 @@ private struct BottomAccessoryPreview: View {
             .glassEffect(.regular, in: .capsule)
     }
 
-    /// 캡슐째 버튼인 변형. 오른쪽은 컨트롤이 아니라 지금 보고 있는 통화를 적은 라벨이다.
+    /// 캡슐째 버튼인 변형 — 오른쪽은 컨트롤이 아니라 **지금** 보고 있는 통화를 적은 라벨이다.
     private var netWorthAccessory: some View {
         Button {
             currency = currency == .krw ? .usd : .krw
@@ -182,12 +193,27 @@ private struct BottomAccessoryPreview: View {
         .buttonStyle(.plain)
     }
 
+    /// 같은 캡슐째 버튼이지만 오른쪽이 **갈 화면**의 이름이다. 두 변형을 나란히 두는 이유가
+    /// 이 대비다 — 캡슐 문법은 하나인데 라벨이 가리키는 시점이 다르다.
     private var portfolioAccessory: some View {
-        BottomAccessory {
-            AccessoryCaption(.value("12종목"), .plain("· 12:04 기준"))
-        } trailing: {
-            AccessoryActionButton("종목 추가", systemImageName: "plus") {}
+        Button {
+            showsCashFlow.toggle()
+        } label: {
+            BottomAccessory {
+                AccessoryCaption(.value("12종목"), .plain("· 12:04 기준"))
+            } trailing: {
+                Label(
+                    showsCashFlow ? "포트폴리오" : "입출금 기록",
+                    systemImage: "arrow.left.arrow.right"
+                )
+                .hannunFont(.pillLabel)
+                .foregroundStyle(Color.brand)
+                .frame(minHeight: .minimumTouchTarget)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
     }
 
     private var performanceAccessory: some View {

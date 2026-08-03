@@ -109,7 +109,7 @@ struct PortfolioListView: View {
                     }
                     .pickerStyle(.inline)
 
-                    categoryFilterSection
+                    categoryFilterMenu
                 } label: {
                     Label(Constants.listControlTitle, systemImage: listControlSymbolName)
                 }
@@ -118,13 +118,19 @@ struct PortfolioListView: View {
         }
     }
 
-    /// 카테고리는 동시에 여러 개를 켤 수 있어 `Picker` 가 아니라 `Toggle` 이다 — 메뉴 안
-    /// `Toggle` 은 체크마크로 그려져 `Picker` 와 같은 결로 읽히면서 다중 선택을 표현한다.
+    /// 카테고리를 정렬과 같은 층에 펼치면 여섯 줄이 더 붙어 메뉴 하나가 화면 절반을 먹는다.
+    /// 한 겹 접어 두면 부모 메뉴는 "정렬 세 줄 + 카테고리 한 줄" 로 읽히고, 거를 때만 안으로
+    /// 들어가면 된다 — 정렬은 열 때마다 쓰지만 필터는 가끔 쓴다.
     ///
-    /// 행마다 카테고리 심볼만 얹고 색은 넣지 않는다. 메뉴 행은 시스템이 그리는 영역이라 색이
-    /// 반영된다는 보장이 없고, 카테고리 색은 아래 필터 칩의 범례 dot 이 이미 나른다.
-    private var categoryFilterSection: some View {
-        Section(Constants.categoryFilterTitle) {
+    /// 접은 대가로 무엇이 걸려 있는지가 밖에서 안 보이므로 라벨이 대신 말한다. 둘까지는 이름을
+    /// 그대로 붙이고 그보다 많으면 개수로 줄인다 — 다섯 이름을 다 이으면 메뉴 폭에서 잘린다.
+    ///
+    /// 안쪽은 동시에 여러 개를 켤 수 있어 `Picker` 가 아니라 `Toggle` 이다 — 메뉴 안 `Toggle`
+    /// 은 체크마크로 그려져 `Picker` 와 같은 결로 읽히면서 다중 선택을 표현한다. 행마다
+    /// 카테고리 심볼만 얹고 색은 넣지 않는다. 메뉴 행은 시스템이 그리는 영역이라 색이 반영된다는
+    /// 보장이 없고, 카테고리 색은 아래 필터 칩의 범례 dot 이 이미 나른다.
+    private var categoryFilterMenu: some View {
+        Menu {
             Toggle(isOn: allCategoriesSelection) {
                 Text(Constants.allCategoriesTitle)
             }
@@ -134,7 +140,20 @@ struct PortfolioListView: View {
                     Label(category.title, systemImage: category.systemImageName)
                 }
             }
+        } label: {
+            Label(categoryFilterTitle, systemImage: Constants.categoryFilterSymbolName)
         }
+    }
+
+    private var categoryFilterTitle: String {
+        let selected = viewModel.selectedCategoryList
+        guard !selected.isEmpty else { return Constants.categoryFilterTitle }
+
+        let summary = selected.count > Constants.inlineCategoryNameLimit
+            ? "\(selected.count)\(Constants.categoryCountUnit)"
+            : selected.map(\.title).joined(separator: Constants.categoryListSeparator)
+
+        return Constants.categoryFilterTitle + Constants.sortFilterSeparator + summary
     }
 
     /// 정렬이든 필터든 기본값을 벗어나면 채운 아이콘으로 바꾼다 — 둘 다 목록을 조용히
@@ -351,7 +370,11 @@ fileprivate enum Constants {
     static let adjustedListControlSymbolName = "line.3.horizontal.decrease.circle.fill"
     static let sortTitle = "정렬"
     static let categoryFilterTitle = "카테고리"
-    /// 음성으로 정렬 값과 필터 목록을 잇는 구분자.
+    static let categoryFilterSymbolName = "line.3.horizontal.decrease"
+    /// 하위 메뉴 라벨에 이름을 그대로 늘어놓을 수 있는 개수. 넘으면 개수로 줄인다.
+    static let inlineCategoryNameLimit = 2
+    static let categoryCountUnit = "개"
+    /// 정렬 값과 필터 목록을 잇는 구분자. 하위 메뉴 라벨과 음성 안내가 함께 쓴다.
     static let sortFilterSeparator = " · "
     static let categoryListSeparator = ", "
     static let allCategoriesTitle = "전체"

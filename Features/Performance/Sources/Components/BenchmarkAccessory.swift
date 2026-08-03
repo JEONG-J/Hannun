@@ -74,6 +74,9 @@ struct BenchmarkAccessory: View {
 
     /// 고른 지수가 없으면 고르라고 하고, 골랐는데 아직 겹칠 값이 없으면 이름만 말한다.
     /// 초과수익은 두 라인이 다 있을 때만 계산되므로 그때만 숫자를 붙인다.
+    ///
+    /// 세 분기 모두 dot 을 단다 — 미선택 분기에서만 빼면 지수를 고르는 순간 문구 전체가
+    /// dot 폭만큼 밀린다 (UI 스펙 §4.3 "dot 은 상시 배치").
     @ViewBuilder
     private var benchmarkCaption: some View {
         if let index = viewModel.selectedBenchmark {
@@ -83,17 +86,30 @@ struct BenchmarkAccessory: View {
                     .accent(AmountFormatter.percentagePoint(ratioDifference: excess),
                             excess < 0 ? .loss : .gain)
                 )
-                .dotted(index.lineColor)
+                .dotted(legendColor)
                 .expandable()
             } else {
                 AccessoryCaption(.plain(index.title))
-                    .dotted(index.lineColor)
+                    .dotted(legendColor)
                     .expandable()
             }
         } else {
             AccessoryCaption(Constants.emptySelectionCaption)
+                .dotted(legendColor)
                 .expandable()
         }
+    }
+
+    /// dot 은 차트 위 벤치마크 라인의 **유일한 범례**다. 그래서 실제로 겹쳐져 있을 때만
+    /// 카테고리 원색이고, 비교를 끄거나 아직 아무것도 고르지 않았으면 중립으로 내린다 —
+    /// 겹치지 않은 상태에서 원색이면 화면에 없는 선을 가리키는 거짓 범례가 된다 (UI 스펙 §4.3).
+    private var legendColor: Color {
+        guard
+            viewModel.isBenchmarkOverlayEnabled,
+            let index = viewModel.selectedBenchmark
+        else { return .neutral }
+
+        return index.lineColor
     }
 
     /// 히어로가 사라진 뒤의 대역. 스크럽 중이면 그 시점 값이 그대로 따라온다.
@@ -138,20 +154,60 @@ fileprivate enum Constants {
 }
 
 #if DEBUG
-#Preview("벤치마크 액세서리 · 라이트") {
-    BenchmarkAccessory(viewModel: .preview)
+/// 범례 dot 의 세 상태를 한 화면에 세워 둔다 — 위아래로 훑으면 dot 이 자리를 지키는지,
+/// 비교를 껐을 때만 색이 빠지는지 한눈에 보인다.
+private struct BenchmarkAccessoryPreview: View {
+
+    // MARK: - Body
+
+    var body: some View {
+        VStack(spacing: .spacingL) {
+            labeled("비교 ON — 카테고리 원색") {
+                BenchmarkAccessory(viewModel: .preview)
+            }
+
+            labeled("비교 OFF — 중립") {
+                BenchmarkAccessory(viewModel: .previewWithOverlayOff)
+            }
+
+            labeled("미선택 — 중립, dot 자리 유지") {
+                BenchmarkAccessory(viewModel: .previewWithoutBenchmark)
+            }
+        }
         .padding(.spacingL)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.backgroundPrimary)
+    }
+
+    // MARK: - Function
+
+    private func labeled(
+        _ title: String,
+        @ViewBuilder content: () -> some View
+    ) -> some View {
+        VStack(alignment: .leading, spacing: .spacingXS) {
+            Text(title)
+                .hannunFont(.caption)
+                .foregroundStyle(Color.textSecondary)
+
+            content()
+        }
+    }
+}
+
+#Preview("벤치마크 액세서리 · 라이트") {
+    BenchmarkAccessoryPreview()
         .preferredColorScheme(.light)
 }
 
 #Preview("벤치마크 액세서리 · 다크") {
-    BenchmarkAccessory(viewModel: .preview)
-        .padding(.spacingL)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.backgroundPrimary)
+    BenchmarkAccessoryPreview()
         .preferredColorScheme(.dark)
+}
+
+#Preview("벤치마크 액세서리 · AX5") {
+    BenchmarkAccessoryPreview()
+        .dynamicTypeSize(.accessibility5)
 }
 
 #Preview("벤치마크 액세서리 · 축약") {

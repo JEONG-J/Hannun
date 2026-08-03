@@ -45,7 +45,8 @@ public struct DailyReturn: Identifiable, Equatable, Sendable {
     ///
     /// - Parameters:
     ///   - cumulative: 날짜 오름차순을 가정하되 방어적으로 다시 정렬한다.
-    ///   - totals: 같은 기간의 시점별 총자산.
+    ///   - totals: 같은 기간의 시점별 총자산. `cumulative` 를 정규화할 때 쓴 것과 같은
+    ///     기준 통화여야 한다 — 다르면 `V0` 와 통화가 어긋나 스케일이 조용히 틀어진다.
     /// - Returns: 둘째 점부터 하나씩. 전일이 없는 첫 점은 일간 수익률을 낼 수 없어 제외한다.
     public static func series(
         cumulative: [BenchmarkPoint],

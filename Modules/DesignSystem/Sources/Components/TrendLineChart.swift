@@ -63,7 +63,7 @@ public struct TrendSeries: Identifiable, Equatable, Sendable {
 /// 시안(§6.3)에는 0% 기준선도 Y축 라벨도 없다. 정규화 값을 그리는 이상 둘 다 없으면
 /// 선 모양만 남아 "얼마나" 에 답하지 못한다 — 내려간 구간이 손실인지 고점 대비 조정인지,
 /// 벤치마크와 벌어진 간격이 1%p 인지 10%p 인지 읽히지 않는다. 대신 눈금선(grid)은 긋지
-/// 않아 시안의 빈 플롯을 최대한 지킨다: 라벨 3개와 기준선 하나가 전부다.
+/// 않아 시안의 빈 플롯을 최대한 지킨다: X축 라벨 3개, Y축 라벨 2개와 기준선 하나가 전부다.
 public struct TrendLineChart: View {
 
     // MARK: - Property
@@ -90,14 +90,39 @@ public struct TrendLineChart: View {
     }
 
     public var body: some View {
-        Group {
-            if points.count > 1 {
-                chart
-            } else {
-                insufficientDataNotice
+        VStack(alignment: .leading, spacing: .spacingS) {
+            if showsLegend {
+                legend
+            }
+
+            Group {
+                if points.count > 1 {
+                    chart
+                } else {
+                    insufficientDataNotice
+                }
+            }
+            .frame(height: Constants.plotHeight)
+        }
+    }
+
+    /// 액세서리 leading 이 곧 기간·단위 안내로 채워져 범례를 그릴 자리가 없어지므로 이
+    /// 컴포넌트 안으로 옮겼다. 주선("내 수익률")은 화면에서 유일한 굵은 brand 선이라 넣지
+    /// 않는다 — 헷갈릴 대상이 없는데 넣으면 한 줄이 두 항목으로 늘어 240pt 로 줄인 세로를
+    /// 다시 먹는다.
+    private var legend: some View {
+        HStack(spacing: .spacingM) {
+            ForEach(benchmarks) { series in
+                HStack(spacing: .spacingXS) {
+                    CategoryDot(color: series.color)
+
+                    Text(series.name)
+                        .hannunFont(.caption)
+                        .foregroundStyle(Color.textSecondary)
+                }
             }
         }
-        .frame(height: Constants.plotHeight)
+        .accessibilityElement(children: .combine)
     }
 
     private var chart: some View {
@@ -163,7 +188,7 @@ public struct TrendLineChart: View {
         .chartYAxis {
             AxisMarks(
                 position: .trailing,
-                values: .automatic(desiredCount: Constants.axisLabelCount)
+                values: .automatic(desiredCount: Constants.yAxisLabelCount)
             ) { value in
                 if let plotValue = value.as(Double.self) {
                     AxisValueLabel {
@@ -175,7 +200,7 @@ public struct TrendLineChart: View {
             }
         }
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: Constants.axisLabelCount)) { _ in
+            AxisMarks(values: .automatic(desiredCount: Constants.xAxisLabelCount)) { _ in
                 AxisValueLabel()
                     .font(.hannun(.caption))
                     .foregroundStyle(Color.textSecondary)
@@ -209,6 +234,10 @@ public struct TrendLineChart: View {
 
     // MARK: - Function
 
+    private var showsLegend: Bool {
+        points.count > 1 && !benchmarks.isEmpty
+    }
+
     private var selectedPoint: TrendPoint? {
         selection.flatMap { date in points.first { $0.date == date } }
     }
@@ -223,7 +252,7 @@ public struct TrendLineChart: View {
 }
 
 fileprivate enum Constants {
-    static let plotHeight: CGFloat = 320
+    static let plotHeight: CGFloat = 240
     static let primaryLineWidth: CGFloat = 2
     static let benchmarkLineWidth: CGFloat = 1
     static let indicatorLineWidth: CGFloat = 1
@@ -233,8 +262,9 @@ fileprivate enum Constants {
     static let baselineValue = 0.0
     static let baselineWidth: CGFloat = 1
     static let baselineDash: [CGFloat] = [4, 3]
-    /// X·Y 축 공통. 눈금이 이보다 촘촘하면 320pt 플롯에서 라벨이 서로 붙는다.
-    static let axisLabelCount = 3
+    /// 240pt 플롯에서 라벨이 붙지 않는 밀도.
+    static let xAxisLabelCount = 3
+    static let yAxisLabelCount = 2
     static let dateLabel = "날짜"
     static let valueLabel = "수익률"
     static let seriesLabel = "계열"

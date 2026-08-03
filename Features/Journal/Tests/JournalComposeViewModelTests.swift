@@ -109,7 +109,8 @@ struct JournalComposeViewModelTests {
         let viewModel = JournalComposeViewModel(
             composition: .draft,
             saveJournal: FailingSaveJournalUseCase(error: .persistence("저장 실패")),
-            fetchHoldings: JournalFixture.fetchHoldings()
+            fetchHoldings: JournalFixture.fetchHoldings(),
+            draftContent: SpyDraftJournalContentUseCase()
         )
         viewModel.title = "제목"
 
@@ -127,6 +128,18 @@ struct JournalComposeViewModelTests {
 
         viewModel.toggleHolding(JournalFixture.apple.id)
         #expect(!viewModel.isSelected(JournalFixture.apple.id))
+    }
+
+    /// 선택 화면의 "전체 해제" — 하나씩 끄는 것과 결과는 같아야 한다.
+    @Test("전체 해제는 고른 종목을 한 번에 비운다")
+    func clearsSelectedHoldings() {
+        let viewModel = makeViewModel()
+        viewModel.toggleHolding(JournalFixture.samsung.id)
+        viewModel.toggleHolding(JournalFixture.apple.id)
+
+        viewModel.clearHoldings()
+
+        #expect(viewModel.selectedHoldingIDs.isEmpty)
     }
 
     @Test("수정 모드는 기존 일지 값으로 시작한다")
@@ -208,7 +221,8 @@ struct JournalComposeViewModelTests {
         let viewModel = JournalComposeViewModel(
             composition: .draft,
             saveJournal: SaveJournalUseCase(journalRepository: InMemoryJournalRepository()),
-            fetchHoldings: FailingFetchHoldingsUseCase(error: .network("연결 실패"))
+            fetchHoldings: FailingFetchHoldingsUseCase(error: .network("연결 실패")),
+            draftContent: SpyDraftJournalContentUseCase()
         )
 
         await viewModel.loadHoldingTags()
@@ -219,17 +233,109 @@ struct JournalComposeViewModelTests {
         #expect(viewModel.savedEntry != nil)
     }
 
+    /// 폼이 이미 들고 있는 값은 다시 묻지 않는다 — 초안 요청에 그대로 실려 나가야 한다.
+    @Test("초안 요청은 제목·작성 시각·종목·메모를 재료로 넘긴다")
+    func sendsComposedMaterialToDraftWriter() async throws {
+        let spy = SpyDraftJournalContentUseCase()
+        let tradedOn = SampleRecords.day(2026, 7, 25)
+        let viewModel = makeViewModel(draftContent: spy)
+        await viewModel.loadHoldingTags()
+        viewModel.title = "반도체 비중 축소"
+        viewModel.writtenAt = tradedOn
+        viewModel.draftMemo = "환율 부담"
+        viewModel.toggleHolding(JournalFixture.samsung.id)
+
+        await viewModel.requestContentDraft()
+
+        let request = try #require(await spy.lastRequest)
+        #expect(request.title == "반도체 비중 축소")
+        #expect(request.writtenAt == tradedOn)
+        #expect(request.holdingNames == [JournalFixture.samsung.name])
+        #expect(request.memo == "환율 부담")
+    }
+
+    /// 초안이 곧바로 본문이 되면 쓰던 문장이 확인 없이 사라진다. 폼에는 되돌리기가 없다.
+    @Test("초안은 받아들여야 본문이 된다")
+    func appliesDraftOnlyWhenAccepted() async {
+        let viewModel = makeViewModel()
+        viewModel.content = "쓰다 만 본문"
+
+        await viewModel.requestContentDraft()
+        #expect(viewModel.content == "쓰다 만 본문")
+        #expect(viewModel.contentDraft == SpyDraftJournalContentUseCase.sampleDraft)
+
+        viewModel.applyContentDraft()
+
+        #expect(viewModel.content == SpyDraftJournalContentUseCase.sampleDraft)
+        #expect(viewModel.contentDraft == nil)
+    }
+
+    /// 다시 만들기 경로 — 초안만 버리고 메모는 남아야 방금 적은 걸 다시 적지 않는다.
+    @Test("초안을 버려도 메모는 남는다")
+    func keepsMemoWhenDiscardingDraft() async {
+        let viewModel = makeViewModel()
+        viewModel.draftMemo = "환율 부담"
+
+        await viewModel.requestContentDraft()
+        viewModel.discardContentDraft()
+
+        #expect(viewModel.contentDraft == nil)
+        #expect(viewModel.draftMemo == "환율 부담")
+    }
+
+    @Test("쓸 수 없는 기기에서는 초안 입구를 내주지 않는다")
+    func hidesDraftEntryWhenWriterUnavailable() async {
+        let viewModel = makeViewModel(
+            draftContent: SpyDraftJournalContentUseCase(readiness: .intelligenceOff)
+        )
+
+        await viewModel.loadWriterAvailability()
+
+        #expect(!viewModel.canOfferContentDraft)
+    }
+
+    @Test("초안 실패는 인라인 상태로만 남는다")
+    func reportsDraftFailureInline() async {
+        let viewModel = makeViewModel(
+            draftContent: SpyDraftJournalContentUseCase(
+                draft: .failure(.unavailable("이 기기에서는 Apple Intelligence를 쓸 수 없어요."))
+            )
+        )
+        viewModel.title = "제목"
+
+        await viewModel.requestContentDraft()
+
+        #expect(viewModel.contentDraft == nil)
+        #expect(viewModel.alertPrompt == nil)
+        #expect(viewModel.contentDraftFailure?.userMessage
+            == "이 기기에서는 Apple Intelligence를 쓸 수 없어요.")
+    }
+
+    /// 재료가 하나도 없으면 눌러도 얻을 게 없다 — 판정자는 UseCase 지만 버튼은 미리 죽인다.
+    @Test("재료가 없으면 초안을 청할 수 없다")
+    func blocksDraftRequestWithoutMaterial() {
+        let viewModel = makeViewModel()
+
+        #expect(!viewModel.canRequestContentDraft)
+
+        viewModel.draftMemo = "환율 부담"
+
+        #expect(viewModel.canRequestContentDraft)
+    }
+
     // MARK: - Function
 
     private func makeViewModel(
         composition: JournalComposition = .draft,
         repository: InMemoryJournalRepository = InMemoryJournalRepository(),
+        draftContent: any DraftJournalContentUseCaseProtocol = SpyDraftJournalContentUseCase(),
         now: Date = SampleRecords.day(2026, 8, 1)
     ) -> JournalComposeViewModel {
         JournalComposeViewModel(
             composition: composition,
             saveJournal: SaveJournalUseCase(journalRepository: repository, now: { now }),
             fetchHoldings: JournalFixture.fetchHoldings(),
+            draftContent: draftContent,
             now: now
         )
     }

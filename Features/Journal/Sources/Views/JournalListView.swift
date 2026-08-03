@@ -234,6 +234,7 @@ struct JournalListView: View {
             composition: composition,
             saveJournal: container.resolve((any SaveJournalUseCaseProtocol).self),
             fetchHoldings: container.resolve((any FetchHoldingsUseCaseProtocol).self),
+            draftContent: container.resolve((any DraftJournalContentUseCaseProtocol).self),
             onClose: { router.dismissComposition() },
             onSaved: { saved in
                 router.dismissComposition()

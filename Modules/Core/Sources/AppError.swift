@@ -14,6 +14,12 @@ public enum AppError: Error, Equatable, Sendable {
     case decoding(String)
     case persistence(String)
     case validation(String)
+    /// 입력이 틀린 게 아니라 **환경이 갖춰지지 않아** 지금은 못 하는 일.
+    ///
+    /// `validation` 과 갈라 두는 이유는 사용자가 할 일이 다르기 때문이다. 검증 실패는 적은
+    /// 값을 고치면 되지만 이쪽은 화면 밖(설정·기기·다운로드)에서 해결해야 한다 —
+    /// 같은 자리에 뭉치면 안내 문구가 "입력을 확인하세요" 로 수렴해 막다른 길이 된다.
+    case unavailable(String)
     case unauthorized
     case unknown(String)
 }
@@ -35,7 +41,8 @@ public extension AppError {
     /// 사용자에게는 일반 문구로 바꿔 보여주고, 원문은 로그·디버깅용으로만 남긴다.
     var userMessage: String {
         switch self {
-        case let .network(message), let .persistence(message), let .validation(message):
+        case let .network(message), let .persistence(message), let .validation(message),
+            let .unavailable(message):
             message
         case .decoding:
             "정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요."

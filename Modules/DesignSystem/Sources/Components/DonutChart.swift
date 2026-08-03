@@ -47,8 +47,6 @@ public struct DonutChart: View {
 
     // MARK: - Property
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     private let slices: [DonutChartSlice]
     @Binding private var selection: AssetCategory?
 
@@ -75,7 +73,11 @@ public struct DonutChart: View {
         }
         .chartLegend(.hidden)
         .frame(width: Constants.diameter, height: Constants.diameter)
-        .overlay { centerHole }
+        .overlay {
+            centerHole
+                .dynamicTypeSize(...Constants.holeMaximumTypeSize)
+                .frame(maxWidth: Constants.holeContentWidth)
+        }
         .contentShape(.rect)
         .gesture(selectionGesture)
         .hannunAnimation(.standard, value: selection)
@@ -85,9 +87,6 @@ public struct DonutChart: View {
     }
 
     /// 고른 섹터가 없으면 힌트, 있으면 그 카테고리의 이름과 금액.
-    ///
-    /// AX 사이즈에서는 심볼을 뺀다 — 홀 지름이 124pt 뿐이라 심볼과 두 줄 문구가 같이 들어가면
-    /// 링을 뚫고 나간다.
     @ViewBuilder
     private var centerHole: some View {
         if let selectedSlice {
@@ -103,18 +102,14 @@ public struct DonutChart: View {
             .transition(.opacity)
         } else {
             VStack(spacing: .spacingXS) {
-                if !dynamicTypeSize.isAccessibilitySize {
-                    Image(systemName: Constants.hintSymbolName)
-                        .hannunFont(.rowTitle)
-                }
+                Image(systemName: Constants.hintSymbolName)
+                    .hannunFont(.rowTitle)
 
                 Text(Constants.hintText)
                     .hannunFont(.caption)
                     .multilineTextAlignment(.center)
             }
             .foregroundStyle(Color.textSecondary)
-            .padding(.horizontal, .spacingS)
-            .frame(maxWidth: Constants.diameter * Constants.innerRadiusRatio)
             .transition(.opacity)
         }
     }
@@ -244,6 +239,12 @@ fileprivate enum Constants {
     static let scrubThreshold: CGFloat = 6
     static let hintSymbolName = "hand.tap"
     static let hintText = "눌러서 자산군별 보기"
+    /// 홀은 지름이 고정이라 원 안에 들어가는 정사각형 폭까지만 글을 채운다 —
+    /// 지름을 그대로 쓰면 위아래 줄이 둥근 가장자리를 뚫고 링 위로 올라간다.
+    static let holeContentWidth = diameter * innerRadiusRatio / 2.0.squareRoot()
+    /// 홀 크기는 안 자라므로 글자도 어딘가에서 멈춰야 한다. 여기서 잘려도 손해가 없는 게
+    /// 홀 안 글은 전부 다른 데 한 번 더 있다 — 힌트는 VoiceOver 값이, 금액은 아래 소계 줄이 말한다.
+    static let holeMaximumTypeSize = DynamicTypeSize.xxLarge
     static let accessibilityLabel = "자산군 비중"
     static let accessibilityEmptyValue = "선택 안 함"
     static let accessibilityValueSeparator = ", "

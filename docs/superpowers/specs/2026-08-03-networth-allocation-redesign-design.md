@@ -67,8 +67,10 @@ func category(at point: CGPoint, in size: CGSize) -> AssetCategory?
 | 미선택 | `hand.tap` 심볼 + `"눌러서 자산군별 보기"` (`.caption`, `textSecondary`) |
 | 선택됨 | 카테고리명 (`.caption`, `textSecondary`) + `AmountText(.row)` — 현재와 동일 |
 
-AX 사이즈(`dynamicTypeSize.isAccessibilitySize`)에서는 심볼을 빼고 문구만 둔다. 홀 지름이
-124pt(200 × 0.62)라 둘 다 들어가지 않는다.
+홀은 지름이 124pt(200 × 0.62)로 고정이라 글자만 자라면 링을 뚫는다. 두 겹으로 막는다 —
+폭은 원에 내접하는 정사각형(124 ÷ √2 ≒ 88pt)까지만 쓰고, 크기는 `xxLarge` 에서 멈춘다
+(`.dynamicTypeSize(...)`). 홀 안 글은 전부 다른 데 한 번 더 있어서(힌트는 VoiceOver 값,
+금액은 아래 소계 줄) 여기서 커지기를 멈춰도 읽을 수 없게 되는 정보가 없다.
 
 `totalLabel` / `total` 파라미터는 더 이상 쓰이지 않으므로 `DonutChart` 이니셜라이저에서
 제거한다. 총자산은 히어로가 말하고, 스크롤로 히어로가 밀려나면 §6 교대 규칙에 따라 하단
@@ -149,7 +151,7 @@ VoiceOver 의 정식 경로다. 도넛에는 안내 힌트를 붙이지 않는�
 - 스크럽 후 손을 떼도 선택 유지
 - 홀 안쪽 탭이 선택을 바꾸지 않음
 - 라이트 / 다크
-- AX-XL 에서 홀 문구가 잘리지 않음
+- AX-XL 에서 홀 문구가 링을 뚫지 않음
 - VoiceOver 로 도넛 → 소계 행 순회
 
 ## 6. 변경 파일

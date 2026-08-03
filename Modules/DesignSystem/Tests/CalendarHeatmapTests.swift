@@ -81,7 +81,106 @@ struct CalendarHeatmapLeadingBlankCountTests {
         #expect(CalendarHeatmap.leadingBlankCount(month: month, calendar: calendar) == 4)
     }
 
+    /// `+ Constants.daysPerWeek` 되감기 항이 없으면 이 두 케이스에서 음수가 나와
+    /// `gridDays` 의 `Array(repeating:count:)` 가 런타임 트랩을 낸다 — 위 네 케이스는
+    /// 전부 `weekday > firstWeekday` 라 되감기 항이 빠져도 우연히 통과한다.
+    @Test("토요일 시작(firstWeekday 7) — 토요일 1일은 곧 시작 요일이라 앞에 0칸이 빈다")
+    func saturdayStartCountsZeroBlanksBeforeSaturdayFirst() {
+        let calendar = CalendarHeatmapLeadingBlankCountTests.utcCalendar(firstWeekday: 7)
+        let month = CalendarHeatmapLeadingBlankCountTests.firstOfMonth(2026, 8)
+
+        #expect(CalendarHeatmap.leadingBlankCount(month: month, calendar: calendar) == 0)
+    }
+
+    @Test("토요일 시작 — 일요일 1일은 되감겨 앞에 1칸만 빈다")
+    func saturdayStartWrapsAroundBeforeSundayFirst() {
+        let calendar = CalendarHeatmapLeadingBlankCountTests.utcCalendar(firstWeekday: 7)
+        let month = CalendarHeatmapLeadingBlankCountTests.firstOfMonth(2026, 11)
+
+        #expect(CalendarHeatmap.leadingBlankCount(month: month, calendar: calendar) == 1)
+    }
+
     /// 호스트 타임존이 달라도 "그 달 1일" 이 하루 밀리지 않도록 UTC 로 고정한다.
+    private static func utcCalendar(firstWeekday: Int) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.firstWeekday = firstWeekday
+        return calendar
+    }
+
+    private static func firstOfMonth(_ year: Int, _ month: Int) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        return calendar.date(from: DateComponents(year: year, month: month, day: 1))!
+    }
+}
+
+@Suite("CalendarHeatmap 그리드 날짜")
+struct CalendarHeatmapGridDaysTests {
+
+    @Test(
+        "그리드 총 길이는 항상 7의 배수다",
+        arguments: [
+            (year: 2026, month: 8, firstWeekday: 1),
+            (year: 2026, month: 8, firstWeekday: 7),
+            (year: 2026, month: 11, firstWeekday: 7),
+            (year: 2027, month: 2, firstWeekday: 2),
+            (year: 2028, month: 2, firstWeekday: 1),
+        ]
+    )
+    func totalLengthIsAlwaysMultipleOfSeven(
+        fixture: (year: Int, month: Int, firstWeekday: Int)
+    ) {
+        let calendar = CalendarHeatmapGridDaysTests.utcCalendar(firstWeekday: fixture.firstWeekday)
+        let month = CalendarHeatmapGridDaysTests.firstOfMonth(fixture.year, fixture.month)
+
+        let days = CalendarHeatmap.gridDays(month: month, calendar: calendar)
+
+        #expect(days.count % 7 == 0)
+    }
+
+    @Test("평년 2월은 28칸이 채워진다 — 2027년")
+    func nonLeapFebruaryFillsTwentyEightDays() {
+        let calendar = CalendarHeatmapGridDaysTests.utcCalendar(firstWeekday: 1)
+        let month = CalendarHeatmapGridDaysTests.firstOfMonth(2027, 2)
+
+        let days = CalendarHeatmap.gridDays(month: month, calendar: calendar)
+
+        #expect(days.compactMap { $0 }.count == 28)
+    }
+
+    @Test("윤년 2월은 29칸이 채워진다 — 2028년")
+    func leapFebruaryFillsTwentyNineDays() {
+        let calendar = CalendarHeatmapGridDaysTests.utcCalendar(firstWeekday: 1)
+        let month = CalendarHeatmapGridDaysTests.firstOfMonth(2028, 2)
+
+        let days = CalendarHeatmap.gridDays(month: month, calendar: calendar)
+
+        #expect(days.compactMap { $0 }.count == 29)
+    }
+
+    /// 앞칸 개수는 `leadingBlankCount` 와 독립적으로 일치해야 하고, 뒷칸 개수는
+    /// "앞칸 + 채운 날짜를 7로 나눈 나머지를 채우는 최소값" 이라는 별도 공식으로 다시
+    /// 계산해도 같아야 한다 — 셋 중 하나만 어긋나도 총 길이는 우연히 7의 배수를 유지할 수
+    /// 있어서, 총 길이 테스트만으로는 날짜가 엉뚱한 칸에 앉는 걸 잡지 못한다.
+    @Test("앞칸·채운 날짜·뒷칸 개수가 독립 계산과 정확히 맞아떨어진다")
+    func leadingFilledAndTrailingCountsMatchIndependentCalculation() {
+        let calendar = CalendarHeatmapGridDaysTests.utcCalendar(firstWeekday: 2)
+        let month = CalendarHeatmapGridDaysTests.firstOfMonth(2026, 8)
+
+        let days = CalendarHeatmap.gridDays(month: month, calendar: calendar)
+        let leading = CalendarHeatmap.leadingBlankCount(month: month, calendar: calendar)
+
+        let leadingNils = days.prefix(while: { $0 == nil }).count
+        let filled = days.compactMap { $0 }.count
+        let trailingNils = days.count - leadingNils - filled
+        let expectedTrailing = (7 - (leading + 31) % 7) % 7
+
+        #expect(leadingNils == leading)
+        #expect(filled == 31)
+        #expect(trailingNils == expectedTrailing)
+    }
+
     private static func utcCalendar(firstWeekday: Int) -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
@@ -136,6 +235,50 @@ struct CalendarHeatmapWeekdaySymbolTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "ko_KR")
         calendar.firstWeekday = firstWeekday
+        return calendar
+    }
+}
+
+/// `HeatmapCell.date` 는 Domain 값에서 그대로 넘어오며 시:분:초가 섞여 있을 수 있다.
+/// 키잉(`cellsByDay` 내부)과 조회(그리드 날짜) 양쪽 모두 `startOfDay` 로 정규화해야
+/// 같은 날이 매칭된다 — 한쪽만 정규화하면 조용히 "기록 없음" 으로 빠진다.
+@Suite("CalendarHeatmap 날짜 매칭")
+struct CalendarHeatmapCellsByDayTests {
+
+    /// 셀 날짜(15:30)와 조회 날짜(09:00)를 일부러 다른 시각으로 둔다 — 둘 다 같은 날
+    /// 자정으로 정규화되어야만 매칭되므로, 키잉·조회 어느 한쪽의 정규화만 빠져도
+    /// 이 테스트가 실패한다.
+    @Test("셀 날짜와 조회 날짜가 서로 다른 시각이어도 같은 날이면 매칭된다")
+    func cellAndLookupWithDifferentTimeComponentsMatchOnSameDay() {
+        let calendar = CalendarHeatmapCellsByDayTests.utcCalendar()
+        let cellDate = calendar.date(
+            from: DateComponents(year: 2026, month: 8, day: 3, hour: 15, minute: 30)
+        )!
+        let lookupDate = calendar.date(
+            from: DateComponents(year: 2026, month: 8, day: 3, hour: 9)
+        )!
+        let cell = HeatmapCell(date: cellDate, ratio: 0.012)
+
+        let cellsByDay = CalendarHeatmap.cellsByDay([cell], calendar: calendar)
+
+        #expect(cellsByDay[calendar.startOfDay(for: lookupDate)]?.ratio == 0.012)
+    }
+
+    @Test("다른 날의 셀은 매칭되지 않는다")
+    func cellOnDifferentDayDoesNotMatch() {
+        let calendar = CalendarHeatmapCellsByDayTests.utcCalendar()
+        let cellDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 3))!
+        let lookupDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
+        let cell = HeatmapCell(date: cellDate, ratio: 0.012)
+
+        let cellsByDay = CalendarHeatmap.cellsByDay([cell], calendar: calendar)
+
+        #expect(cellsByDay[calendar.startOfDay(for: lookupDate)] == nil)
+    }
+
+    private static func utcCalendar() -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
         return calendar
     }
 }

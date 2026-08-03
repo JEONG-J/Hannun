@@ -62,6 +62,10 @@ public struct CalendarHeatmap: View {
     }
 
     public var body: some View {
+        // `ForEach` 는 슬롯마다 클로저를 다시 평가한다 — 한 달 안에서 이 딕셔너리를
+        // 매번 새로 만들지 않도록 여기서 한 번만 계산해 넘긴다.
+        let cellsByDay = cellsByDay
+
         VStack(alignment: .leading, spacing: .spacingS) {
             weekdayHeader
 
@@ -89,6 +93,8 @@ public struct CalendarHeatmap: View {
             ForEach(Array(weekdaySymbols.enumerated()), id: \.offset) { _, symbol in
                 Text(symbol)
                     .hannunFont(.caption)
+                    .minimumScaleFactor(Constants.gridTextMinimumScaleFactor)
+                    .lineLimit(1)
                     .foregroundStyle(Color.textSecondary)
                     .frame(maxWidth: .infinity)
             }
@@ -106,14 +112,8 @@ public struct CalendarHeatmap: View {
         CalendarHeatmap.rotatedWeekdaySymbols(calendar: calendar)
     }
 
-    /// 날짜 매칭은 `==` 이 아니라 하루 단위로 한다 — `HeatmapCell.date` 는 Domain 값에서
-    /// 넘어오며 시:분:초가 섞여 있을 수 있다. 원시 `Date` 비교로 매칭하면 셀이 전부 빈 칸으로
-    /// 빠진다.
     private var cellsByDay: [Date: HeatmapCell] {
-        Dictionary(
-            cells.map { (calendar.startOfDay(for: $0.date), $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
+        CalendarHeatmap.cellsByDay(cells, calendar: calendar)
     }
 }
 
@@ -144,7 +144,10 @@ extension CalendarHeatmap {
     ///
     /// `calendar.component(.weekday, from:)` 은 `firstWeekday` 와 무관하게 항상
     /// 일요일 = 1 인 그레고리력 요일 번호를 돌려준다. 그래서 그리드가 실제로 시작하는
-    /// 요일(`firstWeekday`) 과의 차이를 직접 계산해야 한다.
+    /// 요일(`firstWeekday`) 과의 차이를 직접 계산해야 한다. `+ daysPerWeek` 는 1일의 요일이
+    /// `firstWeekday` 보다 앞서는 되감기 케이스(예: 토요일 시작 달력에서 일요일 1일)에
+    /// 음수가 나오는 것을 막는다 — 이 항을 빼면 `gridDays` 의 `Array(repeating:count:)` 가
+    /// 음수 count 로 런타임에 트랩한다.
     nonisolated static func leadingBlankCount(month: Date, calendar: Calendar) -> Int {
         guard let firstDayOfMonth = firstDayOfMonth(of: month, calendar: calendar) else {
             return 0
@@ -170,6 +173,19 @@ extension CalendarHeatmap {
         if magnitude < Constants.lowOpacityUpperBound { return Constants.lowOpacity }
         if magnitude < Constants.midOpacityUpperBound { return Constants.midOpacity }
         return Constants.highOpacity
+    }
+
+    /// 날짜 매칭용 딕셔너리. 키를 `calendar.startOfDay(for:)` 로 정규화한다 — `HeatmapCell.date`
+    /// 는 Domain 값에서 넘어오며 시:분:초가 섞여 있을 수 있다. 원시 `Date` 를 키로 쓰면
+    /// 조회 쪽(그리드 날짜, 이미 자정)과 어긋나 셀이 전부 "기록 없음" 으로 빠진다.
+    nonisolated static func cellsByDay(
+        _ cells: [HeatmapCell],
+        calendar: Calendar
+    ) -> [Date: HeatmapCell] {
+        Dictionary(
+            cells.map { (calendar.startOfDay(for: $0.date), $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
     }
 
     nonisolated private static func daysInMonth(month: Date, calendar: Calendar) -> [Date] {
@@ -203,10 +219,17 @@ private struct CalendarHeatmapDayCell: View {
     var body: some View {
         content
             .aspectRatio(1, contentMode: .fit)
-            .contentShape(.rect)
     }
 
-    /// 접근성 라벨을 각 갈래 안에서 직접 붙인다 — 바깥에서 `.accessibilityElement(children:
+    /// `.frame`/`.background`/`.contentShape` 를 전부 `label:` **안**에서 적용한다 —
+    /// `Button` 바깥에 붙이면 레이아웃 프레임만 44pt 로 키울 뿐, 탭 인식 영역은 여전히
+    /// 라벨(숫자 글리프) 크기에 머문다. `AccessoryControlButton.swift:85-101` 과 같은
+    /// 위치(label 안)에 적용하되 순서는 그것과 반대로 **프레임을 배경보다 먼저** 둔다 —
+    /// 배경이 라벨(숫자) 크기가 아니라 프레임이 넓힌 44pt 정사각형 전체를 채워야 셀이
+    /// 색칠된 사각형으로 보인다(캡슐 버튼처럼 텍스트만 한 작은 배경 + 여백이 아니다).
+    /// 그래야 시각 사각형과 `.contentShape(.rect)` 히트 사각형이 같은 크기가 된다.
+    ///
+    /// 접근성 라벨은 각 갈래 안에서 직접 붙인다 — 바깥에서 `.accessibilityElement(children:
     /// .ignore)` 로 한 번 더 감싸면 `Button` 이 원래 스스로 하나의 엘리먼트로 접히면서 갖는
     /// `.isButton` 트레이트와 활성화 액션이 사라진다.
     @ViewBuilder
@@ -217,15 +240,19 @@ private struct CalendarHeatmapDayCell: View {
             } label: {
                 dayNumberText
                     .foregroundStyle(Color.textPrimary)
+                    .frame(minWidth: .minimumTouchTarget, minHeight: .minimumTouchTarget)
+                    .background(
+                        fillColor(for: ratio).opacity(fillOpacity(for: ratio)),
+                        in: cellShape
+                    )
+                    .overlay {
+                        if ratio < 0 {
+                            lossStroke
+                        }
+                    }
+                    .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .frame(minWidth: .minimumTouchTarget, minHeight: .minimumTouchTarget)
-            .background(fillColor(for: ratio).opacity(fillOpacity(for: ratio)), in: cellShape)
-            .overlay {
-                if ratio < 0 {
-                    cellShape.stroke(Color.loss, lineWidth: Constants.lossStrokeWidth)
-                }
-            }
             .accessibilityLabel(accessibilityLabel)
         } else {
             dayNumberText
@@ -239,7 +266,7 @@ private struct CalendarHeatmapDayCell: View {
     private var dayNumberText: some View {
         Text("\(dayNumber)")
             .hannunFont(.caption, tabularFigures: true)
-            .minimumScaleFactor(Constants.dayNumberMinimumScaleFactor)
+            .minimumScaleFactor(Constants.gridTextMinimumScaleFactor)
             .lineLimit(1)
     }
 
@@ -249,6 +276,14 @@ private struct CalendarHeatmapDayCell: View {
 
     private var cellShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: .radiusS)
+    }
+
+    /// 인셋 스트로크. `stroke` 대신 `strokeBorder` 를 쓴다 — `stroke` 는 선을 경로 위에
+    /// 걸쳐 그려 절반이 셀 바깥으로 번지고 모서리 반경이 `radiusS` 보다 커 보인다.
+    /// 다른 컴포넌트의 테두리도 전부 인셋이다(`AccessoryControlButton.swift:96`,
+    /// `FilterChip.swift:186`).
+    private var lossStroke: some View {
+        cellShape.strokeBorder(Color.loss, lineWidth: Constants.lossStrokeWidth)
     }
 
     private func fillColor(for ratio: Decimal) -> Color {
@@ -286,8 +321,8 @@ fileprivate enum Constants {
     static let highOpacity = 0.60
 
     static let lossStrokeWidth: CGFloat = 1
-    /// AX5 에서 두 자리 일 숫자가 정사각 셀 폭을 넘어서면 잘리는 대신 줄어든다.
-    static let dayNumberMinimumScaleFactor: CGFloat = 0.5
+    /// AX5 에서 두 자리 일 숫자·요일 심볼이 정사각 셀·열 폭을 넘어서면 잘리는 대신 줄어든다.
+    static let gridTextMinimumScaleFactor: CGFloat = 0.5
 
     static let recordedSeparator = ", 수익률 "
     static let noRecordSuffix = ", 기록 없음"

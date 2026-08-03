@@ -11,6 +11,11 @@ import HannunDomain
 import SwiftUI
 
 /// 일지 목록 화면이자 탭 전용 `NavigationStack` 의 소유자 (JR-1, JR-4).
+///
+/// 스크롤 영역 위에 고정 행을 두지 않는다 — 목록 바깥에 한 줄이라도 얹으면 스크롤이 그 줄
+/// **아래에서만** 일어나 큰 제목이 걷히지 않고, 화면이 두 조각으로 나뉘어 움직인다.
+/// 그래서 종목 필터 칩 줄을 왼쪽 툴바 메뉴로, 검색을 오른쪽 툴바 버튼으로 올렸다.
+/// 콘텐츠가 목록 하나뿐이 되면서 제목·툴바가 스크롤에 맞춰 함께 접힌다.
 struct JournalListView: View {
     // MARK: - Property
 
@@ -36,55 +41,90 @@ struct JournalListView: View {
 
     var body: some View {
         NavigationStack(path: $router.path) {
-            content
+            entryArea
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.backgroundPrimary)
                 .navigationTitle(Constants.screenTitle)
+                .navigationSubtitle(subtitleText)
                 .navigationDestination(for: JournalRoute.self, destination: detail(for:))
+                .toolbar { holdingFilterItem }
                 .searchable(text: $viewModel.searchText, prompt: Constants.searchPrompt)
+                // 펼친 검색창은 목록 위 한 줄을 상시로 먹는다. 최소화하면 오른쪽 위
+                // 돋보기 버튼으로 접혀 콘텐츠 열이 목록 하나로 남는다 (포트폴리오 탭과 같은 규칙).
+                .searchToolbarBehavior(.minimize)
         }
         // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
         .tabAccessory(.journal) {
-            JournalComposeAccessory(viewModel: self.viewModel) {
-                self.router.composeNewEntry()
-            }
+            JournalComposeAccessory { self.router.composeNewEntry() }
         }
         .fullScreenCover(item: $router.composition, content: compose(for:))
         .task { await viewModel.load() }
     }
 
-    private var content: some View {
-        VStack(spacing: .spacingM) {
-            holdingFilterRow
-            entryArea
+    /// 큰 제목 아래 한 줄 — 지금 목록이 무엇을 보여 주고 있는지 (디자인 문서 §4.0).
+    /// 하단 액세서리에서 올라왔다. 목록의 범위를 말하는 문장이라 제목 옆이 제자리고,
+    /// 화면 반대쪽 끝에 있으면 제목과 눈이 두 번 오간다.
+    ///
+    /// 아직 못 읽었거나 한 건도 없으면 빈 문자열이라 줄 자체가 그려지지 않는다 — 빈 상태는
+    /// 목록 자리의 `EmptyStateView` 가 이미 같은 말을 하고 있어 두 번 할 필요가 없다.
+    private var subtitleText: String {
+        switch viewModel.caption {
+        case .none, .empty:
+            ""
+        case let .filtered(name, count):
+            "\(name) \(countText(count))"
+        case let .thisMonth(count):
+            "\(Constants.thisMonthPrefix) \(countText(count))"
+        case let .total(count):
+            "\(Constants.totalPrefix) \(countText(count))"
         }
-        .padding(.top, .spacingS)
     }
 
-    /// 종목 필터는 목록 로딩 상태와 함께 사라지지 않는다 — 필터를 바꾸는 동안
-    /// 방금 누른 칩이 화면에서 없어지면 무엇을 고른 상태인지 알 수 없다.
-    @ViewBuilder
-    private var holdingFilterRow: some View {
+    /// 종목 필터는 "지금 목록이 어떤 상태인가" 를 말하므로 왼쪽에 둔다 — 오른쪽 검색은
+    /// 새로 무언가를 찾는 컨트롤이라 성격이 다르다 (포트폴리오 탭 정렬 메뉴와 같은 자리).
+    ///
+    /// 태그로 쓸 종목이 하나도 없으면 메뉴를 달지 않는다. 고를 게 "전체" 뿐인 필터는
+    /// 눌러도 아무것도 바꾸지 못한다.
+    @ToolbarContentBuilder
+    private var holdingFilterItem: some ToolbarContent {
         if let holdings = viewModel.holdingTagsState.value, !holdings.isEmpty {
-            ChipGroup {
-                FilterChip(
-                    Constants.allHoldingsTitle,
-                    isSelected: viewModel.selectedHoldingID == nil
-                ) {
-                    Task { await viewModel.selectHolding(nil) }
-                }
+            ToolbarItem(placement: .topBarLeading) {
+                Menu {
+                    Picker(Constants.filterTitle, selection: holdingFilter) {
+                        Text(Constants.allHoldingsTitle)
+                            .tag(UUID?.none)
 
-                ForEach(holdings) { holding in
-                    FilterChip(
-                        holding.name,
-                        isSelected: viewModel.selectedHoldingID == holding.id
-                    ) {
-                        Task { await viewModel.selectHolding(holding.id) }
+                        ForEach(holdings) { holding in
+                            Text(holding.name)
+                                .tag(UUID?.some(holding.id))
+                        }
                     }
+                    .pickerStyle(.inline)
+                } label: {
+                    Label(Constants.filterTitle, systemImage: filterSymbolName)
                 }
+                // 아이콘은 "걸러져 있다" 까지만 말한다. 무엇으로 걸렀는지는 메뉴를 열어야
+                // 보이므로, 음성으로는 고른 종목 이름을 직접 읽어 준다.
+                .accessibilityValue(viewModel.selectedHoldingName ?? Constants.allHoldingsTitle)
             }
-            .padding(.horizontal, .spacingL)
         }
+    }
+
+    /// 필터가 걸리면 채운 아이콘으로 바꾼다 — 칩 줄이 사라진 뒤로는 이 아이콘이 "목록이
+    /// 전부가 아니다" 를 화면에서 말하는 유일한 자리다.
+    private var filterSymbolName: String {
+        viewModel.selectedHoldingID == nil
+            ? Constants.filterSymbolName
+            : Constants.activeFilterSymbolName
+    }
+
+    /// `selectedHoldingID` 를 직접 묶지 않는 이유는 필터가 바뀌면 목록을 다시 읽어야 하기
+    /// 때문이다. 그 판단을 ViewModel 이 들고 있어야 화면 밖에서도 같은 동작이 재현된다.
+    private var holdingFilter: Binding<UUID?> {
+        Binding(
+            get: { viewModel.selectedHoldingID },
+            set: { holdingID in Task { await viewModel.selectHolding(holdingID) } }
+        )
     }
 
     @ViewBuilder
@@ -122,7 +162,7 @@ struct JournalListView: View {
                     dateText: dateStyle.listText(for: entry.writtenAt),
                     title: entry.title,
                     preview: entry.content,
-                    tags: viewModel.tagNames(for: entry)
+                    tags: tags(for: entry)
                 )
             }
             .buttonStyle(.plain)
@@ -133,6 +173,9 @@ struct JournalListView: View {
         .listStyle(.plain)
         .listRowSpacing(.spacingM)
         .scrollContentBackground(.hidden)
+        // 시안 §6.4 의 콘텐츠 열 상단 여백 8. `padding` 이 아니라 safe area 를 넓히는 쪽이라
+        // 첫 셀은 띄우면서도 스크롤은 그대로 네비게이션 바 밑을 지난다.
+        .safeAreaPadding(.top, .spacingS)
         // 액세서리 캡슐이 마지막 셀을 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
         .safeAreaPadding(.bottom, .spacingXL)
     }
@@ -157,12 +200,24 @@ struct JournalListView: View {
         }
     }
 
+    private func countText(_ count: Int) -> String {
+        "\(count)\(Constants.countUnit)"
+    }
+
+    /// 종목을 캡슐이 읽을 수 있는 표시용 값으로 옮긴다. 분류를 같이 실어 보내야 캡슐이
+    /// 분류색 유리를 입는다 — 이름만 넘기면 태그가 전부 같은 색이 된다.
+    private func tags(for entry: JournalRecord) -> [JournalTag] {
+        viewModel.taggedHoldings(for: entry).map { holding in
+            JournalTag(id: holding.id, name: holding.name, category: holding.category)
+        }
+    }
+
     private func detail(for route: JournalRoute) -> some View {
         switch route {
         case let .detail(record):
             JournalDetailView(
                 record: record,
-                tagNames: viewModel.tagNames(for: record),
+                tags: tags(for: record),
                 deleteJournal: container.resolve((any DeleteJournalUseCaseProtocol).self),
                 errorHandler: errorHandler,
                 onEdit: { router.edit($0) },
@@ -192,7 +247,14 @@ struct JournalListView: View {
 fileprivate enum Constants {
     static let screenTitle = "매매일지"
     static let searchPrompt = "제목·본문 검색"
+    static let filterTitle = "종목 필터"
+    static let filterSymbolName = "line.3.horizontal.decrease.circle"
+    static let activeFilterSymbolName = "line.3.horizontal.decrease.circle.fill"
     static let allHoldingsTitle = "전체"
+
+    static let thisMonthPrefix = "이번 달"
+    static let totalPrefix = "전체"
+    static let countUnit = "건"
 
     static let emptySymbolName = "book.closed"
     static let emptyTitle = "첫 매매일지를 남겨보세요"

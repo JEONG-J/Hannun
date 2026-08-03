@@ -14,8 +14,8 @@ import Testing
 @Suite("JournalComposeViewModel")
 @MainActor
 struct JournalComposeViewModelTests {
-    @Test("작성 시각은 사용자 입력 없이 자동으로 기록된다")
-    func recordsWrittenAtAutomatically() async {
+    @Test("작성 시각의 기본값은 지금이다")
+    func defaultsWrittenAtToNow() async {
         let now = SampleRecords.day(2026, 8, 1)
         let viewModel = makeViewModel(now: now)
         viewModel.title = "첫 일지"
@@ -23,6 +23,47 @@ struct JournalComposeViewModelTests {
         await viewModel.save()
 
         #expect(viewModel.savedEntry?.writtenAt == now)
+    }
+
+    /// 사후에 몰아 쓴 일지가 "쓴 날" 이 아니라 매매일로 남아야 한다 (JR-2).
+    @Test("고른 작성 시각이 그대로 저장된다")
+    func savesChosenWrittenAt() async throws {
+        let repository = InMemoryJournalRepository()
+        let viewModel = makeViewModel(repository: repository)
+        let tradedOn = SampleRecords.day(2026, 7, 25)
+        viewModel.title = "어제 판 걸 오늘 적는다"
+        viewModel.writtenAt = tradedOn
+
+        await viewModel.save()
+
+        let stored = try #require(await repository.fetchAll().first)
+        #expect(stored.writtenAt == tradedOn)
+    }
+
+    /// 앞날의 매매를 미리 적을 일은 없다. 저장 후 거절이 아니라 Picker 가 애초에 못 고르게 한다.
+    @Test("고를 수 있는 작성 시각은 지금까지다")
+    func blocksFutureWrittenAt() {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.selectableWrittenAtRange.upperBound <= Date())
+    }
+
+    /// `writtenAt` 은 "언제 일어난 일인가", `updatedAt` 은 "언제 저장했나" — 다른 질문이라
+    /// 한쪽이 다른 쪽을 덮으면 안 된다.
+    @Test("작성 시각과 저장 시각은 따로 남는다")
+    func keepsWrittenAtAndUpdatedAtApart() async throws {
+        let savedOn = SampleRecords.day(2026, 8, 1)
+        let repository = InMemoryJournalRepository()
+        let viewModel = makeViewModel(repository: repository, now: savedOn)
+        let tradedOn = SampleRecords.day(2026, 7, 20)
+        viewModel.title = "지난달 매매를 이제 적는다"
+        viewModel.writtenAt = tradedOn
+
+        await viewModel.save()
+
+        let stored = try #require(await repository.fetchAll().first)
+        #expect(stored.writtenAt == tradedOn)
+        #expect(stored.updatedAt == savedOn)
     }
 
     @Test("제목과 본문, 연결 종목을 담아 저장한다")
@@ -135,6 +176,31 @@ struct JournalComposeViewModelTests {
 
         prompt.confirmAction()
         #expect(viewModel.isClosed)
+    }
+
+    /// 날짜만 고쳐 놓고 닫으면 조용히 버려진다 — 글자를 한 자도 안 썼어도 고친 건 고친 거다.
+    @Test("날짜만 바꿔도 확인부터 받는다")
+    func asksBeforeDiscardingWrittenAtChange() {
+        let viewModel = makeViewModel()
+
+        viewModel.writtenAt = SampleRecords.day(2026, 7, 25)
+        viewModel.requestClose()
+
+        #expect(!viewModel.isClosed)
+        #expect(viewModel.alertPrompt != nil)
+    }
+
+    @Test("수정 모드에서 날짜를 되돌리면 고친 게 없는 상태로 돌아간다")
+    func treatsRestoredWrittenAtAsUnchangedWhenEditing() {
+        let entry = JournalFixture.entries[1]
+        let viewModel = makeViewModel(composition: .revision(of: entry))
+
+        viewModel.writtenAt = SampleRecords.day(2026, 7, 10)
+        #expect(viewModel.hasUnsavedChanges)
+
+        viewModel.writtenAt = entry.writtenAt
+
+        #expect(!viewModel.hasUnsavedChanges)
     }
 
     @Test("종목 목록을 불러오지 못해도 작성은 계속할 수 있다")

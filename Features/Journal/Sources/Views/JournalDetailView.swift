@@ -17,7 +17,7 @@ struct JournalDetailView: View {
     @State private var viewModel: JournalDetailViewModel
 
     private let record: JournalRecord
-    private let tagNames: [String]
+    private let tags: [JournalTag]
     private let onEdit: (JournalRecord) -> Void
     private let onDeleted: () -> Void
     private let dateStyle = JournalDateStyle()
@@ -26,14 +26,14 @@ struct JournalDetailView: View {
 
     init(
         record: JournalRecord,
-        tagNames: [String],
+        tags: [JournalTag],
         deleteJournal: any DeleteJournalUseCaseProtocol,
         errorHandler: ErrorHandler,
         onEdit: @escaping (JournalRecord) -> Void,
         onDeleted: @escaping () -> Void
     ) {
         self.record = record
-        self.tagNames = tagNames
+        self.tags = tags
         self.onEdit = onEdit
         self.onDeleted = onDeleted
         _viewModel = State(
@@ -84,10 +84,10 @@ struct JournalDetailView: View {
     /// 셀과 달리 상세에서는 태그를 3개로 줄이지 않는다 — 전문을 보러 들어온 화면이다.
     @ViewBuilder
     private var tagRow: some View {
-        if !tagNames.isEmpty {
+        if !tags.isEmpty {
             ChipGroup {
-                ForEach(tagNames, id: \.self) { name in
-                    TagPill(name)
+                ForEach(tags) { tag in
+                    TagPill(tag.name, category: tag.category)
                 }
             }
         }

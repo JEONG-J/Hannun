@@ -45,12 +45,25 @@ public extension ShapeStyle where Self == HannunTint {
     static func wash(_ base: Color) -> HannunTint { HannunTint(base: base) }
 }
 
+extension Color {
+    /// 유리 tint 로 넘길 옅은 원색 — `HannunTint` 의 유리 쪽 짝이다.
+    ///
+    /// `Glass.tint(_:)` 는 `ShapeStyle` 이 아니라 `Color` 만 받아서 `HannunTint` 를 그대로
+    /// 넘길 수 없다. 그래서 같은 "원색을 옅게 깐다" 규칙을 색 하나로 내준다.
+    ///
+    /// 스킴별로 알파를 가르지 않는 게 wash 와 다른 점이다 — 불투명 면과 달리 유리는 이미 뒤
+    /// 배경을 따라가므로, 같은 알파가 라이트에선 밝게 다크에선 어둡게 앉는다.
+    var glassWash: Color { opacity(Constants.glassWashOpacity) }
+}
+
 fileprivate enum Constants {
     static let lightSchemeOpacity: Double = 0.12
     static let darkSchemeOpacity: Double = 0.18
     /// 투명도 감소에서는 유리 대신 불투명 면 위에 놓이므로 wash 를 진하게 민다.
     static let lightSchemeBoostedOpacity: Double = 0.20
     static let darkSchemeBoostedOpacity: Double = 0.28
+    /// 불투명 wash 보다 높다 — 유리는 tint 를 한 번 더 묽게 먹여서 12% 로는 색이 안 남는다.
+    static let glassWashOpacity: Double = 0.35
 }
 
 #if DEBUG

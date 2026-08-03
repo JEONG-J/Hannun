@@ -18,10 +18,11 @@ enum JournalListPlaceholder: Equatable, Sendable {
     case noMatch
 }
 
-/// 하단 액세서리 왼쪽 한 줄이 말할 내용 (디자인 문서 §4.0).
+/// 큰 제목 아래 한 줄(`navigationSubtitle`)이 말할 내용 (디자인 문서 §4.0).
 ///
-/// 문구가 아니라 **무엇을 말할지**만 정한다 — 축약 여부에 따라 같은 뜻을 다른 길이로 적어야
-/// 해서 문자열까지 여기서 굳히면 뷰가 다시 분해해야 한다.
+/// 문구가 아니라 **무엇을 말할지**만 정한다 — 같은 상태를 부르는 이름은 자리가 바뀌면 같이
+/// 바뀌지만(액세서리 → 제목 아래), 목록이 어떤 상태인가는 그대로다. 문자열까지 여기서
+/// 굳히면 자리를 옮길 때마다 ViewModel 을 건드려야 한다.
 enum JournalListCaption: Equatable, Sendable {
 
     /// 아직 한 건도 없다. 이 줄이 곧 빈 상태의 CTA 다.
@@ -98,24 +99,32 @@ final class JournalListViewModel {
             : .total(count: entries.count)
     }
 
-    /// 지금 걸려 있는 필터의 이름. 종목 필터가 검색어보다 앞선다 — 칩은 화면에 그대로
-    /// 보이지만 검색어는 키보드를 내리면 사라져서, 둘 다 걸렸을 때 더 오래 남는 쪽이다.
+    /// 지금 고른 종목의 이름. 필터가 없거나 그 사이 종목이 지워졌으면 `nil` 이다.
+    var selectedHoldingName: String? {
+        guard let selectedHoldingID else { return nil }
+        return holdingTagsState.value?.first { $0.id == selectedHoldingID }?.name
+    }
+
+    /// 지금 걸려 있는 필터의 이름. 종목 필터가 검색어보다 앞선다 — 종목은 툴바 버튼이
+    /// 채운 아이콘으로 계속 드러내지만 검색어는 접히면 자취가 옅어져서, 둘 다 걸렸을 때
+    /// 화면에서 덜 보이는 쪽을 액세서리가 대신 말한다.
     private var filterName: String? {
-        if let selectedHoldingID,
-           let name = holdingTagsState.value?.first(where: { $0.id == selectedHoldingID })?.name {
-            return name
-        }
+        if let selectedHoldingName { return selectedHoldingName }
 
         let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return keyword.isEmpty ? nil : keyword
     }
 
-    /// 일지에 달린 종목 식별자를 화면에 보여줄 종목명으로 바꾼다.
-    /// 이름을 못 찾은 태그는 그리지 않는다 — 종목이 지워졌다는 뜻이다.
-    func tagNames(for entry: JournalRecord) -> [String] {
+    /// 일지에 달린 종목 식별자를 실제 보유 종목으로 되돌린다.
+    /// 찾지 못한 태그는 버린다 — 종목이 지워졌다는 뜻이다.
+    ///
+    /// 이름만 돌려주지 않는 이유는 태그 캡슐이 분류색을 입기 때문이다. 다만 화면에 쓸 표시용
+    /// 값(`JournalTag`)으로 바꾸는 건 View 가 한다 — ViewModel 이 디자인 시스템 타입을 만들면
+    /// 캡슐 모양이 바뀔 때마다 상태 코드가 따라 움직인다.
+    func taggedHoldings(for entry: JournalRecord) -> [HoldingRecord] {
         let holdings = holdingTagsState.value ?? []
         return entry.holdingIDs.compactMap { holdingID in
-            holdings.first { $0.id == holdingID }?.name
+            holdings.first { $0.id == holdingID }
         }
     }
 

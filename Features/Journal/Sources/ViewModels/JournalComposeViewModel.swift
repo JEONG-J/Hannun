@@ -24,16 +24,25 @@ final class JournalComposeViewModel {
     var content = ""
     var alertPrompt: AlertPrompt?
 
+    /// 이 기록이 **일어난** 시각. 사용자가 고른다 (JR-2).
+    ///
+    /// 매매일지는 사후에 몰아 쓰는 일이 잦다. 화면에 들어온 시각을 그대로 박으면 어제 판 걸
+    /// 오늘 적었을 때 일지의 날짜가 매매일이 아니라 "쓴 날" 이 된다 — 최신순 정렬,
+    /// "오늘/어제" 표기, "이번 달 n건" 집계가 전부 이 값을 본다.
+    ///
+    /// 실제 저장 시각은 `save()` 가 따로 `updatedAt` 에 적는다. 둘은 다른 질문에 답하므로
+    /// 한쪽이 다른 쪽을 대신하지 않는다.
+    var writtenAt: Date
+
     private(set) var selectedHoldingIDs: [UUID] = []
     private(set) var holdingTagsState: Loadable<[HoldingRecord]> = .idle
     private(set) var saveState: Loadable<JournalRecord> = .idle
     private(set) var isClosed = false
 
-    /// 자동으로 기록되는 작성 시각. 사용자 입력 UI 가 없다 (JR-2).
-    let writtenAt: Date
-
     private let entryID: UUID
     private let editingEntry: JournalRecord?
+    /// 화면에 들어왔을 때의 작성 시각. 날짜를 건드렸는지 판단하는 기준선이다.
+    private let initialWrittenAt: Date
     private let saveJournal: any SaveJournalUseCaseProtocol
     private let fetchHoldings: any FetchHoldingsUseCaseProtocol
 
@@ -52,8 +61,21 @@ final class JournalComposeViewModel {
     /// 저장에 실패한 이유. 제목 누락 같은 검증 실패도 이 자리에 인라인으로 표시된다.
     var saveFailure: AppError? { saveState.error }
 
+    /// 고를 수 있는 작성 시각의 상한 — 지금. 매매일지는 이미 일어난 일을 적는 기록이라
+    /// 앞날의 매매를 미리 적을 일이 없다.
+    ///
+    /// 판정을 UseCase 가 아니라 Picker 범위에 둔 이유는 이게 "저장해도 되는가" 가 아니라
+    /// "고를 수 있는가" 의 문제이기 때문이다. 제목 필수 규칙은 빈 제목이 만들어질 길이 여러
+    /// 갈래라 UseCase 가 판정자여야 하지만, 작성 시각은 이 Picker 말고 값이 들어올 곳이 없다.
+    /// 애초에 못 고르게 하면 되돌려 보낼 에러 문구 자체가 필요 없다.
+    var selectableWrittenAtRange: PartialRangeThrough<Date> { ...Date() }
+
     /// 닫기 확인이 필요한지. 새 글은 뭐라도 썼는지, 수정은 원본과 달라졌는지를 본다.
+    ///
+    /// 날짜도 센다 — 날짜만 바꾸고 닫으면 확인 없이 조용히 버려진다.
     var hasUnsavedChanges: Bool {
+        guard writtenAt == initialWrittenAt else { return true }
+
         guard let editingEntry else {
             return !trimmedTitle.isEmpty || !trimmedContent.isEmpty
                 || !selectedHoldingIDs.isEmpty
@@ -85,7 +107,10 @@ final class JournalComposeViewModel {
         self.saveJournal = saveJournal
         self.fetchHoldings = fetchHoldings
 
-        writtenAt = composition.editing?.writtenAt ?? now
+        // 수정 모드는 원본 시각을 그대로 싣는다 — 다시 여는 것만으로 매매일이 오늘로 밀리면
+        // 안 된다.
+        initialWrittenAt = composition.editing?.writtenAt ?? now
+        writtenAt = initialWrittenAt
         title = composition.editing?.title ?? ""
         content = composition.editing?.content ?? ""
         selectedHoldingIDs = composition.editing?.holdingIDs ?? []

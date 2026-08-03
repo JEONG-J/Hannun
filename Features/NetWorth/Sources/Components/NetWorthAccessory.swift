@@ -16,27 +16,34 @@ import SwiftUI
 /// **언제 기준인지**를 말하고, 히어로가 밀려 나가면 **얼마인지**를 대신 말한다. 같은 숫자를
 /// 한 화면에 두 번 적지 않으면서도 스크롤 아래에서 총자산을 잃지 않는다 (디자인 문서 §6).
 ///
-/// 갱신에 실패하면 스크롤 위치와 무관하게 `StaleBadge` 가 자리를 차지한다 — 지금 보고 있는
-/// 숫자를 믿어도 되는지가 그 숫자가 얼마인지보다 먼저다.
+/// 갱신 실패는 이 자리에서 알리지 않는다. 액세서리 왼쪽은 한 줄뿐이라 경고 배지가 들어오면
+/// 시각·총자산 교대가 통째로 멈춘다. 대신 **마지막으로 값을 채운 시각**을 그대로 적는다 —
+/// 갱신에 실패하면 그 시각이 멈춰 있으므로, 낡았다는 사실은 시계가 알아서 말한다.
 ///
-/// 오른쪽은 세그먼트가 아니라 **전환 버튼**이다. 라벨에 적힌 건 현재 통화가 아니라 **바뀔**
-/// 통화이므로 누르면 무엇이 되는지가 그대로 보인다. 세그먼트를 쓰면 두 칸 중 한 칸은 늘
-/// 아무 일도 하지 않는 버튼이 된다.
+/// **캡슐 전체가 통화 전환 버튼이다.** 이 탭의 액세서리에는 동작이 하나뿐이라 오른쪽 글자만
+/// 눌리게 두면 44pt 남짓한 과녁 하나를 위해 나머지 캡슐이 죽는다. 그래서 오른쪽은 컨트롤이
+/// 아니라 **지금 어떤 통화로 보고 있는지 적은 상태 라벨**이고, 누르는 자리는 캡슐 전부다.
+/// 라벨을 바뀔 통화로 적으면 KRW 화면에 USD 라고 쓰여 있게 되므로 현재 통화를 적는다 —
+/// 누르면 무엇이 되는지는 VoiceOver 힌트가 말한다.
 ///
 /// 값이 아니라 ViewModel 을 통째로 받는다. 액세서리는 `TabAccessoryHost` 가 **첫 등장 시점에
-/// 붙잡아 둔 클로저**로 그려지므로, 바깥에서 `freshness` 같은 값을 꺼내 넘기면 그 시점 값이
-/// 그대로 굳어 시세를 받아와도 캡션이 영영 "불러오는 중"에 머문다. 참조를 넘겨 이 안에서 읽으면
-/// Observation 이 추적해 정상적으로 다시 그려진다.
+/// 붙잡아 둔 클로저**로 그려지므로, 바깥에서 `lastRefreshedAt` 같은 값을 꺼내 넘기면 그 시점
+/// 값이 그대로 굳어 시세를 받아와도 캡션이 영영 "불러오는 중"에 머문다. 참조를 넘겨 이 안에서
+/// 읽으면 Observation 이 추적해 정상적으로 다시 그려진다.
 struct NetWorthAccessory: View {
 
     // MARK: - Property
 
     @Environment(\.accessoryLayout) private var layout
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let viewModel: NetWorthViewModel
 
-    private var freshness: QuoteFreshness { viewModel.freshness }
+    /// 누르면 넘어갈 통화. 라벨이 아니라 **동작**의 대상이라 화면에는 적지 않는다.
+    private var targetCurrency: Currency {
+        viewModel.baseCurrency == .krw ? .usd : .krw
+    }
 
     // MARK: - Body
 
@@ -45,24 +52,34 @@ struct NetWorthAccessory: View {
     }
 
     var body: some View {
-        BottomAccessory {
-            leading
-        } trailing: {
-            currencySwitch
+        Button {
+            viewModel.baseCurrency = targetCurrency
+        } label: {
+            BottomAccessory {
+                leading
+            } trailing: {
+                currencyLabel
+            }
+            // 캡슐 높이를 다 쓰고 그 사각형 전체를 과녁으로 선언한다. 이게 없으면 히트
+            // 영역이 **글자가 그려진 픽셀**로 좁아져, 시각과 통화 사이 빈 공간이 안 눌린다.
+            .frame(maxHeight: .infinity)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
+        .accessibilityValue(viewModel.baseCurrency.displayName)
+        .accessibilityHint(
+            String(format: Constants.currencySwitchHintFormat, targetCurrency.displayName)
+        )
+        .hannunAnimation(.selection, value: viewModel.baseCurrency)
     }
 
+    /// 한 번도 채우지 못했을 때만 시각이 없다. 그 외에는 언제 채운 값인지를 늘 말한다.
     @ViewBuilder
     private var leading: some View {
-        switch freshness {
-        case .unknown:
+        if let lastRefreshedAt = viewModel.lastRefreshedAt {
+            alternatingCaption(refreshedAt: lastRefreshedAt)
+        } else {
             AccessoryCaption(Constants.pendingCaption)
-
-        case let .fresh(date):
-            alternatingCaption(refreshedAt: date)
-
-        case let .stale(since):
-            staleBadge(since: since)
         }
     }
 
@@ -95,18 +112,25 @@ struct NetWorthAccessory: View {
         }
     }
 
-    private var currencySwitch: some View {
-        let target: Currency = viewModel.baseCurrency == .krw ? .usd : .krw
-
-        return AccessoryControlButton(
-            target.rawValue,
-            isOn: false,
-            indicatesSelection: false,
-            accessibilityLabel: String(format: Constants.currencySwitchLabelFormat,
-                                       target.displayName)
-        ) {
-            viewModel.baseCurrency = target
-        }
+    /// 지금 보고 있는 통화. 면도 스트로크도 두지 않고 왼쪽 캡션과 같은 한 줄 글자로 두되,
+    /// 눌리는 캡슐이라는 신호는 색으로 남긴다. 다크에서 `brand` 는 4.07:1 로 AA 미달이라
+    /// 잉크로 내린다 — 그 대신 다크에서는 어포던스가 위치(캡슐 오른쪽 끝)에만 남는다.
+    ///
+    /// 높이를 44pt 로 잡아 두는 건 이 글자의 과녁이 아니라 **캡슐 내용의 최소 높이**를 위해서다.
+    /// 누르는 자리는 캡슐 전부이고, 내용이 얇아지면 그 과녁도 같이 얇아진다.
+    ///
+    /// VoiceOver 에는 숨긴다. 캡슐이 하나의 버튼이고 그 값이 이미 "원화 / 미국 달러"라
+    /// 여기서 또 읽으면 "KRW, 원화"가 된다.
+    private var currencyLabel: some View {
+        Text(viewModel.baseCurrency.rawValue)
+            .hannunFont(.pillLabel)
+            .foregroundStyle(colorScheme == .dark ? Color.textPrimary : Color.brand)
+            .lineLimit(1)
+            // 기본값인 `.interpolate` 는 글리프를 보간해 KRW·USD 가 겹쳐 뭉개진다.
+            // 서로 무관한 글자를 섞어 봐야 얻을 게 없으므로 크로스페이드로 갈아끼운다.
+            .contentTransition(.opacity)
+            .frame(minHeight: .minimumTouchTarget)
+            .accessibilityHidden(true)
     }
 
     /// 축약 문구는 inline 만이 아니라 AX 사이즈에서도 쓴다 — 캡션을 숨기는 대신 줄인다.
@@ -116,28 +140,11 @@ struct NetWorthAccessory: View {
             ? Constants.inlineCaptionSuffix
             : Constants.expandedCaptionSuffix
     }
-
-    /// 시세를 한 번도 받지 못한 종목만 낡았다면 "몇 분 전"을 말할 근거가 없다.
-    /// 이럴 때 0분으로 적으면 방금 받은 값처럼 읽히므로 문구를 따로 쓴다.
-    @ViewBuilder
-    private func staleBadge(since date: Date?) -> some View {
-        if let date {
-            StaleBadge(minutesElapsed: minutesElapsed(since: date))
-        } else {
-            StaleBadge(message: Constants.unavailableQuoteMessage)
-        }
-    }
-
-    private func minutesElapsed(since date: Date) -> Int {
-        max(0, Int(Date.now.timeIntervalSince(date) / Constants.secondsPerMinute))
-    }
 }
 
 fileprivate enum Constants {
     static let pendingCaption = "시세 불러오는 중"
-    static let unavailableQuoteMessage = "갱신 실패 · 시세 없는 종목 포함"
-    static let secondsPerMinute: TimeInterval = 60
     static let expandedCaptionSuffix = "시세 기준"
     static let inlineCaptionSuffix = "기준"
-    static let currencySwitchLabelFormat = "%@로 전환"
+    static let currencySwitchHintFormat = "두 번 탭하면 %@로 바꿉니다"
 }

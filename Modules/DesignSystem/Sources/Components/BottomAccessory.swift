@@ -41,6 +41,18 @@ import SwiftUI
 ///
 /// 컨트롤이 없는 탭은 한 자리짜리 이니셜라이저를 쓴다.
 ///
+/// ## 동작이 하나뿐이면 캡슐째 버튼으로 쓴다
+///
+/// 탭이 가진 동작이 하나이고 그게 **상태를 뒤집는 것**뿐이면, 이 컨테이너를 통째로 `Button`
+/// 라벨에 넣는다. 오른쪽 글자 하나만 눌리게 두면 좁은 과녁 하나를 위해 캡슐 나머지가 죽는다.
+/// 그때 오른쪽은 컨트롤이 아니라 **현재 상태를 적은 라벨**이므로 알약도 테두리도 씌우지 않는다
+/// (순자산 탭의 통화 전환). 열 대상이 여럿이거나 왼쪽·오른쪽이 서로 다른 곳으로 가는 탭에는
+/// 쓸 수 없다 — 캡슐 어디를 눌러도 같은 일이 일어나야 성립한다.
+///
+/// 이때 이 컨테이너에 `.frame(maxHeight: .infinity)` 와 `.contentShape(.rect)` 를 반드시
+/// 같이 건다. 버튼의 히트 영역은 라벨이 **그린 픽셀**이라, 없으면 왼쪽 문구와 오른쪽 라벨
+/// 사이 빈 공간이 눌리지 않아 "캡슐 전체가 버튼"이라는 말이 절반만 사실이 된다.
+///
 /// ## 축약은 내용이 정한다
 ///
 /// 이 컨테이너는 시스템 placement 를 `AccessoryLayout` 으로 옮겨 `\.accessoryLayout` 으로
@@ -87,7 +99,7 @@ public struct BottomAccessory<Leading: View, Trailing: View>: View {
         return placement == .inline ? .inline : .expanded
     }
 
-    /// 시스템 캡슐 안쪽 여백. 44pt 터치 타깃이 캡슐 테두리에 닿지 않을 만큼만 준다 —
+    /// 시스템 캡슐 안쪽 여백. 문구와 컨트롤이 둥근 테두리에 붙어 보이지 않을 만큼 들여쓴다 —
     /// 바깥 여백은 시스템이 이미 넣으므로 여기서 더 벌리면 내용이 가운데로 몰린다.
     /// 축약 상태에서는 캡슐이 좁아져 1pt 도 아쉬우므로 더 붙인다.
     private var horizontalPadding: CGFloat {
@@ -103,8 +115,8 @@ public extension BottomAccessory where Trailing == EmptyView {
 }
 
 fileprivate enum Constants {
-    static let horizontalPadding: CGFloat = 6
-    static let inlineHorizontalPadding: CGFloat = 2
+    static let horizontalPadding: CGFloat = .spacingM
+    static let inlineHorizontalPadding: CGFloat = .spacingXS
     /// 폭이 모자랄 때 왼쪽 문구가 먼저 줄어들게 한다. 오른쪽 컨트롤은 고유 폭을 지킨다.
     static let trailingLayoutPriority: Double = 1
     /// 프리뷰 전용. 시스템 컨테이너 높이의 근사치다.
@@ -151,19 +163,23 @@ private struct BottomAccessoryPreview: View {
             .glassEffect(.regular, in: .capsule)
     }
 
+    /// 캡슐째 버튼인 변형. 오른쪽은 컨트롤이 아니라 지금 보고 있는 통화를 적은 라벨이다.
     private var netWorthAccessory: some View {
-        BottomAccessory {
-            AccessoryCaption(value: "12:04", suffix: "시세 기준")
-        } trailing: {
-            AccessoryControlButton(
-                currency == .krw ? "USD" : "KRW",
-                isOn: false,
-                indicatesSelection: false,
-                accessibilityLabel: currency == .krw ? "미국 달러로 전환" : "원화로 전환"
-            ) {
-                currency = currency == .krw ? .usd : .krw
+        Button {
+            currency = currency == .krw ? .usd : .krw
+        } label: {
+            BottomAccessory {
+                AccessoryCaption(value: "12:04", suffix: "시세 기준")
+            } trailing: {
+                Text(currency.rawValue)
+                    .hannunFont(.pillLabel)
+                    .foregroundStyle(Color.brand)
+                    .frame(minHeight: .minimumTouchTarget)
             }
+            .frame(maxHeight: .infinity)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
     }
 
     private var portfolioAccessory: some View {

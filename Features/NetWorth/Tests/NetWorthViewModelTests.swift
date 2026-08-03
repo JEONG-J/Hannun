@@ -118,6 +118,31 @@ struct NetWorthViewModelTests {
         #expect(viewModel.freshness == .stale(since: nil))
     }
 
+    @Test("기준 시각 없이 stale 이어도 값을 채운 시각은 남는다")
+    @MainActor
+    func keepsRefreshTimeWithoutQuoteBasis() async {
+        let viewModel = makeViewModel(
+            holdings: SampleFixtures.mixedHoldings,
+            marketData: FixedPriceMarketDataService(asOf: SampleFixtures.quotedAt)
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.lastRefreshedAt == SampleFixtures.refreshedAt)
+    }
+
+    @Test("한 번도 채우지 못했으면 시각이 없다")
+    @MainActor
+    func hasNoRefreshTimeBeforeFirstSuccess() async {
+        let netWorth = ToggleableNetWorthUseCase(total: .krw(1_000_000))
+        netWorth.failure = .network("끊김")
+        let viewModel = makeViewModel(fetchNetWorth: netWorth)
+
+        await viewModel.load()
+
+        #expect(viewModel.lastRefreshedAt == nil)
+    }
+
     // MARK: - NW-2 기준 통화
 
     @Test("기준 통화를 바꾸면 다시 불러오기 전에 즉시 재환산한다")

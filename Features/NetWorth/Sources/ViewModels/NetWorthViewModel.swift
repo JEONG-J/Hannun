@@ -61,6 +61,13 @@ final class NetWorthViewModel {
 
     private(set) var freshness: QuoteFreshness = .unknown
 
+    /// 화면에 있는 숫자를 마지막으로 채운 시각. 하단 액세서리 왼쪽이 이 시각을 말한다 (NW-1).
+    ///
+    /// `freshness` 와 따로 든다. 시세를 한 번도 받지 못한 종목이 섞이면 기준 시각을 말할 수
+    /// 없어 `.stale(since: nil)` 이 되지만, **불러온 시각**은 그때도 안다. 갱신에 실패하면
+    /// 갱신되지 않으므로 화면에 남은 숫자와 여기 적힌 시각은 항상 같은 조회에서 나온다.
+    private(set) var lastRefreshedAt: Date?
+
     private let fetchNetWorth: any FetchNetWorthUseCaseProtocol
     private let fetchCategoryBreakdown: any FetchCategoryBreakdownUseCaseProtocol
     private let fetchTrend: any FetchNetWorthTrendUseCaseProtocol
@@ -131,6 +138,7 @@ final class NetWorthViewModel {
                     dailyChange: await dailyChange(against: netWorth.total, asOf: refreshedAt)
                 )
             )
+            lastRefreshedAt = refreshedAt
             freshness = quoteFreshness(of: netWorth.valuations, refreshedAt: refreshedAt)
         } catch {
             degrade(on: error)

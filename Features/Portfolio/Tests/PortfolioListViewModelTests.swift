@@ -54,6 +54,27 @@ struct PortfolioListViewModelTests {
         ["005930": .krw(80_000), "AAPL": .usd(200)]
     }
 
+    /// 이름 오름차순과 수익률 내림차순이 서로 반대가 되도록 짠 한 카테고리짜리 표본.
+    /// 정렬 기준이 실제로 바뀌었는지 한 배열로 확인할 수 있다.
+    private var mixedReturnRecords: [HoldingRecord] {
+        [
+            SampleRecords.holding(
+                category: .domesticStock,
+                name: "손실",
+                ticker: "000660",
+                quantity: 10,
+                averagePrice: 70_000
+            ),
+            SampleRecords.holding(
+                category: .domesticStock,
+                name: "이익",
+                ticker: "005930",
+                quantity: 1,
+                averagePrice: 70_000
+            ),
+        ]
+    }
+
     // MARK: - Function
 
     @Test("카테고리별로 묶고 소계를 더한다")
@@ -97,6 +118,184 @@ struct PortfolioListViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.sections.first?.valuations.map(\.holding.name) == ["대액", "소액"])
+    }
+
+    @Test("정렬을 수익률순으로 바꾸면 수익률이 높은 종목이 먼저 온다")
+    func sortsByReturnRateDescending() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(mixedReturnRecords),
+            prices: ["005930": .krw(80_000), "000660": .krw(50_000)]
+        )
+
+        await viewModel.load()
+        viewModel.sortOrder = .returnRate
+
+        #expect(viewModel.sections.first?.valuations.map(\.holding.name) == ["이익", "손실"])
+    }
+
+    @Test("수익률순에서 수익률 없는 종목은 손실 종목보다도 뒤로 간다")
+    func placesUnpricedHoldingsLastWhenSortingByReturnRate() async {
+        let unpriced = SampleRecords.holding(
+            category: .domesticStock,
+            name: "평단미상",
+            ticker: "035420",
+            quantity: 2
+        )
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(mixedReturnRecords + [unpriced]),
+            prices: ["005930": .krw(80_000), "000660": .krw(50_000), "035420": .krw(90_000)]
+        )
+
+        await viewModel.load()
+        viewModel.sortOrder = .returnRate
+
+        let names = viewModel.sections.first?.valuations.map(\.holding.name)
+        #expect(names == ["이익", "손실", "평단미상"])
+    }
+
+    @Test("정렬을 바꿔도 카테고리 카드 순서는 고정이다")
+    func keepsCategoryOrderRegardlessOfSort() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+
+        for order in HoldingSortOrder.allCases {
+            viewModel.sortOrder = order
+            #expect(viewModel.sections.map(\.category) == [.cash, .domesticStock, .overseasStock])
+        }
+    }
+
+    @Test("정렬을 가나다순으로 바꾸면 이름 오름차순으로 온다")
+    func sortsByName() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(mixedReturnRecords),
+            prices: ["005930": .krw(80_000), "000660": .krw(50_000)]
+        )
+
+        await viewModel.load()
+        viewModel.sortOrder = .name
+
+        #expect(viewModel.sections.first?.valuations.map(\.holding.name) == ["손실", "이익"])
+    }
+
+    @Test("기본 순서를 벗어날 때만 정렬을 건드렸다고 본다")
+    func marksSortAdjustedOutsideInitialOrder() {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository()
+        )
+
+        #expect(viewModel.sortOrder == .initial)
+        #expect(viewModel.isSortAdjusted == false)
+
+        viewModel.sortOrder = .returnRate
+        #expect(viewModel.isSortAdjusted)
+
+        viewModel.sortOrder = .initial
+        #expect(viewModel.isSortAdjusted == false)
+    }
+
+    /// 검색창은 종목이 있을 때만 화면에 붙는다. 마지막 종목을 지운 뒤에도 검색어가 남아
+    /// 있으면, 다음에 넣은 종목이 보이지 않는 검색어에 걸려 사라진다.
+    @Test("마지막 종목이 사라지면 검색어도 함께 지운다")
+    func clearsSearchWhenLastHoldingDisappears() async {
+        let repository = InMemoryHoldingRepository(records)
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: repository,
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.search("삼성")
+        #expect(viewModel.isSearching)
+
+        for id in [cashID, domesticID, overseasID] {
+            await viewModel.delete(id: id)
+        }
+
+        #expect(viewModel.hasHoldings == false)
+        #expect(viewModel.searchText.isEmpty)
+        #expect(viewModel.isSearching == false)
+    }
+
+    @Test("검색어는 종목명과 티커를 모두 본다", arguments: ["삼성", "005930", "005"])
+    func searchesNameAndTicker(_ keyword: String) async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.search(keyword)
+
+        #expect(viewModel.isSearching)
+        #expect(viewModel.sections.map(\.category) == [.domesticStock])
+        #expect(viewModel.sections.first?.valuations.map(\.holding.name) == ["삼성전자"])
+    }
+
+    @Test("검색어는 대소문자를 가리지 않는다")
+    func searchIgnoresCase() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.search("aapl")
+
+        #expect(viewModel.sections.first?.valuations.map(\.holding.name) == ["Apple"])
+    }
+
+    @Test("공백만 넣은 검색어는 아무것도 거르지 않는다")
+    func blankSearchKeepsEverything() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.search("   ")
+
+        #expect(viewModel.isSearching == false)
+        #expect(viewModel.summaryTitle == "총 평가금액")
+        #expect(viewModel.sections.map(\.category) == [.cash, .domesticStock, .overseasStock])
+    }
+
+    @Test("검색 중에는 요약이 걸러 낸 만큼만 센다")
+    func summaryFollowsSearch() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.search("삼성")
+
+        #expect(viewModel.summaryTitle == "검색 결과 평가금액")
+        #expect(viewModel.summaryAmount == .krw(800_000))
+        #expect(viewModel.visibleHoldingCount == 1)
+    }
+
+    @Test("검색을 시작하면 접어 둔 카드가 다시 펼쳐진다")
+    func searchExpandsCollapsedSections() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.setExpanded(false, for: .domesticStock)
+        #expect(!viewModel.isExpanded(.domesticStock))
+
+        viewModel.search("삼성")
+        #expect(viewModel.isExpanded(.domesticStock))
+
+        // 검색을 이어 치는 동안에는 다시 접을 수 있어야 한다.
+        viewModel.setExpanded(false, for: .domesticStock)
+        viewModel.search("삼성전")
+        #expect(!viewModel.isExpanded(.domesticStock))
     }
 
     @Test("현금은 평단가도 수익률도 없다")

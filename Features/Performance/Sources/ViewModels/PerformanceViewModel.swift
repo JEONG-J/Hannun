@@ -26,7 +26,15 @@ final class PerformanceViewModel {
     private(set) var selectedBenchmark: BenchmarkIndex?
 
     /// 스크럽 중인 시점. 차트가 직접 갱신하므로 바인딩할 수 있어야 한다.
-    var scrubbedDate: Date?
+    var scrubbedDate: Date? {
+        didSet {
+            if scrubbedDate != nil { hasScrubbed = true }
+        }
+    }
+
+    /// 한 번이라도 스크럽했는지. `scrubbedDate` 는 손을 떼면 `nil` 로 돌아가지만 이 값은
+    /// 그대로 남아 — 한 번 배운 조작을 다시 안내하지 않기 위해서다.
+    private(set) var hasScrubbed = false
 
     /// 고른 지수를 차트에 실제로 겹칠지.
     ///
@@ -77,6 +85,14 @@ final class PerformanceViewModel {
         else { return false }
 
         return trend.portfolio.count < 2
+    }
+
+    /// 스크럽 가이드 한 줄을 보여줄지. 한 번이라도 스크럽했거나, 추이가 아직 로딩·실패
+    /// 중이거나, 점이 하나뿐이라 스크럽할 대상이 없으면(그 경우 `insufficientDataNotice` 가
+    /// 대신 뜬다) 안내할 이유가 없다.
+    var isScrubHintVisible: Bool {
+        guard case let .loaded(trend) = trendState else { return false }
+        return !hasScrubbed && trend.portfolio.count > 1
     }
 
     /// 차트에 겹칠 벤치마크. 비교가 꺼져 있거나 선택이 없거나 조회에 실패한 지수면

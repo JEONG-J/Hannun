@@ -369,6 +369,75 @@ struct PerformanceViewModelTests {
         #expect(viewModel.headline?.rate == PerformanceSampleData.ytdReturn.rate)
     }
 
+    @Test("첫 로딩 직후에는 스크럽 가이드 힌트가 보인다")
+    func hintIsVisibleAfterFirstLoad() async {
+        let viewModel = makeViewModel()
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.isScrubHintVisible)
+    }
+
+    @Test("스크럽하면 배웠다고 기록하고 힌트를 감춘다")
+    func scrubbingMarksAsLearnedAndHidesHint() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        #expect(viewModel.hasScrubbed)
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("손을 떼도 한 번 배운 힌트는 되살아나지 않는다")
+    func releasingScrubKeepsHintHidden() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        viewModel.scrubbedDate = nil
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("스크럽 후 기간을 바꿔도 힌트는 되살아나지 않는다")
+    func changingPeriodAfterScrubKeepsHintHidden() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        await viewModel.selectPeriod(.oneMonth)
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("로딩 중에는 힌트를 보이지 않는다")
+    func hintStaysHiddenWhileLoading() {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("추이 조회에 실패하면 힌트를 보이지 않는다")
+    func hintStaysHiddenOnFailure() async {
+        let viewModel = makeViewModel(
+            trend: { _, _, _ in throw AppError.network("시세 서버 응답 없음") }
+        )
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("추이 점이 하나뿐이면 힌트를 보이지 않는다")
+    func hintStaysHiddenWithSinglePoint() async {
+        let viewModel = makeViewModel(trend: { _, _, _ in [PerformanceSampleData.trendPoints[0]] })
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
     // MARK: - Function
 
     private static var calendar: Calendar {

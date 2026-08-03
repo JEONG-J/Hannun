@@ -95,10 +95,21 @@ struct PerformanceContentView: View {
 
     /// 차트는 콘텐츠라 glass 를 깔지 않는다 — 불투명 surface 카드 위에 얹는다 (UI 스펙 §4.3).
     private var chartCard: some View {
-        chart
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.spacingL)
-            .hannunGlass(.contentSurface, in: .hannunContainer())
+        VStack(alignment: .leading, spacing: .spacingS) {
+            chart
+
+            if viewModel.isScrubHintVisible {
+                Text(Constants.scrubHintMessage)
+                    .hannunFont(.caption)
+                    .foregroundStyle(Color.textSecondary)
+                    // 같은 안내를 차트 accessibilityLabel 이 이미 말하므로 장식으로 숨긴다.
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.spacingL)
+        .hannunGlass(.contentSurface, in: .hannunContainer())
+        .hannunAnimation(.selection, value: viewModel.isScrubHintVisible)
     }
 
     @ViewBuilder
@@ -115,7 +126,13 @@ struct PerformanceContentView: View {
                 insufficientDataMessage: Constants.insufficientDataMessage,
                 selection: $viewModel.scrubbedDate
             )
+            // `.contain` 이 없으면 라벨이 서브트리 전체를 하나로 합쳐 범례의
+            // `.accessibilityElement(children: .combine)` 이 통째로 삼켜진다. 컨테이너에
+            // 라벨·힌트를 달고도 자식은 그대로 순회되게 하는 조합이다 (`CurrencyToggle` 과
+            // 같은 패턴).
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(Constants.chartAccessibilityLabel)
+            .accessibilityHint(Constants.chartAccessibilityHint)
         case let .failed(error):
             EmptyStateView(
                 systemImageName: Constants.failureSymbolName,
@@ -201,7 +218,9 @@ fileprivate enum Constants {
     static let trendFailureTitle = "추이를 불러오지 못했어요"
     static let retryTitle = "다시 시도"
     static let failureSymbolName = "exclamationmark.triangle"
-    static let chartAccessibilityLabel = "자산 추이 차트. 좌우로 쓸어 시점별 수익률을 확인할 수 있어요."
+    static let chartAccessibilityLabel = "자산 추이 차트"
+    static let chartAccessibilityHint = "좌우로 쓸면 시점별 수익률을 읽어 줍니다"
+    static let scrubHintMessage = "차트를 좌우로 쓸어 시점별 수익률을 볼 수 있어요"
     /// 히어로가 거의 다 밀려 나간 뒤에 교대한다 — 살짝 걸쳐 있을 때 바뀌면 같은 숫자가
     /// 위아래에 동시에 보인다.
     static let heroVisibilityThreshold: Double = 0.1

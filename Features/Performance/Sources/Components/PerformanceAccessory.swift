@@ -42,7 +42,11 @@ struct PerformanceAccessory: View {
         BottomAccessory {
             periodStrip
         } trailing: {
+            // `AccessoryControlButton` 내부 애니메이션은 `isOn: false` 상수라 절대 트리거되지
+            // 않는다 — 실제로 바뀌는 값(`granularity`)에 트랜잭션을 걸어야 라벨의
+            // `.contentTransition(.opacity)` 가 발화한다.
             granularityToggle
+                .hannunAnimation(.selection, value: viewModel.granularity)
         }
     }
 
@@ -50,6 +54,10 @@ struct PerformanceAccessory: View {
 
     /// 왼쪽 한 줄은 정보이면서 시트의 손잡이다 — 눌리는 캡션에는 `chevron.up` 을 붙여
     /// 열 것이 있다는 걸 보이게 한다 (디자인 문서 R4).
+    ///
+    /// `.accessibilityLabel` 을 달면 버튼이 접근성 요소 하나로 접혀 자식 `Text` 가 말하던
+    /// 값이 전부 묻힌다 — 라벨은 브리프가 못 박은 문구 그대로 두고, `.accessibilityValue` 로
+    /// 지금 화면이 말하는 한 줄(기간·단위 또는 수익률)을 가산한다.
     private var periodStrip: some View {
         Button {
             viewModel.isPeriodPickerPresented = true
@@ -58,6 +66,7 @@ struct PerformanceAccessory: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Constants.pickerAccessibilityLabel)
+        .accessibilityValue(viewModel.isHeroVisible ? viewModel.periodSummary : headlineDescription)
         .accessibilityHint(Constants.pickerAccessibilityHint)
     }
 
@@ -98,6 +107,16 @@ struct PerformanceAccessory: View {
         } else {
             periodCaption
         }
+    }
+
+    /// `headlineCaption` 이 화면에 그리는 내용을 말로 옮긴 것 — `.accessibilityValue` 전용.
+    /// 헤드라인이 아직 없으면(계산할 기록이 없을 때) 기간·단위로 대신 말한다.
+    private var headlineDescription: String {
+        guard let headline = viewModel.headline else { return viewModel.periodSummary }
+        let prefix = headline.isScrubbing
+            ? Constants.scrubbedHeadlinePrefix
+            : Constants.headlinePrefix
+        return "\(prefix) \(AmountFormatter.compactPercentage(ratio: headline.rate))"
     }
 
     /// 오른쪽은 일별/월별을 오가는 전환형 컨트롤이다. `NetWorthAccessory` 의 통화 전환과 같은
@@ -166,7 +185,7 @@ private struct PerformanceAccessoryPreview: View {
             }
 
             labeled("히어로가 밀려 나간 뒤 — 내 수익률") {
-                heroHiddenAccessory
+                PerformanceAccessory(viewModel: .previewWithHeroHidden)
             }
         }
         .padding(.spacingL)
@@ -175,12 +194,6 @@ private struct PerformanceAccessoryPreview: View {
     }
 
     // MARK: - Function
-
-    private var heroHiddenAccessory: some View {
-        let viewModel = PerformanceViewModel.preview
-        viewModel.isHeroVisible = false
-        return PerformanceAccessory(viewModel: viewModel)
-    }
 
     private func labeled(
         _ title: String,

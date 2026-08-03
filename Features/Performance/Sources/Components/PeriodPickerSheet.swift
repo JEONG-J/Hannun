@@ -58,10 +58,7 @@ struct PeriodPickerSheet: View {
         let isSelected = viewModel.period == period
 
         return Button {
-            Task {
-                await viewModel.selectPeriod(period)
-                dismiss()
-            }
+            Task { await viewModel.selectPeriod(period) }
         } label: {
             HStack(spacing: .spacingM) {
                 VStack(alignment: .leading, spacing: .spacingXS) {

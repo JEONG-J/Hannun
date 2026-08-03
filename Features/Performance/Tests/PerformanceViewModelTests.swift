@@ -182,6 +182,36 @@ struct PerformanceViewModelTests {
         #expect(viewModel.scrubbedDate == nil)
     }
 
+    @Test("단위를 빠르게 두 번 눌러도 나중에 시작한 요청 결과만 반영된다")
+    func rapidGranularityTogglesKeepLatestRequestWinning() async {
+        // 첫 토글(.monthly)은 문을 걸어 두고, 그 사이 두 번째 토글(.daily)이 먼저 끝나게 만든다.
+        // 이 순서에서 첫 토글이 나중에 풀려도 결과를 덮어써서는 안 된다 — 화면에 남는 값은
+        // 항상 사용자의 마지막 조작(.daily)과 맞아야 한다.
+        let gate = RequestGate()
+        let viewModel = makeViewModel(trend: { _, _, granularity in
+            if granularity == .monthly {
+                await gate.wait()
+                return PerformanceSampleData.trendPoints
+            }
+            return Array(PerformanceSampleData.trendPoints.prefix(2))
+        })
+
+        await viewModel.loadIfNeeded()
+
+        async let first: Void = viewModel.toggleGranularity()
+        async let second: Void = viewModel.toggleGranularity()
+        await second
+
+        #expect(viewModel.granularity == .daily)
+        #expect(viewModel.trendState.value?.portfolio.count == 2)
+
+        await gate.signal()
+        await first
+
+        #expect(viewModel.granularity == .daily)
+        #expect(viewModel.trendState.value?.portfolio.count == 2)
+    }
+
     @Test("periodSummary가 기간과 단위를 함께 말한다")
     func periodSummaryDescribesPeriodAndGranularity() {
         let viewModel = makeViewModel()
@@ -196,6 +226,17 @@ struct PerformanceViewModelTests {
         viewModel.isPeriodPickerPresented = true
 
         await viewModel.selectPeriod(.oneMonth)
+
+        #expect(viewModel.isPeriodPickerPresented == false)
+    }
+
+    @Test("이미 보고 있던 기간을 다시 골라도 시트는 닫힌다")
+    func reselectingSamePeriodStillClosesPicker() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.isPeriodPickerPresented = true
+
+        await viewModel.selectPeriod(.yearToDate)
 
         #expect(viewModel.isPeriodPickerPresented == false)
     }
@@ -529,6 +570,21 @@ private actor TrendRequestRecorder {
 
     func record(_ request: TrendRequest) {
         requests.append(request)
+    }
+}
+
+/// 스텁 클로저 하나를 원하는 시점까지 붙잡아 두는 문. 두 조회가 겹칠 때 어느 쪽이
+/// 먼저 끝나는지를 테스트가 직접 정하기 위해 쓴다.
+private actor RequestGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func wait() async {
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func signal() {
+        continuation?.resume()
+        continuation = nil
     }
 }
 

@@ -75,18 +75,31 @@ struct BenchmarkPickerSheet: View {
     }
 
     /// 고를 지수가 없으면 겹칠 대상도 없으므로 스위치를 비활성으로 내리고 이유를 적는다.
+    ///
+    /// 이유는 스위치 밑에 형제로도 보이지만, VoiceOver 는 그 둘을 따로 읽어 흐려진 스위치와
+    /// 이유가 이어지지 않는다 — `accessibilityHint` 로 스위치 자체에 붙여 원인과 컨트롤을
+    /// 하나로 묶고, 형제 `Text` 는 시각 전용으로 남겨 둔다.
     private var overlayToggleRow: some View {
         VStack(alignment: .leading, spacing: .spacingXS) {
             Toggle(Constants.overlayToggleTitle, isOn: overlayBinding)
+                .hannunFont(.body)
+                .foregroundStyle(Color.textPrimary)
+                .tint(Color.brand)
                 .disabled(viewModel.selectedBenchmark == nil)
+                .accessibilityHint(overlayDisabledHint)
 
             if viewModel.selectedBenchmark == nil {
                 Text(Constants.overlayDisabledMessage)
                     .hannunFont(.caption)
                     .foregroundStyle(Color.textSecondary)
+                    .accessibilityHidden(true)
             }
         }
         .listRowBackground(Color.surfacePrimary)
+    }
+
+    private var overlayDisabledHint: String {
+        viewModel.selectedBenchmark == nil ? Constants.overlayDisabledMessage : ""
     }
 
     /// 하나도 못 고르는 상태에서 "다시 누르면 해제됩니다"를 띄우면 고를 수 있다는 뜻으로

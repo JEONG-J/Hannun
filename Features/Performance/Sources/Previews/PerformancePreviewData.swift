@@ -183,6 +183,16 @@ extension PerformanceViewModel {
         return viewModel
     }
 
+    /// 히어로(큰 수익률)가 스크롤로 밀려난 뒤 상태. 액세서리 왼쪽이 기간·단위 대신 내
+    /// 수익률을 말하는지 본다. computed property 안에서 즉석으로 만들면 부모가 다시 그려질
+    /// 때마다 상태가 초기화되므로, 다른 프리뷰들처럼 이름 붙은 static 프로퍼티로 둔다.
+    @MainActor
+    static var previewWithHeroHidden: PerformanceViewModel {
+        let viewModel = PerformanceViewModel.preview
+        viewModel.isHeroVisible = false
+        return viewModel
+    }
+
     /// 아직 아무 지수도 고르지 않은 상태. 벤치마크 시트의 "차트에 겹치기" 스위치가
     /// `.disabled(true)` 로 내려가는지 본다.
     @MainActor

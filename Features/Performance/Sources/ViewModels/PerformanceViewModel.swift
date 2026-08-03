@@ -55,6 +55,12 @@ final class PerformanceViewModel {
     private(set) var isSummaryStale = false
     private(set) var isTrendStale = false
 
+    /// `loadTrend()` 를 부를 때마다 하나씩 늘어난다. 기간·단위 컨트롤은 재탭마다 값을 뒤집는
+    /// 전환형이라(구 `GranularityToggle` 세그먼트처럼 같은 값 재탭이 걸러지지 않는다) 빠르게
+    /// 두 번 누르면 두 조회가 동시에 떠 있을 수 있다 — 나중에 **끝난** 쪽이 아니라 나중에
+    /// **시작한** 쪽 결과만 반영해야 라벨(`granularity`)과 차트(`trendState`)가 어긋나지 않는다.
+    private var trendRequestID = 0
+
     private let calculateYTDReturnUseCase: any CalculateYTDReturnUseCaseProtocol
     private let fetchNetWorthTrendUseCase: any FetchNetWorthTrendUseCaseProtocol
     private let compareBenchmarkUseCase: any CompareBenchmarkUseCaseProtocol
@@ -277,6 +283,9 @@ final class PerformanceViewModel {
     private func loadTrend() async {
         if trendState.value == nil { trendState = .loading }
 
+        trendRequestID += 1
+        let requestID = trendRequestID
+
         let range = Self.dateRange(for: period, now: now(), calendar: calendar)
         let indices = BenchmarkIndex.allCases
         let exchangeRate = await exchangeRateService.currentRate()
@@ -296,6 +305,10 @@ final class PerformanceViewModel {
                 exchangeRate: exchangeRate
             )
 
+            // 이 사이 더 최신 요청이 떴다면 지금 손에 든 결과는 낡은 것이다 — 나중에 끝나도
+            // 반영하지 않는다. 그래야 화면에 남는 값은 항상 사용자의 **마지막** 조작과 맞는다.
+            guard requestID == trendRequestID else { return }
+
             trendState = .loaded(
                 PerformanceTrend(
                     requesting: indices,
@@ -305,6 +318,7 @@ final class PerformanceViewModel {
             )
             isTrendStale = false
         } catch {
+            guard requestID == trendRequestID else { return }
             trendState = retaining(trendState, after: error, markingStale: &isTrendStale)
         }
     }

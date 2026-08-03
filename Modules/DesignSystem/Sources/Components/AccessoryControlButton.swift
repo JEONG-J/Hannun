@@ -179,6 +179,7 @@ private struct AccessoryControlButtonPreview: View {
                 ) {
                     showsDollar.toggle()
                 }
+                .accessibilityHint(showsDollar ? "두 번 탭하면 원화로 바꿉니다" : "두 번 탭하면 미국 달러로 바꿉니다")
             }
         }
         .padding(.spacingL)

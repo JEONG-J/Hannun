@@ -43,8 +43,11 @@ final class PerformanceViewModel {
     /// 하나로 합치면 끄는 순간 선택이 사라져 매번 다시 고르게 된다.
     private(set) var isBenchmarkOverlayEnabled = false
 
-    /// 벤치마크 선택 시트가 떠 있는지. 액세서리 왼쪽을 눌러 연다 (디자인 문서 §7).
+    /// 벤치마크 선택 시트가 떠 있는지. 툴바 아이콘을 눌러 연다 (디자인 문서 §7).
     var isBenchmarkPickerPresented = false
+
+    /// 기간 선택 시트가 떠 있는지. 액세서리 왼쪽 캡션을 눌러 연다.
+    var isPeriodPickerPresented = false
 
     /// 본문 헤드라인이 아직 화면에 있는지. 액세서리 왼쪽이 무엇을 말할지를 이 값이 정한다.
     var isHeroVisible = true
@@ -93,6 +96,12 @@ final class PerformanceViewModel {
     var isScrubHintVisible: Bool {
         guard case let .loaded(trend) = trendState else { return false }
         return !hasScrubbed && trend.portfolio.count > 1
+    }
+
+    /// 액세서리 왼쪽이 기본으로 말하는 한 줄 — "YTD · 일별". 기간과 단위를 한 곳에서 고치므로
+    /// 무엇이 바뀌어도 이 문구만 다시 읽으면 된다.
+    var periodSummary: String {
+        "\(period.title) · \(granularity.title)"
     }
 
     /// 차트에 겹칠 벤치마크. 비교가 꺼져 있거나 선택이 없거나 조회에 실패한 지수면
@@ -174,7 +183,10 @@ final class PerformanceViewModel {
         await loadTrend()
     }
 
+    /// 기간 선택 시트가 부른다. 고른 값과 무관하게 시트를 닫는다 — 이미 보고 있던 기간을
+    /// 다시 눌러도 "골랐다"는 사용자 의도는 같다.
     func selectPeriod(_ period: ChartPeriod) async {
+        isPeriodPickerPresented = false
         guard period != self.period else { return }
 
         self.period = period
@@ -190,6 +202,12 @@ final class PerformanceViewModel {
         await loadTrend()
     }
 
+    /// 액세서리 오른쪽 단위 토글. `.daily` ↔ `.monthly` 를 오가며 기존 `selectGranularity(_:)` 를
+    /// 그대로 불러 재조회·스크럽 해제 규칙을 다시 구현하지 않는다.
+    func toggleGranularity() async {
+        await selectGranularity(granularity == .daily ? .monthly : .daily)
+    }
+
     /// 같은 지수를 다시 고르면 선택이 풀린다 — 겹칠 벤치마크는 0~1개다 (UI 스펙 §4.3).
     func toggleBenchmark(_ index: BenchmarkIndex) {
         selectBenchmark(selectedBenchmark == index ? nil : index)
@@ -202,14 +220,11 @@ final class PerformanceViewModel {
         isBenchmarkOverlayEnabled = index != nil
     }
 
-    /// 액세서리 오른쪽 컨트롤. 아직 고른 지수가 없으면 켤 대상이 없으므로 선택 시트를 연다 —
-    /// 아무 반응 없는 버튼을 만들지 않기 위해서다.
+    /// 벤치마크 선택 시트 안 "차트에 겹치기" 스위치가 부른다. 시트가 이미 떠 있는 상태에서만
+    /// 눌리므로 예전처럼 선택 시트를 여는 분기는 필요 없다. 고른 지수가 없으면 스위치 자체가
+    /// `.disabled(true)` 라 눌리지 않지만, guard 는 그 우회까지 막아 둔다.
     func toggleBenchmarkOverlay() {
-        guard selectedBenchmark != nil else {
-            isBenchmarkPickerPresented = true
-            return
-        }
-
+        guard selectedBenchmark != nil else { return }
         isBenchmarkOverlayEnabled.toggle()
     }
 

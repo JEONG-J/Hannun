@@ -10,7 +10,8 @@ import HannunDesignSystem
 import HannunDomain
 import SwiftUI
 
-/// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트 → 단위·기간 컨트롤.
+/// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트.
+/// 기간·단위는 액세서리로, 벤치마크는 툴바 + 시트로 옮겨 본문에는 컨트롤이 없다.
 struct PerformanceContentView: View {
 
     // MARK: - Property
@@ -39,11 +40,9 @@ struct PerformanceContentView: View {
                     }
 
                 // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
-                // 쌓이면…" 안내가 같은 화면에 두 번 나오고, 기간·단위 컨트롤은 바꿔도
-                // 나올 값이 없어 눌러볼 수만 있는 장식이 된다.
+                // 쌓이면…" 안내가 같은 화면에 두 번 나온다.
                 if !viewModel.hasNoRecords {
                     chartCard
-                    controls
                 }
             }
             .padding(.horizontal, .spacingL)
@@ -102,7 +101,7 @@ struct PerformanceContentView: View {
                 Text(Constants.scrubHintMessage)
                     .hannunFont(.caption)
                     .foregroundStyle(Color.textSecondary)
-                    // 같은 안내를 차트 accessibilityLabel 이 이미 말하므로 장식으로 숨긴다.
+                    // 같은 안내를 차트 accessibilityHint 가 이미 말하므로 장식으로 숨긴다.
                     .accessibilityHidden(true)
             }
         }
@@ -145,21 +144,6 @@ struct PerformanceContentView: View {
         }
     }
 
-    private var controls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: .spacingM) {
-                GranularityToggle(selection: granularity)
-                Spacer(minLength: .spacingS)
-                PeriodSegment(selection: period)
-            }
-
-            VStack(alignment: .leading, spacing: .spacingM) {
-                GranularityToggle(selection: granularity)
-                PeriodSegment(selection: period)
-            }
-        }
-    }
-
     // MARK: - Function
 
     /// 선택된 지수 하나만 겹친다. 조회에 실패한 지수는 `overlaidBenchmark` 가 이미 걸러낸다.
@@ -177,20 +161,6 @@ struct PerformanceContentView: View {
                 points: series.points.map(plotPoint)
             ),
         ]
-    }
-
-    private var granularity: Binding<TrendGranularity> {
-        Binding(
-            get: { viewModel.granularity },
-            set: { newValue in Task { await viewModel.selectGranularity(newValue) } }
-        )
-    }
-
-    private var period: Binding<ChartPeriod> {
-        Binding(
-            get: { viewModel.period },
-            set: { newValue in Task { await viewModel.selectPeriod(newValue) } }
-        )
     }
 
     private func plotPoints(of trend: PerformanceTrend) -> [TrendPoint] {

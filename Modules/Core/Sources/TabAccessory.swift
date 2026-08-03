@@ -57,7 +57,7 @@ public extension View {
     /// ```swift
     /// PerformanceContentView(viewModel: viewModel)
     ///     .tabAccessory(.performance) {
-    ///         BenchmarkAccessory(viewModel: viewModel)
+    ///         PerformanceAccessory(viewModel: viewModel)
     ///     }
     /// ```
     ///

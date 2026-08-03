@@ -155,6 +155,51 @@ struct PerformanceViewModelTests {
         #expect(viewModel.granularity == .monthly)
     }
 
+    @Test("단위 토글은 일별·월별을 오가며 매번 재조회한다")
+    func togglingGranularityAlternatesAndRefetches() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, _, granularity in
+            await recorder.record(TrendRequest(start: start, granularity: granularity))
+            return PerformanceSampleData.trendPoints
+        })
+
+        await viewModel.loadIfNeeded()
+        await viewModel.toggleGranularity()
+        await viewModel.toggleGranularity()
+
+        #expect(await recorder.requests.map(\.granularity) == [.daily, .monthly, .daily])
+        #expect(viewModel.granularity == .daily)
+    }
+
+    @Test("단위 토글은 스크럽 상태를 해제한다")
+    func togglingGranularityClearsScrub() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        await viewModel.toggleGranularity()
+
+        #expect(viewModel.scrubbedDate == nil)
+    }
+
+    @Test("periodSummary가 기간과 단위를 함께 말한다")
+    func periodSummaryDescribesPeriodAndGranularity() {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.periodSummary == "YTD · 일별")
+    }
+
+    @Test("기간을 고르면 선택 시트가 닫힌다")
+    func selectingPeriodClosesPicker() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.isPeriodPickerPresented = true
+
+        await viewModel.selectPeriod(.oneMonth)
+
+        #expect(viewModel.isPeriodPickerPresented == false)
+    }
+
     @Test("단위가 고른 시점만 차트에 남는다")
     func trendKeepsSampledDatesOnly() async {
         let sampled = [PerformanceSampleData.trendPoints[0], PerformanceSampleData.trendPoints[4]]
@@ -258,14 +303,13 @@ struct PerformanceViewModelTests {
         #expect(viewModel.overlaidBenchmark?.index == .sp500)
     }
 
-    @Test("고른 지수가 없으면 비교 버튼이 선택 시트를 연다")
-    func overlayToggleOpensPickerWithoutSelection() async {
+    @Test("고른 지수가 없으면 비교를 켤 수 없다")
+    func overlayCannotEnableWithoutSelection() async {
         let viewModel = makeViewModel()
         await viewModel.loadIfNeeded()
 
         viewModel.toggleBenchmarkOverlay()
 
-        #expect(viewModel.isBenchmarkPickerPresented)
         #expect(viewModel.isBenchmarkOverlayEnabled == false)
     }
 

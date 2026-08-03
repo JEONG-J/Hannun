@@ -174,7 +174,8 @@ extension PerformanceViewModel {
         return viewModel
     }
 
-    /// 지수는 골랐지만 비교를 꺼 둔 상태. 액세서리 범례 dot 이 중립으로 내려가는지 본다.
+    /// 지수는 골랐지만 비교를 꺼 둔 상태. 벤치마크 시트의 "차트에 겹치기" 스위치가 활성인
+    /// 채로 꺼져 있는지(선택 O, disabled 아님) 본다.
     @MainActor
     static var previewWithOverlayOff: PerformanceViewModel {
         let viewModel = PerformanceViewModel.preview
@@ -182,7 +183,8 @@ extension PerformanceViewModel {
         return viewModel
     }
 
-    /// 아직 아무 지수도 고르지 않은 상태. dot 자리가 비어 폭이 흔들리지 않는지 본다.
+    /// 아직 아무 지수도 고르지 않은 상태. 벤치마크 시트의 "차트에 겹치기" 스위치가
+    /// `.disabled(true)` 로 내려가는지 본다.
     @MainActor
     static var previewWithoutBenchmark: PerformanceViewModel {
         let viewModel = PerformanceViewModel.preview

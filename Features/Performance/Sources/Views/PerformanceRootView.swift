@@ -45,13 +45,27 @@ private struct PerformanceScreen: View {
         NavigationStack {
             PerformanceContentView(viewModel: viewModel)
                 .navigationTitle(Constants.navigationTitle)
+                // 벤치마크는 저빈도라 액세서리가 아니라 툴바 아이콘 하나로 내렸다 (문서 §7).
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            viewModel.isBenchmarkPickerPresented = true
+                        } label: {
+                            Image(systemName: Constants.benchmarkToolbarSymbolName)
+                        }
+                        .accessibilityLabel(Constants.benchmarkToolbarAccessibilityLabel)
+                    }
+                }
         }
         // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
         .tabAccessory(.performance) {
-            BenchmarkAccessory(viewModel: self.viewModel)
+            PerformanceAccessory(viewModel: self.viewModel)
         }
-        // 시트도 탭 루트가 띄운다 — 여는 주체가 액세서리라 화면에 붙이면 화면이 바뀔 때
+        // 시트도 탭 루트가 띄운다 — 여는 주체가 액세서리·툴바라 화면에 붙이면 화면이 바뀔 때
         // 시트까지 함께 사라진다 (디자인 문서 §7).
+        .sheet(isPresented: $viewModel.isPeriodPickerPresented) {
+            PeriodPickerSheet(viewModel: self.viewModel)
+        }
         .sheet(isPresented: $viewModel.isBenchmarkPickerPresented) {
             BenchmarkPickerSheet(viewModel: self.viewModel)
         }
@@ -61,4 +75,6 @@ private struct PerformanceScreen: View {
 
 fileprivate enum Constants {
     static let navigationTitle = "투자 성과"
+    static let benchmarkToolbarSymbolName = "chart.line.uptrend.xyaxis"
+    static let benchmarkToolbarAccessibilityLabel = "벤치마크 비교"
 }

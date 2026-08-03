@@ -51,15 +51,34 @@
 | `Kympp` | 입출금 기록 | PF-5, PF-6 | `assets/pencil/07-cashflow-list.png` |
 | `pbEqw` | 일지 작성 | JR-2 | `assets/pencil/08-journal-compose.png` |
 | `gMyiS` | 액세서리 `.inline` 대응 | — | `assets/pencil/09-accessory-inline.png` |
+| `VutY3` | 벤치마크 선택 sheet | PM-4 | (재출력 대기 — 아래 ⚠️ 참고) |
 
 캡처는 2x PNG 로 내보낸 것이라 원본이 아니다. 실측이 필요하면 `batch_get` 으로 노드를 직접 읽는다.
 
-> **⚠️ 하단 액세서리는 시안과 구현이 다르다 (2026-08-01 비주얼 재제안).** 아래 액세서리 노드
-> (`bjQi7`·`kyiZ5`·`EikF0`·`cfHUb`)와 §7 inline 스터디(`gMyiS`)의 서술은 **구 규격**이다 —
-> 확정 규격은 `docs/design/2026-08-01-bottom-accessory-visual-redesign.md` 와 UI 스펙 §3.1 을
-> 따른다 (비선택 무채움 · 선택 wash + dot · 주 액션 trailing 통일 · 캡션 무아이콘 ·
-> 매매일지 라벨 캡슐). `hannun.pen` 갱신과 `01~04·09` PNG 재출력은 후속 작업으로 대기 중이다
-> (Pencil 데스크톱 앱 필요).
+> **⚠️ 하단 액세서리는 시안과 구현이 다르다 — 두 차례 개정됐다.** 아래 액세서리 노드
+> (`bjQi7`·`kyiZ5`·`EikF0`·`cfHUb`)와 §7 inline 스터디(`gMyiS`)의 서술은 **구 규격**이다.
+>
+> 1. **2026-08-01 비주얼 재제안** — 비선택 무채움 · 선택 wash + dot · 주 액션 trailing 통일 ·
+>    캡션 무아이콘 · 매매일지 라벨 캡슐
+> 2. **2026-08-02 단일 뷰 재정의** — 액세서리는 툴바가 아니라 **상태 한 줄(leading) +
+>    컨트롤 하나(trailing)** 의 스트립이다. 칩 그룹·액션 2개·2칸 세그먼트가 전부 빠지고,
+>    성과 탭은 비교 스트립 + 벤치마크 선택 시트로 바뀐다
+>
+> 확정 규격은 `docs/design/2026-08-02-bottom-accessory-single-view-redesign.md` 와 UI 스펙 §3.1
+> 을 따른다. 아래 서술은 **시안 원본의 기록**으로만 읽는다.
+>
+> **`hannun.pen` 갱신 현황 (2026-08-02)**
+>
+> - **반영 완료** — 4탭 액세서리 프레임(`bjQi7`·`kyiZ5`·`EikF0`·`cfHUb`)과 inline 스터디(`gMyiS`)를
+>   단일 스트립 문법으로 다시 그렸다. 렌더 확인까지 마쳤다
+> - **미완** — 신규 `VutY3` 벤치마크 선택 시트. 프레임과 하위 노드는 들어갔지만 `DimArea` 가
+>   y=50 에서 시작해 `Sheet` 가 프레임 아래로 50pt 넘치고(`partially clipped`) 렌더가 비어 나온다.
+>   수정 시도 중 Pen 앱 MCP 쓰기가 `OK` 만 돌려주고 반영되지 않는 상태가 됐다 — 앱에서 파일을
+>   다시 연 뒤 `MZQLF` 높이를 350 으로 낮추면(=`reioU` 와 같은 구성) 해소된다
+> - **대기** — `01~04·09` PNG 재출력 + 벤치마크 시트 캡처 신규 출력
+>
+> `.pen` 은 암호화 파일이라 Pen 데스크톱 앱에서 연 상태에서만 MCP 로 접근된다. pen.dev 전용 CLI 는
+> 이 머신에 없다(PATH·`Pen.app`·Homebrew·npm 전역 모두 미설치) — 갱신 경로는 MCP 하나뿐이다.
 
 모든 탭의 공통 세로 스택:
 

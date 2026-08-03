@@ -21,25 +21,22 @@ struct PortfolioListView: View {
     @Environment(PortfolioRouter.self) private var router
     @Environment(\.appRouter) private var appRouter
 
-    @State private var viewModel: PortfolioListViewModel
+    /// 탭 루트가 소유한다 — 하단 액세서리도 같은 인스턴스를 읽어야 하기 때문이다.
+    @Bindable private var viewModel: PortfolioListViewModel
 
     private let container: DIContainer
     private let errorHandler: ErrorHandler
 
     // MARK: - Body
 
-    @MainActor
-    init(container: DIContainer, errorHandler: ErrorHandler) {
+    init(
+        viewModel: PortfolioListViewModel,
+        container: DIContainer,
+        errorHandler: ErrorHandler
+    ) {
+        _viewModel = Bindable(viewModel)
         self.container = container
         self.errorHandler = errorHandler
-        _viewModel = State(
-            initialValue: PortfolioListViewModel(
-                fetchHoldings: container.resolve((any FetchHoldingsUseCaseProtocol).self),
-                deleteHolding: container.resolve((any DeleteHoldingUseCaseProtocol).self),
-                exchangeRateService: container.resolve((any ExchangeRateServiceProtocol).self),
-                errorHandler: errorHandler
-            )
-        )
     }
 
     var body: some View {
@@ -49,6 +46,7 @@ struct PortfolioListView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.backgroundPrimary)
             .navigationTitle(Constants.screenTitle)
+            .toolbar { cashFlowToolbarItem }
             .alertPrompt(item: $viewModel.alertPrompt)
             .sheet(item: $router.holdingEditor) { mode in
                 HoldingEditorView(
@@ -67,6 +65,19 @@ struct PortfolioListView: View {
                 viewModel.apply(route)
                 _ = appRouter?.consumeRoute(for: .portfolio)
             }
+    }
+
+    /// 입출금 기록(PF-5/6)의 진입점. 하단 액세서리에서 여기로 돌아왔다 — 캡슐 오른쪽은
+    /// 컨트롤 하나의 자리이고, 종목 추가와 달리 입출금은 매일 쓰는 액션이 아니다
+    /// (디자인 문서 §4.2 · §11-1).
+    private var cashFlowToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                router.showCashFlowList()
+            } label: {
+                Label(Constants.cashFlowTitle, systemImage: Constants.cashFlowSymbolName)
+            }
+        }
     }
 
     @ViewBuilder
@@ -238,6 +249,8 @@ struct PortfolioListView: View {
 
 fileprivate enum Constants {
     static let screenTitle = "포트폴리오"
+    static let cashFlowTitle = "입출금 기록"
+    static let cashFlowSymbolName = "arrow.left.arrow.right"
     static let allCategoriesTitle = "전체"
     static let addHoldingTitle = "종목 추가"
     static let editTitle = "수정"

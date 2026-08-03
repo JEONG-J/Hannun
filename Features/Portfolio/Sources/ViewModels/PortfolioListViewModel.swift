@@ -108,6 +108,12 @@ final class PortfolioListViewModel {
         valuations.value?.isEmpty == false
     }
 
+    /// 액세서리가 말하는 종목 수. 필터가 걸려 있으면 보이는 만큼만 센다 — 요약 바 금액과
+    /// 같은 모수를 써야 두 숫자가 같은 이야기를 한다.
+    var visibleHoldingCount: Int {
+        sections.reduce(0) { $0 + $1.valuations.count }
+    }
+
     /// 갱신 실패 배지를 띄울지.
     ///
     /// 조회가 통째로 실패한 경우뿐 아니라, 성공했더라도 낡은 시세로 평가한 종목이 섞여 있으면

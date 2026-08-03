@@ -48,7 +48,12 @@ private struct PerformanceScreen: View {
         }
         // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
         .tabAccessory(.performance) {
-            BenchmarkAccessory(viewModel: viewModel)
+            BenchmarkAccessory(viewModel: self.viewModel)
+        }
+        // 시트도 탭 루트가 띄운다 — 여는 주체가 액세서리라 화면에 붙이면 화면이 바뀔 때
+        // 시트까지 함께 사라진다 (디자인 문서 §7).
+        .sheet(isPresented: $viewModel.isBenchmarkPickerPresented) {
+            BenchmarkPickerSheet(viewModel: self.viewModel)
         }
         .task { await viewModel.loadIfNeeded() }
     }

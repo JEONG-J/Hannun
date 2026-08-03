@@ -33,6 +33,10 @@ struct PerformanceContentView: View {
                 }
 
                 headline
+                    // 히어로가 밀려 나가면 액세서리가 수익률을 대신 말한다 (디자인 문서 §6).
+                    .onScrollVisibilityChange(threshold: Constants.heroVisibilityThreshold) {
+                        viewModel.isHeroVisible = $0
+                    }
 
                 // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
                 // 쌓이면…" 안내가 같은 화면에 두 번 나오고, 기간·단위 컨트롤은 바꿔도
@@ -198,6 +202,9 @@ fileprivate enum Constants {
     static let retryTitle = "다시 시도"
     static let failureSymbolName = "exclamationmark.triangle"
     static let chartAccessibilityLabel = "자산 추이 차트. 좌우로 쓸어 시점별 수익률을 확인할 수 있어요."
+    /// 히어로가 거의 다 밀려 나간 뒤에 교대한다 — 살짝 걸쳐 있을 때 바뀌면 같은 숫자가
+    /// 위아래에 동시에 보인다.
+    static let heroVisibilityThreshold: Double = 0.1
 }
 
 #if DEBUG

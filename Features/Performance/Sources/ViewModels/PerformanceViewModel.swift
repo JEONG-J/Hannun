@@ -28,6 +28,19 @@ final class PerformanceViewModel {
     /// 스크럽 중인 시점. 차트가 직접 갱신하므로 바인딩할 수 있어야 한다.
     var scrubbedDate: Date?
 
+    /// 고른 지수를 차트에 실제로 겹칠지.
+    ///
+    /// **무엇을 비교할지(`selectedBenchmark`)와 비교할지 말지를 분리한다.** 액세서리
+    /// 오른쪽 컨트롤이 껐다 켜도 고른 지수는 남아 있어야 다시 켤 때 그대로 돌아온다.
+    /// 하나로 합치면 끄는 순간 선택이 사라져 매번 다시 고르게 된다.
+    private(set) var isBenchmarkOverlayEnabled = false
+
+    /// 벤치마크 선택 시트가 떠 있는지. 액세서리 왼쪽을 눌러 연다 (디자인 문서 §7).
+    var isBenchmarkPickerPresented = false
+
+    /// 본문 헤드라인이 아직 화면에 있는지. 액세서리 왼쪽이 무엇을 말할지를 이 값이 정한다.
+    var isHeroVisible = true
+
     private(set) var isSummaryStale = false
     private(set) var isTrendStale = false
 
@@ -66,10 +79,25 @@ final class PerformanceViewModel {
         return trend.portfolio.count < 2
     }
 
-    /// 차트에 겹칠 벤치마크. 선택이 없거나 조회에 실패한 지수면 아무것도 그리지 않는다.
+    /// 차트에 겹칠 벤치마크. 비교가 꺼져 있거나 선택이 없거나 조회에 실패한 지수면
+    /// 아무것도 그리지 않는다.
     var overlaidBenchmark: BenchmarkSeries? {
-        guard let selectedBenchmark else { return nil }
+        guard isBenchmarkOverlayEnabled, let selectedBenchmark else { return nil }
         return trendState.value?.benchmarks.first { $0.index == selectedBenchmark }
+    }
+
+    /// 액세서리 한 줄이 말하는 초과수익 — "S&P500 대비 +1.4%p".
+    ///
+    /// 내 수익률과 지수 등락률 둘 다 **기간 시작을 0 으로** 정규화한 값이라 그대로 빼면
+    /// 백분율 포인트 차가 된다. 비율끼리의 나눗셈이 아니므로 단위는 `%` 가 아니라 `%p` 다.
+    var benchmarkExcessReturn: Decimal? {
+        guard
+            let series = overlaidBenchmark,
+            let mine = trendState.value?.portfolio.last?.rate,
+            let theirs = series.points.last?.rate
+        else { return nil }
+
+        return mine - theirs
     }
 
     private var scrubbedHeadline: PerformanceHeadline? {
@@ -146,13 +174,27 @@ final class PerformanceViewModel {
         await loadTrend()
     }
 
-    /// 같은 칩을 다시 누르면 선택이 풀린다 — 기본 표시 벤치마크는 0~1개다 (UI 스펙 §4.3).
+    /// 같은 지수를 다시 고르면 선택이 풀린다 — 겹칠 벤치마크는 0~1개다 (UI 스펙 §4.3).
     func toggleBenchmark(_ index: BenchmarkIndex) {
         selectBenchmark(selectedBenchmark == index ? nil : index)
     }
 
+    /// 지수를 고르면 비교도 함께 켠다 — 골라 놓고 아무 일도 일어나지 않으면 시트를 닫은
+    /// 사용자는 선택이 먹지 않았다고 읽는다. 선택을 푸는 경우에만 함께 끈다.
     func selectBenchmark(_ index: BenchmarkIndex?) {
         selectedBenchmark = index
+        isBenchmarkOverlayEnabled = index != nil
+    }
+
+    /// 액세서리 오른쪽 컨트롤. 아직 고른 지수가 없으면 켤 대상이 없으므로 선택 시트를 연다 —
+    /// 아무 반응 없는 버튼을 만들지 않기 위해서다.
+    func toggleBenchmarkOverlay() {
+        guard selectedBenchmark != nil else {
+            isBenchmarkPickerPresented = true
+            return
+        }
+
+        isBenchmarkOverlayEnabled.toggle()
     }
 
     /// 아직 받아오기 전에는 전부 활성으로 둔다 — 없다고 단정할 근거가 없다.

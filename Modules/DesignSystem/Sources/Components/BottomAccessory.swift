@@ -20,21 +20,26 @@ import SwiftUI
 /// 겹치면 가독성이 무너진다. `ChipGroup(appearance: .accessory)` · `AccessoryActionButton` 이
 /// 이 규칙을 이미 지키고 있으므로 그대로 담으면 된다.
 ///
-/// ## 자리는 둘이다
+/// ## 자리는 둘이고, 각 자리에 하나씩만 들어간다
 ///
-/// 왼쪽은 상태·문구, 오른쪽은 컨트롤. 폭이 모자라면 **왼쪽이 먼저 양보한다** — 오른쪽이
-/// 잘리면 그 탭의 유일한 진입점이 사라지기 때문이다. `Spacer` 를 담는 쪽에서 끼워 넣던
-/// 예전 방식은 이 우선순위를 표현하지 못했고 네 탭이 제각기 다른 `minLength` 를 썼다.
+/// 왼쪽은 **주어 한 줄** — 이 탭이 지금 무엇을 보고 있는지 말하는 정보다. 오른쪽은
+/// **컨트롤 하나**. 미니 플레이어와 같은 문법이고, 둘 다 늘리면 캡슐이 도구모음이 된다.
+///
+/// 왼쪽은 원칙적으로 눌리지 않는다. 누를 수 있는 건 **열 대상이 실제로 있을 때**뿐이고,
+/// 그때는 `AccessoryCaption.expandable()` 로 셰브런을 붙여 눌린다고 말한다.
+///
+/// 폭이 모자라면 **왼쪽이 먼저 양보한다** — 오른쪽이 잘리면 그 탭의 유일한 진입점이
+/// 사라지기 때문이다.
 ///
 /// ```swift
 /// BottomAccessory {
 ///     AccessoryCaption(value: "12:04", suffix: "시세 기준")
 /// } trailing: {
-///     CurrencyToggle(selection: $currency)
+///     AccessoryControlButton("USD", isOn: false, indicatesSelection: false) { … }
 /// }
 /// ```
 ///
-/// 칩 그룹처럼 캡슐을 통째로 쓰는 내용은 한 자리짜리 이니셜라이저를 쓴다.
+/// 컨트롤이 없는 탭은 한 자리짜리 이니셜라이저를 쓴다.
 ///
 /// ## 축약은 내용이 정한다
 ///
@@ -91,7 +96,7 @@ public struct BottomAccessory<Leading: View, Trailing: View>: View {
 }
 
 public extension BottomAccessory where Trailing == EmptyView {
-    /// 캡슐 폭을 통째로 쓰는 내용(성과 탭 벤치마크 칩) 전용.
+    /// 컨트롤 없이 상태만 말하는 캡슐 전용.
     init(@ViewBuilder content: () -> Leading) {
         self.init(content: content, trailing: { EmptyView() })
     }
@@ -112,17 +117,10 @@ private struct BottomAccessoryPreview: View {
 
     // MARK: - Property
 
-    private let benchmarks: [(name: String, color: Color)] = [
-        ("코스피", .categoryDomestic),
-        ("S&P500", .categoryForeign),
-        ("나스닥", .categoryEtf),
-        ("BTC", .categoryCrypto),
-    ]
-
     private let layout: AccessoryLayout
 
     @State private var currency: Currency = .krw
-    @State private var selectedBenchmark = "S&P500"
+    @State private var isComparing = true
 
     // MARK: - Body
 
@@ -157,41 +155,41 @@ private struct BottomAccessoryPreview: View {
         BottomAccessory {
             AccessoryCaption(value: "12:04", suffix: "시세 기준")
         } trailing: {
-            CurrencyToggle(selection: $currency)
+            AccessoryControlButton(
+                currency == .krw ? "USD" : "KRW",
+                isOn: false,
+                indicatesSelection: false,
+                accessibilityLabel: currency == .krw ? "미국 달러로 전환" : "원화로 전환"
+            ) {
+                currency = currency == .krw ? .usd : .krw
+            }
         }
     }
 
     private var portfolioAccessory: some View {
         BottomAccessory {
-            AccessoryActionButton("종목 추가", systemImageName: "plus", style: .primary) {}
+            AccessoryCaption(.value("12종목"), .plain("· 12:04 기준"))
         } trailing: {
-            AccessoryActionButton(
-                "입출금 기록",
-                systemImageName: "arrow.left.arrow.right",
-                style: .secondary
-            ) {}
+            AccessoryActionButton("종목 추가", systemImageName: "plus") {}
         }
     }
 
     private var performanceAccessory: some View {
         BottomAccessory {
-            ChipGroup(appearance: .accessory, scrollsHorizontally: false) {
-                ForEach(benchmarks, id: \.name) { benchmark in
-                    FilterChip(
-                        benchmark.name,
-                        isSelected: benchmark.name == selectedBenchmark,
-                        tint: benchmark.color
-                    ) {
-                        selectedBenchmark = benchmark.name
-                    }
-                }
+            Button {} label: {
+                AccessoryCaption(.plain("S&P500 대비"), .accent("+1.4%p", .gain))
+                    .dotted(.categoryForeign)
+                    .expandable()
             }
+            .buttonStyle(.plain)
+        } trailing: {
+            AccessoryControlButton("비교", isOn: isComparing) { isComparing.toggle() }
         }
     }
 
     private var journalAccessory: some View {
         BottomAccessory {
-            AccessoryCaption("오늘의 매매를 기록해보세요")
+            AccessoryCaption(.plain("이번 달"), .value("7건"))
         } trailing: {
             AccessoryActionButton("작성", systemImageName: "pencil.line") {}
         }

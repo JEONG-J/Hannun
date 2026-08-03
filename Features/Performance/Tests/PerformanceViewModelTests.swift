@@ -229,7 +229,7 @@ struct PerformanceViewModelTests {
         #expect(viewModel.overlaidBenchmark?.index == .sp500)
     }
 
-    @Test("같은 칩을 다시 누르면 선택이 풀린다")
+    @Test("같은 지수를 다시 고르면 선택이 풀린다")
     func togglingSameBenchmarkClearsSelection() async {
         let viewModel = makeViewModel()
         await viewModel.loadIfNeeded()
@@ -239,6 +239,58 @@ struct PerformanceViewModelTests {
 
         #expect(viewModel.selectedBenchmark == nil)
         #expect(viewModel.overlaidBenchmark == nil)
+        #expect(viewModel.isBenchmarkOverlayEnabled == false)
+    }
+
+    @Test("비교를 껐다 켜도 고른 지수는 남는다")
+    func togglingOverlayKeepsSelection() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.selectBenchmark(.sp500)
+
+        viewModel.toggleBenchmarkOverlay()
+
+        #expect(viewModel.selectedBenchmark == .sp500)
+        #expect(viewModel.overlaidBenchmark == nil)
+
+        viewModel.toggleBenchmarkOverlay()
+
+        #expect(viewModel.overlaidBenchmark?.index == .sp500)
+    }
+
+    @Test("고른 지수가 없으면 비교 버튼이 선택 시트를 연다")
+    func overlayToggleOpensPickerWithoutSelection() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+
+        viewModel.toggleBenchmarkOverlay()
+
+        #expect(viewModel.isBenchmarkPickerPresented)
+        #expect(viewModel.isBenchmarkOverlayEnabled == false)
+    }
+
+    @Test("초과수익은 마지막 시점의 수익률 차다")
+    func excessReturnIsTheLastPointDifference() async throws {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+
+        viewModel.selectBenchmark(.sp500)
+
+        // 표본 마지막 시점: 내 9.4% - S&P500 5.1% = 4.3%p.
+        // 표본 비율이 부동소수 리터럴에서 왔으므로 표시 자릿수(0.1%p) 안에서만 따진다.
+        let excess = try #require(viewModel.benchmarkExcessReturn)
+        #expect(abs(excess - Constants.expectedExcessReturn) < Constants.excessReturnTolerance)
+    }
+
+    @Test("비교가 꺼져 있으면 초과수익도 말하지 않는다")
+    func excessReturnNeedsOverlay() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.selectBenchmark(.sp500)
+
+        viewModel.toggleBenchmarkOverlay()
+
+        #expect(viewModel.benchmarkExcessReturn == nil)
     }
 
     @Test("조회에 실패한 지수는 비활성으로 표시된다")
@@ -369,3 +421,9 @@ private actor TrendRequestRecorder {
 
 /// `AppError` 로 매핑되지 않는 에러가 들어오는 경로를 확인하기 위한 표본.
 private struct SampleFailure: Error {}
+
+fileprivate enum Constants {
+    static let expectedExcessReturn = Decimal(string: "0.043") ?? 0
+    /// 화면에는 0.1%p 까지만 찍히므로 그보다 잘게 따질 이유가 없다.
+    static let excessReturnTolerance = Decimal(string: "0.0001") ?? 0
+}

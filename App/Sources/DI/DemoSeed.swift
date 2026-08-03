@@ -26,6 +26,7 @@ enum DemoSeed {
         let holdingsByTicker = insertHoldings(into: context)
         insertCashFlows(into: context)
         insertSnapshots(into: context)
+        insertBenchmarks(into: context)
         insertJournalEntries(into: context, taggedWith: holdingsByTicker)
 
         do {
@@ -151,6 +152,32 @@ enum DemoSeed {
                 }
             )
             context.insert(NetWorthSnapshot(record: record))
+        }
+    }
+
+    /// 지수를 넣지 않으면 비교 시트의 네 줄이 전부 "불러오지 못했어요"로 잠겨서 액세서리의
+    /// 비교 컨트롤·초과수익 문구를 아예 눌러볼 수 없다.
+    ///
+    /// S&P 500 만 포트폴리오보다 앞서게 두었다 — 초과수익이 음수인 경우까지 한 시드에서
+    /// 확인해야 상승 빨강·하락 파랑이 스트립에도 제대로 적용됐는지 볼 수 있다.
+    private static func insertBenchmarks(into context: ModelContext) {
+        let monthlyValues: [(index: BenchmarkIndex, values: [Decimal])] = [
+            (.kospi, [2_610, 2_684, 2_655, 2_742, 2_708, 2_801, 2_864]),
+            (.sp500, [5_910, 6_180, 6_050, 6_520, 6_410, 7_050, 7_520]),
+            (.nasdaq, [19_420, 20_110, 19_760, 20_540, 20_180, 21_030, 21_620]),
+            (.bitcoin, [92_400_000, 98_600_000, 89_300_000, 95_700_000,
+                        91_200_000, 87_400_000, 88_200_000]),
+        ]
+
+        for (index, values) in monthlyValues {
+            for (offset, value) in values.enumerated() {
+                let record = BenchmarkRecord(
+                    recordedOn: date(2026, offset + 1, 1),
+                    index: index,
+                    value: value
+                )
+                context.insert(BenchmarkSnapshot(record: record))
+            }
         }
     }
 

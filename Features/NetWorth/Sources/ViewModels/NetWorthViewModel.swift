@@ -51,6 +51,12 @@ final class NetWorthViewModel {
     /// 도넛에서 고른 섹터. 중앙 홀 표시가 이 값을 따라간다.
     var selectedCategory: AssetCategory?
 
+    /// 본문 총자산 블록이 아직 화면에 있는지. 액세서리 왼쪽이 무엇을 말할지를 이 값이 정한다.
+    ///
+    /// 히어로가 보이는 동안 총자산을 액세서리에 또 적으면 같은 숫자가 한 화면에 두 번 뜬다.
+    /// 스크롤로 히어로가 밀려 나가면 그때부터 액세서리가 그 자리를 대신한다.
+    var isHeroVisible = true
+
     private var storedBaseCurrency: Currency
 
     private(set) var freshness: QuoteFreshness = .unknown

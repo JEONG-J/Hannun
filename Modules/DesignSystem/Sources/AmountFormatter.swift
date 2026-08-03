@@ -58,6 +58,44 @@ public enum AmountFormatter {
         parts(for: money, showsPositiveSign: showsPositiveSign).text
     }
 
+    /// 폭이 없는 자리(액세서리 한 줄)에 넣는 축약 금액 — `₩1억 2,340만` · `$1.23M`.
+    ///
+    /// 자릿수를 지우는 대신 **단위를 올린다**. 전체 금액은 화면 본문의 히어로가 이미 정확히
+    /// 보여주고 있으므로, 여기서는 "얼마쯤인지"만 한눈에 들어오면 된다. 어느 구간에서도
+    /// 유효숫자 네 자리는 남겨 두 값의 대소가 뒤집히지 않게 한다.
+    public static func compact(_ money: Money, showsPositiveSign: Bool = false) -> String {
+        let sign = sign(of: money.amount, showsPositiveSign: showsPositiveSign)
+        let magnitude = money.amount.magnitude
+        let body = switch money.currency {
+        case .krw: compactKrw(magnitude)
+        case .usd: compactUsd(magnitude)
+        }
+        return sign + money.currency.symbol + body
+    }
+
+    /// 축약 수익률 — `+12.4%`. 소수 두 자리는 캡션 폭에서 값보다 노이즈가 크다.
+    public static func compactPercentage(ratio: Decimal, showsPositiveSign: Bool = true) -> String {
+        let magnitude = ratio.magnitude.formatted(
+            .percent.precision(.fractionLength(Constants.compactPercentFractionDigits))
+        )
+        return sign(of: ratio, showsPositiveSign: showsPositiveSign) + magnitude
+    }
+
+    /// 벤치마크 대비 초과수익 — `+1.4%p`.
+    ///
+    /// 단위가 `%` 가 아니라 `%p` 인 것이 핵심이다. 두 수익률의 **차이**는 비율이 아니라
+    /// 백분율 포인트이며, `%` 로 적으면 "내 수익률의 1.4%" 로 읽혀 뜻이 달라진다.
+    public static func percentagePoint(
+        ratioDifference: Decimal,
+        showsPositiveSign: Bool = true
+    ) -> String {
+        let magnitude = (ratioDifference.magnitude * Constants.percentScale).formatted(
+            .number.precision(.fractionLength(Constants.compactPercentFractionDigits))
+        )
+        let sign = sign(of: ratioDifference, showsPositiveSign: showsPositiveSign)
+        return sign + magnitude + Constants.percentagePointUnit
+    }
+
     /// - Parameter ratio: 백분율이 아니라 **비율**을 넣는다 — `0.0098` 이 `+0.98%` 가 된다.
     public static func percentage(ratio: Decimal, showsPositiveSign: Bool = true) -> String {
         let magnitude = ratio.magnitude.formatted(
@@ -83,6 +121,69 @@ public enum AmountFormatter {
         return number + unit
     }
 
+    /// 억 아래로 내려가도 만 단위로 접는 건 천만 원부터다. 12,345 원을 "1만" 으로 적으면
+    /// 유효숫자가 한 자리만 남아 옆 값과 비교가 안 된다.
+    private static func compactKrw(_ magnitude: Decimal) -> String {
+        if magnitude >= Constants.hundredMillion {
+            var eok = rounded(magnitude / Constants.hundredMillion, scale: 0, mode: .down)
+            var man = rounded(
+                (magnitude - eok * Constants.hundredMillion) / Constants.tenThousand,
+                scale: 0,
+                mode: .plain
+            )
+            // 9,999.6만 이 10,000만 으로 올림되면 억으로 올려 보낸다.
+            if man >= Constants.tenThousand {
+                eok += 1
+                man = 0
+            }
+            guard man > 0 else { return integerString(eok) + Constants.hundredMillionUnit }
+            return integerString(eok) + Constants.hundredMillionUnit + " "
+                + integerString(man) + Constants.tenThousandUnit
+        }
+
+        if magnitude >= Constants.tenMillion {
+            let man = rounded(magnitude / Constants.tenThousand, scale: 0, mode: .plain)
+            return integerString(man) + Constants.tenThousandUnit
+        }
+
+        return integerString(rounded(magnitude, scale: 0, mode: .plain))
+    }
+
+    private static func compactUsd(_ magnitude: Decimal) -> String {
+        if magnitude >= Constants.million {
+            return decimalString(magnitude / Constants.million, fractionDigits: 2)
+                + Constants.millionUnit
+        }
+
+        if magnitude >= Constants.tenThousand {
+            return decimalString(magnitude / Constants.thousand, fractionDigits: 1)
+                + Constants.thousandUnit
+        }
+
+        return decimalString(magnitude, fractionDigits: Currency.usd.fractionDigits)
+    }
+
+    private static func integerString(_ value: Decimal) -> String {
+        value.formatted(.number.precision(.fractionLength(0)).grouping(.automatic))
+    }
+
+    private static func decimalString(_ value: Decimal, fractionDigits: Int) -> String {
+        value.formatted(
+            .number.precision(.fractionLength(fractionDigits)).grouping(.automatic)
+        )
+    }
+
+    private static func rounded(
+        _ value: Decimal,
+        scale: Int,
+        mode: NSDecimalNumber.RoundingMode
+    ) -> Decimal {
+        var input = value
+        var result = Decimal()
+        NSDecimalRound(&result, &input, scale, mode)
+        return result
+    }
+
     private static func sign(of value: Decimal, showsPositiveSign: Bool) -> String {
         if value < 0 {
             Constants.negativeSign
@@ -102,6 +203,14 @@ public extension Currency {
         }
     }
 
+    /// VoiceOver 가 읽을 이름. 코드(`USD`)는 눈으로 볼 때만 짧아서 좋고 귀로 들으면 철자다.
+    var displayName: String {
+        switch self {
+        case .krw: "원화"
+        case .usd: "미국 달러"
+        }
+    }
+
     /// 원화는 소수부를 쓰지 않는다. 달러만 센트 단위까지 보여준다.
     var fractionDigits: Int {
         switch self {
@@ -113,7 +222,19 @@ public extension Currency {
 
 fileprivate enum Constants {
     static let percentFractionDigits = 2
+    /// 캡션 폭에서는 소수 한 자리까지가 정보, 그 아래는 노이즈다.
+    static let compactPercentFractionDigits = 1
     static let percentScale: Decimal = 100
+    static let percentagePointUnit = "%p"
+    static let hundredMillion: Decimal = 100_000_000
+    static let tenMillion: Decimal = 10_000_000
+    static let tenThousand: Decimal = 10_000
+    static let million: Decimal = 1_000_000
+    static let thousand: Decimal = 1_000
+    static let hundredMillionUnit = "억"
+    static let tenThousandUnit = "만"
+    static let millionUnit = "M"
+    static let thousandUnit = "K"
     /// 코인 수량이 잘리지 않을 만큼만 남긴다.
     static let maximumQuantityFractionDigits = 8
     static let fallbackDecimalSeparator = "."

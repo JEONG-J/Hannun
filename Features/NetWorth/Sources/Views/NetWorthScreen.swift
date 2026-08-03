@@ -81,6 +81,10 @@ struct NetWorthScreen: View {
     private func loaded(_ summary: NetWorthSummary) -> some View {
         VStack(alignment: .leading, spacing: .spacingL) {
             TotalAssetBlock(total: summary.total, change: summary.dailyChange)
+                // 히어로가 밀려 나가면 액세서리가 총자산을 대신 말한다 (디자인 문서 §6).
+                .onScrollVisibilityChange(threshold: Constants.heroVisibilityThreshold) {
+                    viewModel.isHeroVisible = $0
+                }
 
             if summary.isEmpty {
                 EmptyStateView(
@@ -122,6 +126,10 @@ struct NetWorthScreen: View {
 
 fileprivate enum Constants {
     static let navigationTitle = "순자산"
+
+    /// 히어로가 이만큼도 안 남으면 "사라졌다"로 본다. 절반으로 잡으면 총자산 숫자가 반쯤
+    /// 잘려 보이는 구간에서 액세서리가 먼저 바뀌어 두 값이 겹쳐 읽힌다.
+    static let heroVisibilityThreshold: Double = 0.1
 
     static let skeletonSurfaceHeight: CGFloat = 360
     static let skeletonAccessibilityLabel = "순자산 불러오는 중"

@@ -100,7 +100,6 @@ struct NetWorthScreen: View {
             } else {
                 AllocationCard(
                     breakdown: summary.fundedBreakdown,
-                    total: summary.total,
                     selection: $viewModel.selectedCategory
                 ) { category in
                     appRouter?.navigate(to: .portfolio(category: category))

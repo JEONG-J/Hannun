@@ -34,11 +34,26 @@ struct NetWorthSummary: Equatable, Sendable {
 
     /// 금액이 0 인 카테고리는 도넛에도 리스트에도 넣지 않는다 —
     /// 0% 섹터는 그릴 수 없고 0원 행은 읽을 정보가 없다.
+    ///
+    /// 금액 내림차순이라 도넛 12시에 가장 큰 자산군이 오고 리스트도 큰 것부터 읽힌다
+    /// (시안 §6.1). 금액이 같으면 `AssetCategory` 선언 순서로 고정한다 — 새로고침할 때마다
+    /// 섹터가 자리를 바꾸면 안 된다.
     var fundedBreakdown: [CategoryBreakdown] {
-        breakdown.filter { $0.amount.amount > 0 }
+        breakdown
+            .filter { $0.amount.amount > 0 }
+            .sorted { lhs, rhs in
+                guard lhs.amount.amount == rhs.amount.amount else {
+                    return lhs.amount.amount > rhs.amount.amount
+                }
+                return categoryOrder(lhs.category) < categoryOrder(rhs.category)
+            }
     }
 
     // MARK: - Function
+
+    private func categoryOrder(_ category: AssetCategory) -> Int {
+        AssetCategory.allCases.firstIndex(of: category) ?? AssetCategory.allCases.count
+    }
 
     /// 담고 있는 금액을 다른 기준 통화로 옮긴다.
     ///

@@ -19,7 +19,6 @@ struct AllocationCard: View {
     // MARK: - Property
 
     private let breakdown: [CategoryBreakdown]
-    private let total: Money
     @Binding private var selection: AssetCategory?
     private let onSelect: (AssetCategory) -> Void
 
@@ -27,12 +26,10 @@ struct AllocationCard: View {
 
     init(
         breakdown: [CategoryBreakdown],
-        total: Money,
         selection: Binding<AssetCategory?>,
         onSelect: @escaping (AssetCategory) -> Void
     ) {
         self.breakdown = breakdown
-        self.total = total
         _selection = selection
         self.onSelect = onSelect
     }
@@ -47,8 +44,6 @@ struct AllocationCard: View {
                         amount: $0.amount
                     )
                 },
-                totalLabel: Constants.totalLabel,
-                total: total,
                 selection: $selection
             )
 
@@ -58,7 +53,9 @@ struct AllocationCard: View {
 
             VStack(spacing: 0) {
                 ForEach(breakdown) { item in
-                    CategorySubtotalRow(item) { onSelect(item.category) }
+                    CategorySubtotalRow(item, isSelected: selection == item.category) {
+                        onSelect(item.category)
+                    }
                 }
             }
         }
@@ -68,7 +65,6 @@ struct AllocationCard: View {
 }
 
 fileprivate enum Constants {
-    static let totalLabel = "총자산"
     static let separatorHeight: CGFloat = 1
 }
 
@@ -77,12 +73,13 @@ private struct AllocationCardPreview: View {
 
     // MARK: - Property
 
+    /// 화면과 같은 금액 내림차순. 시안(§6.1)의 34 / 26 / 18 / 12 / 10 구성이다.
     private let breakdown: [CategoryBreakdown] = [
-        CategoryBreakdown(category: .cash, amount: .krw(43_673_000), weight: 0.34),
-        CategoryBreakdown(category: .domesticStock, amount: .krw(33_397_000), weight: 0.26),
-        CategoryBreakdown(category: .overseasStock, amount: .krw(23_121_000), weight: 0.18),
-        CategoryBreakdown(category: .etf, amount: .krw(15_414_000), weight: 0.12),
-        CategoryBreakdown(category: .crypto, amount: .krw(12_845_000), weight: 0.10),
+        CategoryBreakdown(category: .domesticStock, amount: .krw(43_673_000), weight: 0.34),
+        CategoryBreakdown(category: .overseasStock, amount: .krw(33_397_000), weight: 0.26),
+        CategoryBreakdown(category: .etf, amount: .krw(23_121_000), weight: 0.18),
+        CategoryBreakdown(category: .crypto, amount: .krw(15_414_000), weight: 0.12),
+        CategoryBreakdown(category: .cash, amount: .krw(12_845_000), weight: 0.10),
     ]
 
     @State private var selection: AssetCategory?
@@ -91,11 +88,7 @@ private struct AllocationCardPreview: View {
 
     var body: some View {
         ScrollView {
-            AllocationCard(
-                breakdown: breakdown,
-                total: .krw(128_450_000),
-                selection: $selection
-            ) { _ in }
+            AllocationCard(breakdown: breakdown, selection: $selection) { _ in }
             .padding(.spacingL)
         }
         .background(Color.backgroundPrimary)

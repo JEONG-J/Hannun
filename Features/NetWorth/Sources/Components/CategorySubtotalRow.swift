@@ -12,52 +12,95 @@ import HannunDomain
 import SwiftUI
 
 /// NW-4 카테고리 소계 한 줄. 누르면 포트폴리오 탭이 이 카테고리로 필터링된 채 열린다.
+///
+/// 퍼센트 숫자만으로는 다섯 줄의 크기 차이가 읽히지 않아 아래에 같은 색 비중 막대를 깐다 —
+/// 목록이 곧 도넛의 범례이므로 막대도 섹터와 같은 카테고리 색을 쓴다.
 struct CategorySubtotalRow: View {
 
     // MARK: - Property
 
     private let breakdown: CategoryBreakdown
+    /// 도넛에서 이 카테고리를 고른 상태. 선택이 홀 안에서만 일어나면 어느 줄 이야기인지 모른다.
+    private let isSelected: Bool
     private let action: () -> Void
 
     // MARK: - Body
 
-    init(_ breakdown: CategoryBreakdown, action: @escaping () -> Void) {
+    init(_ breakdown: CategoryBreakdown, isSelected: Bool, action: @escaping () -> Void) {
         self.breakdown = breakdown
+        self.isSelected = isSelected
         self.action = action
     }
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: .spacingS) {
-                CategoryDot(breakdown.category)
+            VStack(alignment: .leading, spacing: .spacingXS) {
+                headline
 
-                Text(breakdown.category.title)
-                    .hannunFont(.subtext)
-                    .foregroundStyle(Color.textPrimary)
-
-                Spacer(minLength: .spacingS)
-
-                AmountText(breakdown.amount, size: .sub)
-
-                Text(weightText)
-                    .hannunFont(.caption, tabularFigures: true)
-                    .foregroundStyle(Color.textSecondary)
-
-                Image(systemName: Constants.disclosureSymbolName)
-                    .hannunFont(.caption)
-                    .foregroundStyle(Color.textSecondary)
+                weightBar
+                    .padding(.leading, Constants.barLeadingInset)
             }
-            .lineLimit(1)
             .padding(.vertical, .spacingS)
+            .padding(.horizontal, .spacingS)
+            .background {
+                if isSelected {
+                    Color.surfaceSecondary
+                        .clipShape(.hannunContainer(radius: .radiusS))
+                }
+            }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .hannunAnimation(.standard, value: isSelected)
         .accessibilityLabel(breakdown.category.title)
         .accessibilityValue(accessibilityValue)
         .accessibilityHint(Constants.accessibilityHint)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Function
+
+    private var headline: some View {
+        HStack(spacing: .spacingS) {
+            CategoryDot(breakdown.category)
+
+            Text(breakdown.category.title)
+                .hannunFont(.subtext)
+                .foregroundStyle(Color.textPrimary)
+
+            Spacer(minLength: .spacingS)
+
+            AmountText(breakdown.amount, size: .sub)
+
+            Text(weightText)
+                .hannunFont(.caption, tabularFigures: true)
+                .foregroundStyle(Color.textSecondary)
+
+            Image(systemName: Constants.disclosureSymbolName)
+                .hannunFont(.caption)
+                .foregroundStyle(Color.textSecondary)
+        }
+        .lineLimit(1)
+    }
+
+    /// 비중은 바로 위 퍼센트 숫자가 이미 말한다. 막대까지 읽으면 같은 값을 두 번 듣는다.
+    private var weightBar: some View {
+        GeometryReader { proxy in
+            Capsule()
+                .fill(breakdown.category.color)
+                .frame(width: proxy.size.width * barFraction)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: Constants.barHeight)
+        .background(Color.surfaceSecondary, in: .capsule)
+        .accessibilityHidden(true)
+    }
+
+    /// 반올림해서 0% 로 보이는 자산군도 막대가 아주 조금은 남아야 줄이 비어 보이지 않는다.
+    private var barFraction: CGFloat {
+        let fraction = NSDecimalNumber(decimal: breakdown.weight).doubleValue
+        return min(max(CGFloat(fraction), Constants.minimumBarFraction), 1)
+    }
 
     private var weightText: String {
         breakdown.weight.formatted(
@@ -79,6 +122,10 @@ fileprivate enum Constants {
     static let disclosureSymbolName = "chevron.right"
     /// 시안이 정수 퍼센트다. 다섯 칸이라 소수점을 붙이면 줄이 넘친다.
     static let weightFractionLength = 0
+    static let barHeight: CGFloat = 3
+    /// dot(8pt) + `spacingS` 만큼 들여써서 막대가 이름 왼쪽 끝에서 시작한다.
+    static let barLeadingInset: CGFloat = 16
+    static let minimumBarFraction: CGFloat = 0.02
     static let accessibilityHint = "포트폴리오 탭에서 이 자산군만 봅니다"
     static let accessibilityValueSeparator = ", "
     static let weightPrefix = "비중 "

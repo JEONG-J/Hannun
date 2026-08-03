@@ -23,7 +23,11 @@ final class PortfolioRouter {
 
     // MARK: - Function
 
+    /// 이미 열려 있으면 다시 쌓지 않는다. 이 화면을 여는 버튼은 하단 액세서리에 있는데,
+    /// 액세서리는 push 된 뒤에도 그대로 떠 있어 연타가 가능하다. 막지 않으면 같은 화면이
+    /// 두 겹으로 쌓여 뒤로가기를 두 번 눌러야 목록으로 돌아온다.
     func showCashFlowList() {
+        guard path.last != .cashFlowList else { return }
         path.append(.cashFlowList)
     }
 

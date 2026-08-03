@@ -52,9 +52,11 @@ struct PortfolioScreen: View {
             }
         }
         // 액세서리는 화면이 아니라 탭에 속하므로 루트에만 등록한다 (UI 스펙 §3.1).
+        // 등록 클로저가 `NavigationStack` 바깥에서 실행돼도 push 가 되는 이유는, 스택의
+        // path 를 들고 있는 라우터를 여기서 참조로 붙잡기 때문이다.
         .tabAccessory(.portfolio) {
             PortfolioActionAccessory(viewModel: self.viewModel) {
-                self.router.presentHoldingEditor(.create)
+                self.router.showCashFlowList()
             }
         }
         .environment(router)

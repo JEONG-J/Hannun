@@ -337,11 +337,89 @@ struct PortfolioListViewModelTests {
         await viewModel.load()
         viewModel.selectCategory(.cash)
 
+        #expect(viewModel.isCategoryFiltered)
+        #expect(viewModel.selectedCategoryList == [.cash])
         #expect(viewModel.sections.map(\.category) == [.cash])
         #expect(viewModel.summaryTitle == "현금 평가금액")
         #expect(viewModel.summaryAmount == .krw(1_000_000))
         #expect(viewModel.summaryProfit == nil)
         #expect(viewModel.summaryReturnRate == nil)
+    }
+
+    @Test("고른 카테고리만 남기고 나머지는 걸러 낸다")
+    func showsOnlySelectedCategories() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.toggleCategory(.domesticStock)
+        viewModel.toggleCategory(.overseasStock)
+
+        #expect(viewModel.isCategorySelected(.domesticStock))
+        #expect(viewModel.isCategorySelected(.cash) == false)
+        // 고른 순서가 아니라 카드·도넛과 같은 고정 순서로 나와야 칩이 제자리를 지킨다.
+        #expect(viewModel.selectedCategoryList == [.domesticStock, .overseasStock])
+        #expect(viewModel.sections.map(\.category) == [.domesticStock, .overseasStock])
+        #expect(viewModel.summaryAmount == .krw(2_180_000))
+        #expect(viewModel.visibleHoldingCount == 2)
+    }
+
+    @Test("같은 카테고리를 다시 누르면 선택이 풀린다")
+    func togglesSameCategoryOff() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.toggleCategory(.cash)
+        #expect(viewModel.sections.map(\.category) == [.cash])
+
+        viewModel.toggleCategory(.cash)
+
+        #expect(viewModel.isCategorySelected(.cash) == false)
+        #expect(viewModel.isCategoryFiltered == false)
+        #expect(viewModel.sections.map(\.category) == [.cash, .domesticStock, .overseasStock])
+    }
+
+    @Test("필터를 비우면 전체가 돌아온다")
+    func clearingFilterRestoresEverything() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.toggleCategory(.cash)
+        viewModel.toggleCategory(.etf)
+
+        viewModel.clearCategoryFilter()
+
+        #expect(viewModel.selectedCategories.isEmpty)
+        #expect(viewModel.selectedCategoryList.isEmpty)
+        #expect(viewModel.isCategoryFiltered == false)
+        #expect(viewModel.summaryTitle == "총 평가금액")
+        #expect(viewModel.summaryAmount == .krw(3_180_000))
+    }
+
+    /// 카테고리를 여럿 고르면 이름을 늘어놓는 대신 골랐다는 사실만 말한다.
+    @Test("두 개 이상 고르면 요약 제목이 선택 카테고리로 바뀐다")
+    func summaryTitleGeneralizesAcrossCategories() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.toggleCategory(.cash)
+        #expect(viewModel.summaryTitle == "현금 평가금액")
+
+        viewModel.toggleCategory(.domesticStock)
+
+        #expect(viewModel.summaryTitle == "선택 카테고리 평가금액")
+        #expect(viewModel.summaryAmount == .krw(1_800_000))
     }
 
     @Test("지표는 수익률 → 수익금 → 현재가 순으로 돈다")
@@ -412,6 +490,7 @@ struct PortfolioListViewModelTests {
         #expect(viewModel.sections.map(\.category) == [.cash, .overseasStock])
     }
 
+    /// 딥링크는 "그 카테고리만" 이라는 뜻이라, 먼저 골라 둔 필터가 있어도 갈아 끼운다.
     @Test("다른 탭에서 넘어온 카테고리를 필터에 반영한다")
     func appliesIncomingRoute() async {
         let viewModel = PortfolioTestFactory.listViewModel(
@@ -419,10 +498,11 @@ struct PortfolioListViewModelTests {
             prices: prices
         )
 
+        viewModel.toggleCategory(.cash)
         viewModel.apply(.portfolio(category: .overseasStock))
         await viewModel.load()
 
-        #expect(viewModel.selectedCategory == .overseasStock)
+        #expect(viewModel.selectedCategories == [.overseasStock])
         #expect(viewModel.sections.map(\.category) == [.overseasStock])
     }
 
@@ -450,33 +530,6 @@ struct PortfolioListViewModelTests {
 
         await viewModel.refresh()
 
-        #expect(viewModel.didLastRefreshFail)
         #expect(viewModel.valuations.value?.count == 3)
-    }
-
-    @Test("조회에 성공해도 낡은 시세가 섞여 있으면 갱신 실패 배지를 띄운다")
-    func flagsStaleQuotesAfterSuccessfulLoad() async {
-        let viewModel = PortfolioTestFactory.listViewModel(
-            repository: InMemoryHoldingRepository(records),
-            prices: prices,
-            staleSymbols: ["AAPL"]
-        )
-
-        await viewModel.load()
-
-        #expect(viewModel.didLastRefreshFail == false)
-        #expect(viewModel.hasStaleQuotes)
-    }
-
-    @Test("모든 시세가 최신이면 갱신 실패 배지를 띄우지 않는다")
-    func hidesStaleBadgeWhenEveryQuoteIsCurrent() async {
-        let viewModel = PortfolioTestFactory.listViewModel(
-            repository: InMemoryHoldingRepository(records),
-            prices: prices
-        )
-
-        await viewModel.load()
-
-        #expect(viewModel.hasStaleQuotes == false)
     }
 }

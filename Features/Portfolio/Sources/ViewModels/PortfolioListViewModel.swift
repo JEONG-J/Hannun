@@ -81,19 +81,30 @@ final class PortfolioListViewModel {
     private(set) var valuations: Loadable<[HoldingValuation]> = .idle
     private(set) var metric: HoldingMetric = .returnRate
     private(set) var lastLoadedAt: Date?
-    private(set) var didLastRefreshFail = false
 
     /// 검색 시작 시점을 알아야 접힌 카드를 펼 수 있어서 `search(_:)` 로만 바꾼다.
     private(set) var searchText = ""
 
+    /// 골라 둔 카테고리. 비어 있으면 전체를 보여 준다 — "아무것도 안 고름" 과 "전부 고름" 을
+    /// 같은 화면으로 두어야 필터를 풀었을 때 종목이 하나도 없는 상태가 생기지 않는다.
+    /// 바꾸는 길을 아래 함수들로 좁혀 두면 칩 줄과 딥링크가 같은 규칙을 쓴다.
+    private(set) var selectedCategories: Set<AssetCategory> = []
+
     var sortOrder: HoldingSortOrder = .initial
-    var selectedCategory: AssetCategory?
     var alertPrompt: AlertPrompt?
 
     private var collapsedCategories: Set<AssetCategory> = []
 
     /// 목록이 비었을 때 검색 때문인지 카테고리 필터 때문인지 갈라 말하려고 쓴다.
     var isSearching: Bool { !query.isEmpty }
+
+    var isCategoryFiltered: Bool { !selectedCategories.isEmpty }
+
+    /// 칩 줄이 그리는 순서. `Set` 은 순회 순서가 실행마다 달라 그대로 쓰면 칩이 제자리를
+    /// 지키지 못하므로, 카드·도넛과 같은 `allCases` 순서에 실어 고정한다.
+    var selectedCategoryList: [AssetCategory] {
+        AssetCategory.allCases.filter { selectedCategories.contains($0) }
+    }
 
     /// 기본 순서를 벗어났는지. 정렬은 행 순서만 조용히 바꾸므로 메뉴를 열기 전에는 무엇으로
     /// 정렬 중인지 알 방법이 없다 — 툴바 아이콘이 이 값으로 그 사실을 대신 알린다.
@@ -123,11 +134,16 @@ final class PortfolioListViewModel {
     }
 
     /// 검색 중에는 "총" 이라고 말할 수 없다 — 요약 바가 더하는 건 걸러 낸 종목뿐이다.
+    /// 카테고리를 여럿 고른 경우도 같은 이유로 "총" 을 못 쓰는데, 이름을 늘어놓으면 한 줄을
+    /// 넘겨 버리므로 골라 놓았다는 사실만 말하고 어떤 것들인지는 칩 줄에 맡긴다.
     var summaryTitle: String {
         if isSearching { return Constants.searchSummaryTitle }
+        guard isCategoryFiltered else { return Constants.totalSummaryTitle }
 
-        guard let selectedCategory else { return Constants.totalSummaryTitle }
-        return selectedCategory.title + Constants.summaryTitleSuffix
+        guard selectedCategories.count == 1, let onlyCategory = selectedCategories.first else {
+            return Constants.filteredSummaryTitle
+        }
+        return onlyCategory.title + Constants.summaryTitleSuffix
     }
 
     /// 평단가가 있는 종목만 모아 계산한 수익금. 현금뿐이면 nil.
@@ -159,15 +175,6 @@ final class PortfolioListViewModel {
         sections.reduce(0) { $0 + $1.valuations.count }
     }
 
-    /// 갱신 실패 배지를 띄울지.
-    ///
-    /// 조회가 통째로 실패한 경우뿐 아니라, 성공했더라도 낡은 시세로 평가한 종목이 섞여 있으면
-    /// 참이다 — 시세는 종목마다 따로 실패하므로 목록 전체가 최신이라고 말할 수 없다.
-    var hasStaleQuotes: Bool {
-        if didLastRefreshFail { return true }
-        return valuations.value?.contains { $0.priceFreshness.isStale } ?? false
-    }
-
     // MARK: - Function
 
     init(
@@ -194,8 +201,31 @@ final class PortfolioListViewModel {
         await reload()
     }
 
+    /// 이미 골라 둔 카테고리를 다시 누르면 그것만 뺀다. 마지막 하나까지 빼면 필터가 비어
+    /// 전체 표시로 돌아가므로, 아무것도 안 보이는 상태에 갇히지 않는다.
+    func toggleCategory(_ category: AssetCategory) {
+        if selectedCategories.contains(category) {
+            selectedCategories.remove(category)
+        } else {
+            selectedCategories.insert(category)
+        }
+    }
+
+    func clearCategoryFilter() {
+        selectedCategories.removeAll()
+    }
+
+    /// 하나만 남기는 선택. nil 이면 전체로 되돌린다.
     func selectCategory(_ category: AssetCategory?) {
-        selectedCategory = category
+        if let category {
+            selectedCategories = [category]
+        } else {
+            clearCategoryFilter()
+        }
+    }
+
+    func isCategorySelected(_ category: AssetCategory) -> Bool {
+        selectedCategories.contains(category)
     }
 
     /// 검색을 시작하는 순간 접어 둔 카드를 전부 펼친다 — 찾은 종목이 접힌 카드 안에 숨으면
@@ -241,9 +271,12 @@ final class PortfolioListViewModel {
     }
 
     /// 다른 탭에서 넘어온 카테고리 요청을 필터에 반영한다 (NW-4).
+    ///
+    /// "그 카테고리를 보여 달라" 가 아니라 "그 카테고리만 보여 달라" 는 요청이므로, 이미 골라
+    /// 둔 것에 더하지 않고 통째로 갈아 끼운다.
     func apply(_ route: AppRoute?) {
         guard case .portfolio(let category) = route else { return }
-        selectedCategory = category
+        selectCategory(category)
     }
 
     /// 확인 다이얼로그가 승인한 뒤에만 불린다.
@@ -278,13 +311,10 @@ final class PortfolioListViewModel {
             // 종목을 넣었을 때 보이지 않는 검색어가 그 종목을 걸러 낸다.
             if loaded.isEmpty { searchText = "" }
             lastLoadedAt = Date()
-            didLastRefreshFail = false
         } catch {
-            // 이미 그려 둔 값이 있으면 화면을 비우지 않는다. 갱신 실패는 배지로만 알린다.
-            guard valuations.value == nil else {
-                didLastRefreshFail = true
-                return
-            }
+            // 갱신에 실패해도 마지막으로 그린 값은 그대로 둔다 — 읽고 있던 숫자를 지우고
+            // 빈 화면을 들이미는 쪽이, 조금 낡은 값을 계속 보여 주는 쪽보다 나쁘다.
+            guard valuations.value == nil else { return }
 
             valuations = .failed(AppError(narrowing: error))
         }
@@ -294,7 +324,9 @@ final class PortfolioListViewModel {
     private func isVisible(_ valuation: HoldingValuation) -> Bool {
         let holding = valuation.holding
 
-        guard selectedCategory == nil || holding.category == selectedCategory else { return false }
+        guard selectedCategories.isEmpty || selectedCategories.contains(holding.category) else {
+            return false
+        }
         guard !query.isEmpty else { return true }
 
         return holding.name.localizedStandardContains(query)
@@ -339,6 +371,7 @@ fileprivate enum Constants {
     static let featureName = "포트폴리오"
     static let totalSummaryTitle = "총 평가금액"
     static let searchSummaryTitle = "검색 결과 평가금액"
+    static let filteredSummaryTitle = "선택 카테고리 평가금액"
     static let summaryTitleSuffix = " 평가금액"
     static let deleteMessage = "보유 기록이 사라집니다. 되돌릴 수 없어요."
 }

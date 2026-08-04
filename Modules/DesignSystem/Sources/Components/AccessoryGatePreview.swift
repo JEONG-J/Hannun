@@ -59,7 +59,10 @@ struct AccessoryGatePreview: View {
                     }
                 }
 
-                gate("G4 — chevron.up 이 \"누를 수 있다\"로 읽히는가 (눌리는 줄 vs 안 눌리는 줄)") {
+                // 셋을 붙여 두는 이유: 셰브런이 "여기서 화면이 열린다"만 뜻하고, 캡슐째
+                // 버튼은 셰브런 없이도 눌린다는 게 이 매트릭스가 판정할 대비다. 가운데 줄이
+                // "안 눌린다"로 읽히면 오른쪽 라벨의 brand 색만으로는 과녁 신호가 모자란 것이다.
+                gate("G4 — chevron.up 이 \"화면이 열린다\"로 읽히는가 (여는 줄 vs 캡슐째 버튼 vs 안 눌리는 줄)") {
                     standIn {
                         BottomAccessory {
                             comparisonStrip
@@ -67,11 +70,12 @@ struct AccessoryGatePreview: View {
                             AccessoryControlButton("비교", isOn: true) {}
                         }
                     }
+                    standIn { portfolioSwitchStrip }
                     standIn {
                         BottomAccessory {
-                            AccessoryCaption(.value("12종목"), .plain("· 12:04 기준"))
+                            AccessoryCaption(.value("7건"), .plain("이번 달"))
                         } trailing: {
-                            AccessoryActionButton("종목 추가", systemImageName: "plus") {}
+                            AccessoryActionButton("작성", systemImageName: "pencil.line") {}
                         }
                     }
                 }
@@ -86,7 +90,7 @@ struct AccessoryGatePreview: View {
                 gate("G8 — brand 스트로크·라벨 실측 대비 (선행 문서 §3.1 표 대조)") {
                     standIn {
                         BottomAccessory {
-                            AccessoryCaption("첫 종목을 추가해 보세요")
+                            AccessoryCaption("아직 종목이 없어요")
                         } trailing: {
                             AccessoryControlButton("비교", isOn: false) {}
                         }
@@ -162,6 +166,24 @@ struct AccessoryGatePreview: View {
             AccessoryCaption(.plain("S&P500 대비"), .accent("+4.3%p", .gain))
                 .dotted(.categoryForeign)
                 .expandable()
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 포트폴리오 탭 — 캡슐 전체가 화면 전환 버튼이다. 셰브런은 붙지 않는다(무언가 열리는 게
+    /// 아니라 탭 루트가 갈리는 것이므로). 오른쪽은 컨트롤이 아니라 **갈 화면 이름 라벨**이다.
+    private var portfolioSwitchStrip: some View {
+        Button {} label: {
+            BottomAccessory {
+                AccessoryCaption(.value("12종목"), .plain("· 12:04 기준"))
+            } trailing: {
+                Label("입출금 기록", systemImage: "arrow.left.arrow.right")
+                    .hannunFont(.pillLabel)
+                    .foregroundStyle(Color.brand)
+                    .frame(minHeight: .minimumTouchTarget)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
     }

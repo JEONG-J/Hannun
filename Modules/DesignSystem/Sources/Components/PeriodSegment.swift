@@ -34,11 +34,12 @@ public enum ChartPeriod: String, CaseIterable, Identifiable, Sendable {
 ///
 /// 성과 탭은 기간이 잦은 조작이라 액세서리(캡션 → 시트)로 옮겨 갔지만, 인라인 기간 선택이
 /// 더 맞는 화면을 위해 이 컴포넌트 자체는 남겨 둔다.
+///
+/// 시각 문법은 `SegmentedPicker` 가 갖는다 — 여기는 `ChartPeriod` 특수화만 한다. 세그먼트가
+/// 두 벌로 갈라지면 선택 캡슐 하나를 고쳐도 한쪽만 바뀐다.
 public struct PeriodSegment: View {
 
     // MARK: - Property
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @Binding private var selection: ChartPeriod
 
@@ -49,61 +50,8 @@ public struct PeriodSegment: View {
     }
 
     public var body: some View {
-        track
-            .hannunGlass(.periodSegment)
-            .hannunAnimation(.selection, value: selection)
+        SegmentedPicker(ChartPeriod.allCases, selection: $selection) { $0.title }
     }
-
-    // MARK: - Function
-
-    /// AX 사이즈에서는 6등분한 열이 "YTD"를 담지 못해 하필 **선택된** 칸만 "Y…"로 잘린다.
-    /// 지금 어느 구간을 보고 있는지 말하는 유일한 단서라 줄일 수 없다 — 열 폭을 라벨에
-    /// 맞추고 트랙째 가로로 굴린다.
-    @ViewBuilder
-    private var track: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            ScrollView(.horizontal) { row(isEvenlyDivided: false) }
-                .scrollIndicators(.hidden)
-        } else {
-            row(isEvenlyDivided: true)
-        }
-    }
-
-    private func row(isEvenlyDivided: Bool) -> some View {
-        HStack(spacing: 0) {
-            ForEach(ChartPeriod.allCases) { segment($0, isEvenlyDivided: isEvenlyDivided) }
-        }
-        .padding(Constants.trackPadding)
-    }
-
-    private func segment(_ period: ChartPeriod, isEvenlyDivided: Bool) -> some View {
-        Button {
-            selection = period
-        } label: {
-            Text(period.title)
-                .hannunFont(.pillLabel)
-                .foregroundStyle(period == selection ? Color.brand : Color.textSecondary)
-                .lineLimit(1)
-                .fixedSize(horizontal: !isEvenlyDivided, vertical: false)
-                .padding(.horizontal, isEvenlyDivided ? 0 : .spacingM)
-                .frame(
-                    maxWidth: isEvenlyDivided ? .infinity : nil,
-                    minHeight: .minimumTouchTarget
-                )
-                .background {
-                    if period == selection {
-                        Capsule().fill(HannunTint.brandTint)
-                    }
-                }
-                .contentShape(.capsule)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-fileprivate enum Constants {
-    /// 선택 캡슐이 glass 트랙 테두리에 닿지 않게 하는 최소 여백.
-    static let trackPadding: CGFloat = 4
 }
 
 #if DEBUG

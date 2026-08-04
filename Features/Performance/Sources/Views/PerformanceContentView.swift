@@ -10,8 +10,11 @@ import HannunDesignSystem
 import HannunDomain
 import SwiftUI
 
-/// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트.
-/// 기간·단위는 액세서리로, 벤치마크는 툴바 + 시트로 옮겨 본문에는 컨트롤이 없다.
+/// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트 → 월간 수익률 캘린더.
+///
+/// 기간은 액세서리로, 벤치마크 고르기는 툴바 + 시트로 내렸다. 일별/월별만 차트 카드 헤더에
+/// 둔다 — 차트 가로축을 정하는 컨트롤이라 바꾸는 대상 바로 위에 있어야 무엇이 달라지는지
+/// 보인다 (UI 스펙 §4.3).
 struct PerformanceContentView: View {
 
     // MARK: - Property
@@ -126,8 +129,12 @@ struct PerformanceContentView: View {
                 points: plotPoints(of: trend),
                 benchmarks: overlay,
                 insufficientDataMessage: Constants.insufficientDataMessage,
-                selection: $viewModel.scrubbedDate
-            )
+                selection: cursorBinding
+            ) {
+                SegmentedPicker(TrendGranularity.allCases, selection: granularityBinding) {
+                    $0.title
+                }
+            }
             // `.contain` 이 없으면 라벨이 서브트리 전체를 하나로 합쳐 범례의
             // `.accessibilityElement(children: .combine)` 이 통째로 삼켜진다. 컨테이너에
             // 라벨·힌트를 달고도 자식은 그대로 순회되게 하는 조합이다 (`CurrencyToggle` 과
@@ -148,6 +155,31 @@ struct PerformanceContentView: View {
     }
 
     // MARK: - Function
+
+    /// 차트 커서를 그릴 시점.
+    ///
+    /// 읽기와 쓰기가 서로 다른 값을 본다. 커서를 만드는 건 스크럽만이 아니라 캘린더에서 고른
+    /// 날도 마찬가지라 읽을 때는 둘을 합친 `chartCursorDate`(차트가 실제로 담고 있는 점으로
+    /// 스냅된 값)를 주고, 차트가 되돌려주는 값은 스크럽 자리에만 넣는다. 손을 떼 스크럽이
+    /// `nil` 이 되면 읽기 쪽이 다시 캘린더 선택을 집으므로 커서가 그 자리에 남는다.
+    private var cursorBinding: Binding<Date?> {
+        Binding {
+            viewModel.chartCursorDate
+        } set: { date in
+            viewModel.scrubbedDate = date
+        }
+    }
+
+    /// `granularity` 는 `private(set)` 이고 바뀌면 재조회가 따라와야 하므로 세그먼트가 값을
+    /// 직접 쓰지 않고 `selectGranularity(_:)` 를 부르는 계산 바인딩으로 잇는다
+    /// (`BenchmarkPickerSheet` 가 겹치기 스위치를 다루는 방식과 같다).
+    private var granularityBinding: Binding<TrendGranularity> {
+        Binding {
+            viewModel.granularity
+        } set: { granularity in
+            Task { await viewModel.selectGranularity(granularity) }
+        }
+    }
 
     /// 선택된 지수 하나만 겹친다. 조회에 실패한 지수는 `overlaidBenchmark` 가 이미 걸러낸다.
     private var overlay: [TrendSeries] {
@@ -177,7 +209,7 @@ struct PerformanceContentView: View {
 
 fileprivate enum Constants {
     static let placeholderHeadline = PerformanceHeadline(
-        scrubbedDate: nil,
+        focusedDate: nil,
         rate: 0,
         amount: .krw(0)
     )
@@ -234,5 +266,11 @@ private struct PerformanceContentPreview: View {
 
 #Preview("성과 본문 · 기록 없음") {
     PerformanceContentPreview(viewModel: .previewWithoutRecords)
+}
+
+/// 지수를 겹친 채 차트 위 한 점을 고른 상태. 히어로가 그 시점 값으로 바뀌고 같은 자리에
+/// 커서가 서는지 본다.
+#Preview("성과 본문 · 비교 ON + 날짜 선택") {
+    PerformanceContentPreview(viewModel: .previewWithFocusedDate)
 }
 #endif

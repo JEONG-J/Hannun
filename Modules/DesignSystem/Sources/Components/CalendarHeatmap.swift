@@ -38,12 +38,19 @@ public struct HeatmapCell: Identifiable, Equatable, Sendable {
 ///
 /// 채움 opacity 상한을 0.60 으로 잡는 이유는 `textPrimary` 로 적은 일 숫자가 라이트·다크
 /// 양쪽에서 계속 읽히게 하기 위해서다 — 그래서 `onGain`/`onLoss` 같은 신규 토큰이 필요 없다.
+///
+/// **선택 표시**: 고른 셀은 44pt 프레임 바깥선에 `brand` 2pt 링을 두른다. 채움 사각형은
+/// 선택 여부와 무관하게 **모든 셀에서 2pt 인셋**해 그린다 — 인셋을 선택 셀에만 걸면 고른
+/// 칸의 색면만 작아져 격자가 들쭉날쭉해진다. 손실 셀의 `loss` 1pt 스트로크는 인셋된 채움
+/// 경계에 그대로 남아 색맹 대응 부호가 선택 중에도 살아 있고, 두 테두리는 색·굵기·위치가
+/// 모두 달라 겹쳐도 구분된다.
 public struct CalendarHeatmap: View {
 
     // MARK: - Property
 
     private let month: Date
     private let cells: [HeatmapCell]
+    private let selectedDate: Date?
     private let calendar: Calendar
     private let onSelect: (HeatmapCell) -> Void
 
@@ -52,11 +59,13 @@ public struct CalendarHeatmap: View {
     public init(
         month: Date,
         cells: [HeatmapCell],
+        selectedDate: Date? = nil,
         calendar: Calendar = .current,
         onSelect: @escaping (HeatmapCell) -> Void
     ) {
         self.month = month
         self.cells = cells
+        self.selectedDate = selectedDate
         self.calendar = calendar
         self.onSelect = onSelect
     }
@@ -65,6 +74,7 @@ public struct CalendarHeatmap: View {
         // `ForEach` 는 슬롯마다 클로저를 다시 평가한다 — 한 달 안에서 이 딕셔너리를
         // 매번 새로 만들지 않도록 여기서 한 번만 계산해 넘긴다.
         let cellsByDay = cellsByDay
+        let selectedDay = selectedDate.map { calendar.startOfDay(for: $0) }
 
         VStack(alignment: .leading, spacing: .spacingS) {
             weekdayHeader
@@ -75,6 +85,7 @@ public struct CalendarHeatmap: View {
                         CalendarHeatmapDayCell(
                             day: day,
                             cell: cellsByDay[calendar.startOfDay(for: day)],
+                            isSelected: selectedDay == calendar.startOfDay(for: day),
                             calendar: calendar,
                             onSelect: onSelect
                         )
@@ -211,6 +222,7 @@ private struct CalendarHeatmapDayCell: View {
 
     let day: Date
     let cell: HeatmapCell?
+    let isSelected: Bool
     let calendar: Calendar
     let onSelect: (HeatmapCell) -> Void
 
@@ -241,19 +253,13 @@ private struct CalendarHeatmapDayCell: View {
                 dayNumberText
                     .foregroundStyle(Color.textPrimary)
                     .frame(minWidth: .minimumTouchTarget, minHeight: .minimumTouchTarget)
-                    .background(
-                        fillColor(for: ratio).opacity(fillOpacity(for: ratio)),
-                        in: cellShape
-                    )
-                    .overlay {
-                        if ratio < 0 {
-                            lossStroke
-                        }
-                    }
+                    .background { fill(for: ratio) }
+                    .overlay { selectionRing }
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(accessibilityLabel)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
         } else {
             // 버튼이 아니어도 **프레임은 같아야 한다**. 이 갈래가 맨 텍스트면 높이가 글자
             // 높이(약 15pt)로 주저앉는다. 기록이 하나라도 있는 주는 옆 셀이 44pt 로 행을
@@ -262,6 +268,7 @@ private struct CalendarHeatmapDayCell: View {
             dayNumberText
                 .foregroundStyle(Color.textSecondary)
                 .frame(minWidth: .minimumTouchTarget, minHeight: .minimumTouchTarget)
+                .overlay { selectionRing }
                 .accessibilityLabel(accessibilityLabel)
         }
     }
@@ -283,12 +290,34 @@ private struct CalendarHeatmapDayCell: View {
         RoundedRectangle(cornerRadius: .radiusS)
     }
 
+    /// 채움 색면. 44pt 프레임 안쪽으로 2pt 물러나 선택 링이 들어올 자리를 늘 비워 둔다 —
+    /// 선택된 셀만 물러나면 고른 칸의 색면 크기가 달라져 격자가 들쭉날쭉해 보인다.
+    private func fill(for ratio: Decimal) -> some View {
+        cellShape
+            .fill(fillColor(for: ratio).opacity(fillOpacity(for: ratio)))
+            .overlay {
+                if ratio < 0 {
+                    lossStroke
+                }
+            }
+            .padding(Constants.fillInset)
+    }
+
     /// 인셋 스트로크. `stroke` 대신 `strokeBorder` 를 쓴다 — `stroke` 는 선을 경로 위에
     /// 걸쳐 그려 절반이 셀 바깥으로 번지고 모서리 반경이 `radiusS` 보다 커 보인다.
     /// 다른 컴포넌트의 테두리도 전부 인셋이다(`AccessoryControlButton.swift:96`,
     /// `FilterChip.swift:186`).
     private var lossStroke: some View {
         cellShape.strokeBorder(Color.loss, lineWidth: Constants.lossStrokeWidth)
+    }
+
+    /// 선택 링. 채움 경계가 아니라 **프레임 바깥선**에 그려 손실 스트로크와 위치가 겹치지
+    /// 않는다 — 색(brand/loss)·굵기(2pt/1pt)까지 달라 두 테두리가 한 셀에 있어도 읽힌다.
+    @ViewBuilder
+    private var selectionRing: some View {
+        if isSelected {
+            cellShape.strokeBorder(Color.brand, lineWidth: Constants.selectionStrokeWidth)
+        }
     }
 
     private func fillColor(for ratio: Decimal) -> Color {
@@ -326,6 +355,9 @@ fileprivate enum Constants {
     static let highOpacity = 0.60
 
     static let lossStrokeWidth: CGFloat = 1
+    static let selectionStrokeWidth: CGFloat = 2
+    /// 채움이 44pt 프레임에서 물러나는 폭. 선택 링 굵기와 같아 링이 채움을 덮지 않는다.
+    static let fillInset: CGFloat = 2
     /// AX5 에서 두 자리 일 숫자·요일 심볼이 정사각 셀·열 폭을 넘어서면 잘리는 대신 줄어든다.
     static let gridTextMinimumScaleFactor: CGFloat = 0.5
 
@@ -340,8 +372,9 @@ private struct CalendarHeatmapPreview: View {
 
     private let month = CalendarHeatmapPreview.date(year: 2026, month: 8, day: 1)
     private let cells: [HeatmapCell]
+    private let selectedDate: Date?
 
-    init() {
+    init(selectedDay: Int? = nil) {
         let calendar = Calendar.current
         // 수익·손실·0%·기록 없음이 모두 들어간 표본. 8월은 31일까지라 다섯째 주까지 채운다.
         let ratiosByDay: [Int: Decimal?] = [
@@ -356,12 +389,15 @@ private struct CalendarHeatmapPreview: View {
             else { return nil }
             return HeatmapCell(date: date, ratio: ratio)
         }
+        selectedDate = selectedDay.flatMap {
+            calendar.date(byAdding: .day, value: $0 - 1, to: anchorMonth)
+        }
     }
 
     // MARK: - Body
 
     var body: some View {
-        CalendarHeatmap(month: month, cells: cells) { _ in }
+        CalendarHeatmap(month: month, cells: cells, selectedDate: selectedDate) { _ in }
             .padding(.spacingL)
             .background(Color.surfacePrimary, in: .hannunContainer())
             .padding(.spacingL)
@@ -386,9 +422,20 @@ private struct CalendarHeatmapPreview: View {
         .preferredColorScheme(.dark)
 }
 
+/// 선택 링이 채움을 덮지 않고 격자 정렬도 흔들지 않는지 — 5일은 채움이 가장 진한 수익 셀이다.
+#Preview("캘린더 히트맵 · 수익 셀 선택") {
+    CalendarHeatmapPreview(selectedDay: 5)
+}
+
+/// 두 테두리가 한 셀에 공존하는 경우. 바깥선 `brand` 2pt 와 채움 경계 `loss` 1pt 가
+/// 서로를 먹지 않는지 이 케이스로 본다.
+#Preview("캘린더 히트맵 · 손실 셀 선택") {
+    CalendarHeatmapPreview(selectedDay: 15)
+}
+
 /// 요일 헤더와 일 숫자가 AX5 에서도 7열 그리드를 무너뜨리지 않는지 확인한다.
 #Preview("캘린더 히트맵 · AX5") {
-    CalendarHeatmapPreview()
+    CalendarHeatmapPreview(selectedDay: 15)
         .dynamicTypeSize(.accessibility5)
 }
 #endif

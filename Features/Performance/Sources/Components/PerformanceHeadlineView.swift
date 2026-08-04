@@ -11,8 +11,9 @@ import SwiftUI
 
 /// 화면 최상단 큰 숫자 블록 (PM-3).
 ///
-/// 스크럽 중에는 같은 자리에서 그 시점 값으로 바뀌므로 캡션도 함께 바뀐다 — 기준선이
-/// 연초에서 기간 시작으로 옮겨간다는 사실을 숨기면 숫자를 오독하게 된다.
+/// 특정 시점을 보고 있을 때(차트 스크럽·캘린더 날짜 선택)는 같은 자리에서 그 시점 값으로
+/// 바뀌므로 캡션도 함께 바뀐다 — 기준선이 연초에서 기간 시작으로 옮겨간다는 사실을 숨기면
+/// 숫자를 오독하게 된다.
 struct PerformanceHeadlineView: View {
 
     // MARK: - Property
@@ -48,9 +49,9 @@ struct PerformanceHeadlineView: View {
     // MARK: - Function
 
     private var caption: String {
-        guard let scrubbedDate = headline.scrubbedDate else { return Constants.yearToDateCaption }
+        guard let focusedDate = headline.focusedDate else { return Constants.yearToDateCaption }
 
-        let date = scrubbedDate.formatted(.dateTime.year().month().day())
+        let date = focusedDate.formatted(.dateTime.year().month().day())
         return "\(date) \(Constants.captionSeparator) \(Constants.periodStartCaption)"
     }
 
@@ -61,10 +62,10 @@ struct PerformanceHeadlineView: View {
     /// 금액 자체가 부속 정보이므로 한 `Text` 로 묶어 통째로 한 단계 죽인다. 덩어리 하나라
     /// 폭이 모자랄 때 줄바꿈·축소도 라벨과 숫자가 따로 놀지 않는다.
     private func amountLine(_ amount: Money) -> some View {
-        let label = headline.isScrubbing ? Constants.totalLabel : Constants.yearOpeningLabel
+        let label = headline.isFocused ? Constants.totalLabel : Constants.yearOpeningLabel
         let value = AmountFormatter.text(
             for: amount,
-            showsPositiveSign: !headline.isScrubbing
+            showsPositiveSign: !headline.isFocused
         )
 
         return Text("\(label) \(value)")
@@ -85,16 +86,16 @@ fileprivate enum Constants {
 #Preview("성과 헤드라인 · 라이트") {
     VStack(alignment: .leading, spacing: .spacingXL) {
         PerformanceHeadlineView(
-            PerformanceHeadline(scrubbedDate: nil, rate: 0.094, amount: .krw(9_140_000))
+            PerformanceHeadline(focusedDate: nil, rate: 0.094, amount: .krw(9_140_000))
         )
 
         PerformanceHeadlineView(
-            PerformanceHeadline(scrubbedDate: nil, rate: -0.0312, amount: .krw(-3_120_000))
+            PerformanceHeadline(focusedDate: nil, rate: -0.0312, amount: .krw(-3_120_000))
         )
 
         PerformanceHeadlineView(
             PerformanceHeadline(
-                scrubbedDate: Date(timeIntervalSince1970: 1_769_904_000),
+                focusedDate: Date(timeIntervalSince1970: 1_769_904_000),
                 rate: 0.0412,
                 amount: .krw(128_450_000)
             )
@@ -108,7 +109,7 @@ fileprivate enum Constants {
 
 #Preview("성과 헤드라인 · 다크") {
     PerformanceHeadlineView(
-        PerformanceHeadline(scrubbedDate: nil, rate: 0.094, amount: .krw(9_140_000))
+        PerformanceHeadline(focusedDate: nil, rate: 0.094, amount: .krw(9_140_000))
     )
     .padding(.spacingL)
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -119,7 +120,7 @@ fileprivate enum Constants {
 /// 보조줄이 13 → 15 로 올라갔다. 최대 사이즈에서 라벨과 금액이 한 덩어리로 접히는지 본다.
 #Preview("성과 헤드라인 · AX5") {
     PerformanceHeadlineView(
-        PerformanceHeadline(scrubbedDate: nil, rate: 0.094, amount: .krw(9_140_000))
+        PerformanceHeadline(focusedDate: nil, rate: 0.094, amount: .krw(9_140_000))
     )
     .padding(.spacingL)
     .frame(maxWidth: .infinity, alignment: .leading)

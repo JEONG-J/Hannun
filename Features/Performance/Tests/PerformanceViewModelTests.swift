@@ -161,8 +161,8 @@ struct PerformanceViewModelTests {
         #expect(viewModel.granularity == .monthly)
     }
 
-    @Test("단위 토글은 일별·월별을 오가며 매번 재조회한다")
-    func togglingGranularityAlternatesAndRefetches() async {
+    @Test("단위를 왕복해 골라도 매번 재조회한다")
+    func alternatingGranularityRefetchesEachTime() async {
         let recorder = TrendRequestRecorder()
         let viewModel = makeViewModel(trend: { start, end, granularity in
             await recorder.record(
@@ -172,28 +172,28 @@ struct PerformanceViewModelTests {
         })
 
         await viewModel.loadIfNeeded()
-        await viewModel.toggleGranularity()
-        await viewModel.toggleGranularity()
+        await viewModel.selectGranularity(.monthly)
+        await viewModel.selectGranularity(.daily)
 
         #expect(await recorder.chartRequests.map(\.granularity) == [.daily, .monthly, .daily])
         #expect(viewModel.granularity == .daily)
     }
 
-    @Test("단위 토글은 스크럽 상태를 해제한다")
-    func togglingGranularityClearsScrub() async {
+    @Test("단위를 바꾸면 스크럽 상태가 풀린다")
+    func selectingGranularityClearsScrub() async {
         let viewModel = makeViewModel()
         await viewModel.loadIfNeeded()
         viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
 
-        await viewModel.toggleGranularity()
+        await viewModel.selectGranularity(.monthly)
 
         #expect(viewModel.scrubbedDate == nil)
     }
 
     @Test("단위를 빠르게 두 번 눌러도 나중에 시작한 요청 결과만 반영된다")
-    func rapidGranularityTogglesKeepLatestRequestWinning() async {
-        // 첫 토글(.monthly)은 문을 걸어 두고, 그 사이 두 번째 토글(.daily)이 먼저 끝나게 만든다.
-        // 이 순서에서 첫 토글이 나중에 풀려도 결과를 덮어써서는 안 된다 — 화면에 남는 값은
+    func rapidGranularityChangesKeepLatestRequestWinning() async {
+        // 첫 선택(.monthly)은 문을 걸어 두고, 그 사이 두 번째 선택(.daily)이 먼저 끝나게 만든다.
+        // 이 순서에서 첫 선택이 나중에 풀려도 결과를 덮어써서는 안 된다 — 화면에 남는 값은
         // 항상 사용자의 마지막 조작(.daily)과 맞아야 한다.
         let gate = RequestGate()
         let viewModel = makeViewModel(trend: { _, _, granularity in
@@ -206,8 +206,8 @@ struct PerformanceViewModelTests {
 
         await viewModel.loadIfNeeded()
 
-        async let first: Void = viewModel.toggleGranularity()
-        async let second: Void = viewModel.toggleGranularity()
+        async let first: Void = viewModel.selectGranularity(.monthly)
+        async let second: Void = viewModel.selectGranularity(.daily)
         await second
 
         #expect(viewModel.granularity == .daily)
@@ -218,13 +218,6 @@ struct PerformanceViewModelTests {
 
         #expect(viewModel.granularity == .daily)
         #expect(viewModel.trendState.value?.portfolio.count == 2)
-    }
-
-    @Test("periodSummary가 기간과 단위를 함께 말한다")
-    func periodSummaryDescribesPeriodAndGranularity() {
-        let viewModel = makeViewModel()
-
-        #expect(viewModel.periodSummary == "YTD · 일별")
     }
 
     @Test("기간을 고르면 선택 시트가 닫힌다")
@@ -432,8 +425,8 @@ struct PerformanceViewModelTests {
         let scrubbedDate = PerformanceSampleData.date(at: 3)
         viewModel.scrubbedDate = scrubbedDate
 
-        #expect(viewModel.headline?.isScrubbing == true)
-        #expect(viewModel.headline?.scrubbedDate == scrubbedDate)
+        #expect(viewModel.headline?.isFocused == true)
+        #expect(viewModel.headline?.focusedDate == scrubbedDate)
         #expect(viewModel.headline?.rate == 0.031)
         #expect(viewModel.headline?.amount == .krw(123_720_000))
     }
@@ -446,7 +439,7 @@ struct PerformanceViewModelTests {
 
         viewModel.scrubbedDate = nil
 
-        #expect(viewModel.headline?.isScrubbing == false)
+        #expect(viewModel.headline?.isFocused == false)
         #expect(viewModel.headline?.rate == PerformanceSampleData.ytdReturn.rate)
         #expect(viewModel.headline?.amount == .krw(9_400_000))
     }
@@ -458,7 +451,7 @@ struct PerformanceViewModelTests {
 
         viewModel.scrubbedDate = .distantFuture
 
-        #expect(viewModel.headline?.isScrubbing == false)
+        #expect(viewModel.headline?.isFocused == false)
         #expect(viewModel.headline?.rate == PerformanceSampleData.ytdReturn.rate)
     }
 
@@ -529,6 +522,101 @@ struct PerformanceViewModelTests {
         await viewModel.loadIfNeeded()
 
         #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    // MARK: - 날짜 선택
+
+    @Test("캘린더에서 고른 날이 헤드라인과 차트 커서를 옮긴다")
+    func selectingDateMovesHeadlineAndCursor() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        let selected = PerformanceSampleData.date(at: 3)
+
+        viewModel.selectDate(selected)
+
+        #expect(viewModel.selectedDate == selected)
+        #expect(viewModel.focusedDate == selected)
+        #expect(viewModel.chartCursorDate == selected)
+        #expect(viewModel.headline?.isFocused == true)
+        #expect(viewModel.headline?.focusedDate == selected)
+        #expect(viewModel.headline?.rate == 0.031)
+    }
+
+    @Test("고른 날을 다시 누르면 선택이 풀린다")
+    func reselectingTheSameDateClearsSelection() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        let selected = PerformanceSampleData.date(at: 3)
+        viewModel.selectDate(selected)
+
+        viewModel.selectDate(selected)
+
+        #expect(viewModel.selectedDate == nil)
+        #expect(viewModel.chartCursorDate == nil)
+        #expect(viewModel.headline?.isFocused == false)
+    }
+
+    @Test("스크럽이 고른 날을 덮고, 손을 떼면 다시 그 날로 돌아온다")
+    func scrubbingOverridesSelectionAndReleasingRestoresIt() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        let selected = PerformanceSampleData.date(at: 3)
+        let scrubbed = PerformanceSampleData.date(at: 5)
+        viewModel.selectDate(selected)
+
+        viewModel.scrubbedDate = scrubbed
+
+        #expect(viewModel.focusedDate == scrubbed)
+        #expect(viewModel.headline?.focusedDate == scrubbed)
+
+        viewModel.scrubbedDate = nil
+
+        // 손을 뗐다고 연초 대비로 돌아가지는 않는다 — 캘린더 선택이 아직 살아 있다.
+        #expect(viewModel.focusedDate == selected)
+        #expect(viewModel.headline?.focusedDate == selected)
+    }
+
+    @Test("차트가 담지 않은 날을 골라도 헤드라인은 연초 대비 그대로다")
+    func selectingDateOutsideTheChartKeepsYearToDate() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        let outside = Self.date(year: 2023, month: 3, day: 14)
+
+        viewModel.selectDate(outside)
+
+        // 선택 자체는 남는다 — 캘린더 셀의 링은 그려야 하기 때문이다.
+        #expect(viewModel.selectedDate == outside)
+        #expect(viewModel.chartCursorDate == nil)
+        #expect(viewModel.headline?.isFocused == false)
+        #expect(viewModel.headline?.rate == PerformanceSampleData.ytdReturn.rate)
+    }
+
+    @Test("월별 단위에서는 고른 날이 같은 달 점으로 스냅된다")
+    func monthlyGranularitySnapsSelectionToItsMonth() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        await viewModel.selectGranularity(.monthly)
+
+        viewModel.selectDate(Self.date(year: 2026, month: 3, day: 31))
+
+        #expect(viewModel.chartCursorDate == PerformanceSampleData.date(at: 3))
+        #expect(viewModel.headline?.rate == 0.031)
+    }
+
+    @Test("기간·단위를 바꿔도 고른 날은 남는다")
+    func changingPeriodOrGranularityKeepsSelection() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        let selected = PerformanceSampleData.date(at: 3)
+        viewModel.selectDate(selected)
+
+        await viewModel.selectPeriod(.oneMonth)
+
+        #expect(viewModel.selectedDate == selected)
+
+        await viewModel.selectGranularity(.monthly)
+
+        #expect(viewModel.selectedDate == selected)
     }
 
     // MARK: - 캘린더
@@ -675,6 +763,92 @@ struct PerformanceViewModelTests {
 
         #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 7, day: 1))
         #expect(await recorder.requests.count == 1)
+    }
+
+    @Test("달을 옮기면 고른 날이 함께 풀린다")
+    func movingMonthClearsTheSelectedDate() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.selectDate(PerformanceSampleData.date(at: 3))
+
+        await viewModel.showPreviousMonth()
+
+        #expect(viewModel.selectedDate == nil)
+
+        viewModel.selectDate(PerformanceSampleData.date(at: 3))
+        await viewModel.showMonth(year: 2026, month: 4)
+
+        #expect(viewModel.selectedDate == nil)
+    }
+
+    @Test("월 점프는 고른 달 구간을 조회한다")
+    func jumpingToAMonthRequestsThatMonth() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return []
+        })
+        await viewModel.loadCalendar()
+
+        await viewModel.showMonth(year: 2026, month: 3)
+
+        #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 3, day: 1))
+        #expect(await recorder.requests.last?.start == Self.date(year: 2026, month: 2, day: 28))
+    }
+
+    @Test("아직 오지 않은 달로는 점프하지 않는다")
+    func jumpingToAFutureMonthDoesNothing() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return []
+        })
+        await viewModel.loadCalendar()
+
+        await viewModel.showMonth(year: 2026, month: 9)
+
+        #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 7, day: 1))
+        #expect(await recorder.requests.count == 1)
+    }
+
+    @Test("올해는 이번 달 뒤가 비활성이고 지난 해는 열두 달 모두 고를 수 있다")
+    func disabledMonthsCoverTheFutureOnly() async {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.displayedYear == 2026)
+        #expect(viewModel.displayedMonth == 7)
+        #expect(viewModel.disabledMonths == Set(8...12))
+
+        await viewModel.showPreviousYear()
+
+        #expect(viewModel.displayedYear == 2025)
+        #expect(viewModel.disabledMonths.isEmpty)
+    }
+
+    @Test("올해에서는 다음 해로 넘어갈 수 없다")
+    func nextYearIsBlockedAtTheCurrentYear() async {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.canShowNextYear == false)
+
+        await viewModel.showPreviousYear()
+
+        #expect(viewModel.canShowNextYear)
+    }
+
+    @Test("해를 넘길 때 아직 오지 않은 달로는 가지 않는다")
+    func movingYearClampsToTheLatestSelectableMonth() async {
+        let viewModel = makeViewModel()
+        await viewModel.showMonth(year: 2025, month: 12)
+
+        await viewModel.showNextYear()
+
+        // 2025년 12월에서 한 해를 넘기면 2026년 12월이 아니라 이번 달(7월)에 선다.
+        #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 7, day: 1))
     }
 
     @Test("캘린더 조회 실패가 차트·요약을 오염시키지 않는다")

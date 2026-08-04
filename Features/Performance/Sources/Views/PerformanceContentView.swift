@@ -10,7 +10,8 @@ import HannunDesignSystem
 import HannunDomain
 import SwiftUI
 
-/// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트 → 단위·기간 컨트롤.
+/// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트.
+/// 기간·단위는 액세서리로, 벤치마크는 툴바 + 시트로 옮겨 본문에는 컨트롤이 없다.
 struct PerformanceContentView: View {
 
     // MARK: - Property
@@ -39,11 +40,12 @@ struct PerformanceContentView: View {
                     }
 
                 // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
-                // 쌓이면…" 안내가 같은 화면에 두 번 나오고, 기간·단위 컨트롤은 바꿔도
-                // 나올 값이 없어 눌러볼 수만 있는 장식이 된다.
+                // 쌓이면…" 안내가 같은 화면에 두 번 나온다. 캘린더도 같이 감춘다 — 기록이
+                // 없으면 어느 달로 넘겨도 빈 격자라 넘길 이유 자체가 없다.
                 if !viewModel.hasNoRecords {
                     chartCard
-                    controls
+
+                    MonthlyReturnCard(viewModel: viewModel)
                 }
             }
             .padding(.horizontal, .spacingL)
@@ -95,10 +97,21 @@ struct PerformanceContentView: View {
 
     /// 차트는 콘텐츠라 glass 를 깔지 않는다 — 불투명 surface 카드 위에 얹는다 (UI 스펙 §4.3).
     private var chartCard: some View {
-        chart
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.spacingL)
-            .hannunGlass(.contentSurface, in: .hannunContainer())
+        VStack(alignment: .leading, spacing: .spacingS) {
+            chart
+
+            if viewModel.isScrubHintVisible {
+                Text(Constants.scrubHintMessage)
+                    .hannunFont(.caption)
+                    .foregroundStyle(Color.textSecondary)
+                    // 같은 안내를 차트 accessibilityHint 가 이미 말하므로 장식으로 숨긴다.
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.spacingL)
+        .hannunGlass(.contentSurface, in: .hannunContainer())
+        .hannunAnimation(.selection, value: viewModel.isScrubHintVisible)
     }
 
     @ViewBuilder
@@ -115,7 +128,13 @@ struct PerformanceContentView: View {
                 insufficientDataMessage: Constants.insufficientDataMessage,
                 selection: $viewModel.scrubbedDate
             )
+            // `.contain` 이 없으면 라벨이 서브트리 전체를 하나로 합쳐 범례의
+            // `.accessibilityElement(children: .combine)` 이 통째로 삼켜진다. 컨테이너에
+            // 라벨·힌트를 달고도 자식은 그대로 순회되게 하는 조합이다 (`CurrencyToggle` 과
+            // 같은 패턴).
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(Constants.chartAccessibilityLabel)
+            .accessibilityHint(Constants.chartAccessibilityHint)
         case let .failed(error):
             EmptyStateView(
                 systemImageName: Constants.failureSymbolName,
@@ -124,21 +143,6 @@ struct PerformanceContentView: View {
                 actionTitle: Constants.retryTitle
             ) {
                 Task { await viewModel.refresh() }
-            }
-        }
-    }
-
-    private var controls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: .spacingM) {
-                GranularityToggle(selection: granularity)
-                Spacer(minLength: .spacingS)
-                PeriodSegment(selection: period)
-            }
-
-            VStack(alignment: .leading, spacing: .spacingM) {
-                GranularityToggle(selection: granularity)
-                PeriodSegment(selection: period)
             }
         }
     }
@@ -160,20 +164,6 @@ struct PerformanceContentView: View {
                 points: series.points.map(plotPoint)
             ),
         ]
-    }
-
-    private var granularity: Binding<TrendGranularity> {
-        Binding(
-            get: { viewModel.granularity },
-            set: { newValue in Task { await viewModel.selectGranularity(newValue) } }
-        )
-    }
-
-    private var period: Binding<ChartPeriod> {
-        Binding(
-            get: { viewModel.period },
-            set: { newValue in Task { await viewModel.selectPeriod(newValue) } }
-        )
     }
 
     private func plotPoints(of trend: PerformanceTrend) -> [TrendPoint] {
@@ -201,7 +191,9 @@ fileprivate enum Constants {
     static let trendFailureTitle = "추이를 불러오지 못했어요"
     static let retryTitle = "다시 시도"
     static let failureSymbolName = "exclamationmark.triangle"
-    static let chartAccessibilityLabel = "자산 추이 차트. 좌우로 쓸어 시점별 수익률을 확인할 수 있어요."
+    static let chartAccessibilityLabel = "자산 추이 차트"
+    static let chartAccessibilityHint = "좌우로 쓸면 시점별 수익률을 읽어 줍니다"
+    static let scrubHintMessage = "차트를 좌우로 쓸어 시점별 수익률을 볼 수 있어요"
     /// 히어로가 거의 다 밀려 나간 뒤에 교대한다 — 살짝 걸쳐 있을 때 바뀌면 같은 숫자가
     /// 위아래에 동시에 보인다.
     static let heroVisibilityThreshold: Double = 0.1

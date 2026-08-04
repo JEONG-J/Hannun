@@ -25,7 +25,9 @@ import SwiftUI
 ///
 /// 켜짐/꺼짐이 **한 대상의 두 상태**일 때만 `.isSelected` trait 을 붙인다(비교 on/off).
 /// 통화 전환처럼 누를 때마다 대상이 바뀌는 컨트롤은 선택 상태가 아니므로 붙이지 않고,
-/// 라벨에 **바뀔 대상**을 적는다 — `USD` 가 보이면 누르면 달러가 된다.
+/// 라벨에는 **지금 상태**를 적는다 — `KRW` 가 보이면 지금 원화로 보고 있다는 뜻이다.
+/// 눌러서 바뀔 대상은 `accessibilityHint` 가 말한다(`NetWorthAccessory` 의 통화 전환·
+/// 성과 탭의 일별/월별 전환과 같은 문법).
 public struct AccessoryControlButton: View {
 
     // MARK: - Property
@@ -44,7 +46,8 @@ public struct AccessoryControlButton: View {
     /// - Parameters:
     ///   - isOn: 켜짐이면 채움, 꺼짐이면 스트로크.
     ///   - indicatesSelection: 켜짐/꺼짐이 한 대상의 두 상태일 때만 `true`. 통화 전환처럼
-    ///     누를 때마다 대상이 바뀌는 컨트롤은 `false` 로 두고 라벨이 대상을 말하게 한다.
+    ///     누를 때마다 대상이 바뀌는 컨트롤은 `false` 로 두고 라벨이 **지금 상태**를 말하게
+    ///     한다 — 바뀔 대상은 `accessibilityHint` 가 맡는다.
     ///   - accessibilityLabel: 비우면 `title` 을 그대로 읽는다.
     public init(
         _ title: String,
@@ -167,15 +170,16 @@ private struct AccessoryControlButtonPreview: View {
                 }
             }
 
-            labeled("전환형 — 라벨이 바뀔 대상을 말한다 (선택 상태 아님)") {
+            labeled("전환형 — 라벨이 지금 상태를 말한다 (선택 상태 아님)") {
                 AccessoryControlButton(
-                    showsDollar ? "KRW" : "USD",
+                    showsDollar ? "USD" : "KRW",
                     isOn: false,
                     indicatesSelection: false,
-                    accessibilityLabel: showsDollar ? "원화로 전환" : "미국 달러로 전환"
+                    accessibilityLabel: showsDollar ? "지금 미국 달러" : "지금 원화"
                 ) {
                     showsDollar.toggle()
                 }
+                .accessibilityHint(showsDollar ? "두 번 탭하면 원화로 바꿉니다" : "두 번 탭하면 미국 달러로 바꿉니다")
             }
         }
         .padding(.spacingL)

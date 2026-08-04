@@ -108,8 +108,10 @@ struct PerformanceViewModelTests {
     @Test("기간을 바꾸면 그 구간으로 다시 조회한다")
     func selectingPeriodRequestsNewRange() async {
         let recorder = TrendRequestRecorder()
-        let viewModel = makeViewModel(trend: { start, _, granularity in
-            await recorder.record(TrendRequest(start: start, granularity: granularity))
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
             return PerformanceSampleData.trendPoints
         })
 
@@ -121,30 +123,34 @@ struct PerformanceViewModelTests {
             now: PerformanceSampleData.now,
             calendar: Self.calendar
         )
-        #expect(await recorder.requests.count == 2)
-        #expect(await recorder.requests.last?.start == expected.start)
+        #expect(await recorder.chartRequests.count == 2)
+        #expect(await recorder.chartRequests.last?.start == expected.start)
         #expect(viewModel.period == .oneMonth)
     }
 
     @Test("같은 기간을 다시 고르면 조회하지 않는다")
     func reselectingPeriodSkipsRequest() async {
         let recorder = TrendRequestRecorder()
-        let viewModel = makeViewModel(trend: { start, _, granularity in
-            await recorder.record(TrendRequest(start: start, granularity: granularity))
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
             return PerformanceSampleData.trendPoints
         })
 
         await viewModel.loadIfNeeded()
         await viewModel.selectPeriod(.yearToDate)
 
-        #expect(await recorder.requests.count == 1)
+        #expect(await recorder.chartRequests.count == 1)
     }
 
     @Test("단위를 바꾸면 그 단위로 다시 조회한다")
     func selectingGranularityRequestsNewSampling() async {
         let recorder = TrendRequestRecorder()
-        let viewModel = makeViewModel(trend: { start, _, granularity in
-            await recorder.record(TrendRequest(start: start, granularity: granularity))
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
             return PerformanceSampleData.trendPoints
         })
 
@@ -153,6 +159,94 @@ struct PerformanceViewModelTests {
 
         #expect(await recorder.requests.last?.granularity == .monthly)
         #expect(viewModel.granularity == .monthly)
+    }
+
+    @Test("단위 토글은 일별·월별을 오가며 매번 재조회한다")
+    func togglingGranularityAlternatesAndRefetches() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return PerformanceSampleData.trendPoints
+        })
+
+        await viewModel.loadIfNeeded()
+        await viewModel.toggleGranularity()
+        await viewModel.toggleGranularity()
+
+        #expect(await recorder.chartRequests.map(\.granularity) == [.daily, .monthly, .daily])
+        #expect(viewModel.granularity == .daily)
+    }
+
+    @Test("단위 토글은 스크럽 상태를 해제한다")
+    func togglingGranularityClearsScrub() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        await viewModel.toggleGranularity()
+
+        #expect(viewModel.scrubbedDate == nil)
+    }
+
+    @Test("단위를 빠르게 두 번 눌러도 나중에 시작한 요청 결과만 반영된다")
+    func rapidGranularityTogglesKeepLatestRequestWinning() async {
+        // 첫 토글(.monthly)은 문을 걸어 두고, 그 사이 두 번째 토글(.daily)이 먼저 끝나게 만든다.
+        // 이 순서에서 첫 토글이 나중에 풀려도 결과를 덮어써서는 안 된다 — 화면에 남는 값은
+        // 항상 사용자의 마지막 조작(.daily)과 맞아야 한다.
+        let gate = RequestGate()
+        let viewModel = makeViewModel(trend: { _, _, granularity in
+            if granularity == .monthly {
+                await gate.wait()
+                return PerformanceSampleData.trendPoints
+            }
+            return Array(PerformanceSampleData.trendPoints.prefix(2))
+        })
+
+        await viewModel.loadIfNeeded()
+
+        async let first: Void = viewModel.toggleGranularity()
+        async let second: Void = viewModel.toggleGranularity()
+        await second
+
+        #expect(viewModel.granularity == .daily)
+        #expect(viewModel.trendState.value?.portfolio.count == 2)
+
+        await gate.signal()
+        await first
+
+        #expect(viewModel.granularity == .daily)
+        #expect(viewModel.trendState.value?.portfolio.count == 2)
+    }
+
+    @Test("periodSummary가 기간과 단위를 함께 말한다")
+    func periodSummaryDescribesPeriodAndGranularity() {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.periodSummary == "YTD · 일별")
+    }
+
+    @Test("기간을 고르면 선택 시트가 닫힌다")
+    func selectingPeriodClosesPicker() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.isPeriodPickerPresented = true
+
+        await viewModel.selectPeriod(.oneMonth)
+
+        #expect(viewModel.isPeriodPickerPresented == false)
+    }
+
+    @Test("이미 보고 있던 기간을 다시 골라도 시트는 닫힌다")
+    func reselectingSamePeriodStillClosesPicker() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.isPeriodPickerPresented = true
+
+        await viewModel.selectPeriod(.yearToDate)
+
+        #expect(viewModel.isPeriodPickerPresented == false)
     }
 
     @Test("단위가 고른 시점만 차트에 남는다")
@@ -258,14 +352,13 @@ struct PerformanceViewModelTests {
         #expect(viewModel.overlaidBenchmark?.index == .sp500)
     }
 
-    @Test("고른 지수가 없으면 비교 버튼이 선택 시트를 연다")
-    func overlayToggleOpensPickerWithoutSelection() async {
+    @Test("고른 지수가 없으면 비교를 켤 수 없다")
+    func overlayCannotEnableWithoutSelection() async {
         let viewModel = makeViewModel()
         await viewModel.loadIfNeeded()
 
         viewModel.toggleBenchmarkOverlay()
 
-        #expect(viewModel.isBenchmarkPickerPresented)
         #expect(viewModel.isBenchmarkOverlayEnabled == false)
     }
 
@@ -369,9 +462,370 @@ struct PerformanceViewModelTests {
         #expect(viewModel.headline?.rate == PerformanceSampleData.ytdReturn.rate)
     }
 
+    @Test("첫 로딩 직후에는 스크럽 가이드 힌트가 보인다")
+    func hintIsVisibleAfterFirstLoad() async {
+        let viewModel = makeViewModel()
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.isScrubHintVisible)
+    }
+
+    @Test("스크럽하면 배웠다고 기록하고 힌트를 감춘다")
+    func scrubbingMarksAsLearnedAndHidesHint() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        #expect(viewModel.hasScrubbed)
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("손을 떼도 한 번 배운 힌트는 되살아나지 않는다")
+    func releasingScrubKeepsHintHidden() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        viewModel.scrubbedDate = nil
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("스크럽 후 기간을 바꿔도 힌트는 되살아나지 않는다")
+    func changingPeriodAfterScrubKeepsHintHidden() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
+
+        await viewModel.selectPeriod(.oneMonth)
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("로딩 중에는 힌트를 보이지 않는다")
+    func hintStaysHiddenWhileLoading() {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("추이 조회에 실패하면 힌트를 보이지 않는다")
+    func hintStaysHiddenOnFailure() async {
+        let viewModel = makeViewModel(
+            trend: { _, _, _ in throw AppError.network("시세 서버 응답 없음") }
+        )
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    @Test("추이 점이 하나뿐이면 힌트를 보이지 않는다")
+    func hintStaysHiddenWithSinglePoint() async {
+        let viewModel = makeViewModel(trend: { _, _, _ in [PerformanceSampleData.trendPoints[0]] })
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.isScrubHintVisible == false)
+    }
+
+    // MARK: - 캘린더
+
+    @Test("캘린더는 그 달 하루 전부터 말일 끝까지 조회한다")
+    func calendarQueryStartsOneDayBeforeTheMonth() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return []
+        })
+
+        await viewModel.loadCalendar()
+
+        // 7월 1일의 일간 수익률에는 6월 30일 총자산이 필요하다 — 하루를 더 받아온다.
+        let request = await recorder.requests.last
+        #expect(request?.start == Self.date(year: 2026, month: 6, day: 30))
+        #expect(
+            request?.end
+                == Self.date(year: 2026, month: 7, day: 31, hour: 23, minute: 59, second: 59)
+        )
+    }
+
+    @Test("차트가 월별을 보고 있어도 캘린더는 일별로 조회한다")
+    func calendarStaysDailyWhileChartIsMonthly() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return PerformanceSampleData.trendPoints
+        })
+
+        await viewModel.loadIfNeeded()
+        await viewModel.selectGranularity(.monthly)
+        await viewModel.loadCalendar()
+
+        // 월별 샘플링을 그대로 물려받으면 "전월 대비" 수익률이 일별 격자에 칠해진다.
+        #expect(viewModel.granularity == .monthly)
+        #expect(await recorder.requests.last?.granularity == .daily)
+    }
+
+    @Test("캘린더 조회는 기간 세그먼트가 고른 구간을 따라가지 않는다")
+    func calendarRangeIgnoresChartPeriod() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return PerformanceSampleData.trendPoints
+        })
+
+        await viewModel.loadIfNeeded()
+        await viewModel.selectPeriod(.oneYear)
+        await viewModel.loadCalendar()
+
+        #expect(await recorder.requests.last?.start == Self.date(year: 2026, month: 6, day: 30))
+    }
+
+    @Test("캘린더 조회는 지수를 하나도 요청하지 않는다")
+    func calendarQueryAsksForNoBenchmarkIndices() async {
+        let recorder = ComparisonRequestRecorder()
+        let viewModel = makeViewModel(comparison: { start, _, indices in
+            await recorder.record(ComparisonRequest(start: start, indices: indices))
+            return PerformanceSampleData.comparison
+        })
+
+        await viewModel.loadIfNeeded()
+
+        // 차트는 전 지수를, 캘린더는 빈 목록을 요청한다 — 빈 목록이면 지수 저장소를 돌지 않는다.
+        #expect(await recorder.requests.first?.indices == BenchmarkIndex.allCases)
+        #expect(await recorder.requests.last?.indices == [])
+    }
+
+    @Test("그 달 밖의 날은 파생 결과에서 걸러진다")
+    func calendarKeepsDisplayedMonthOnly() async {
+        // 하루에 기록이 둘이면 더 받아온 하루(6월 30일)에서도 파생값이 생긴다. 8월 1일은
+        // 조회 구간 밖이지만 저장소가 넉넉히 돌려줘도 격자에 새지 않아야 한다.
+        let samples: [(date: Date, rate: Decimal)] = [
+            (Self.date(year: 2026, month: 6, day: 30, hour: 9), 0),
+            (Self.date(year: 2026, month: 6, day: 30, hour: 21), 0.004),
+            (Self.date(year: 2026, month: 7, day: 1), 0.010),
+            (Self.date(year: 2026, month: 7, day: 2), 0.006),
+            (Self.date(year: 2026, month: 8, day: 1), 0.020),
+        ]
+        let viewModel = makeViewModel(
+            trend: { _, _, _ in Self.trendPoints(of: samples) },
+            comparison: { _, _, _ in Self.comparison(of: samples) }
+        )
+
+        await viewModel.loadCalendar()
+
+        #expect(
+            viewModel.calendarState.value?.map(\.date) == [
+                Self.date(year: 2026, month: 7, day: 1),
+                Self.date(year: 2026, month: 7, day: 2),
+            ]
+        )
+    }
+
+    @Test("이전 달로 옮기면 그 달 구간을 다시 조회한다")
+    func showingPreviousMonthRequestsThatMonth() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return []
+        })
+        await viewModel.loadCalendar()
+
+        await viewModel.showPreviousMonth()
+
+        #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 6, day: 1))
+        #expect(await recorder.requests.count == 2)
+        #expect(await recorder.requests.last?.start == Self.date(year: 2026, month: 5, day: 31))
+    }
+
+    @Test("현재 달에서는 다음 달로 넘어갈 수 없다")
+    func nextMonthIsBlockedAtTheCurrentMonth() async {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.canShowNextMonth == false)
+
+        await viewModel.showPreviousMonth()
+
+        #expect(viewModel.canShowNextMonth)
+    }
+
+    @Test("넘어갈 수 없는 달에서는 다음 달 요청이 아무 일도 하지 않는다")
+    func blockedNextMonthDoesNotRequest() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return []
+        })
+        await viewModel.loadCalendar()
+
+        await viewModel.showNextMonth()
+
+        #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 7, day: 1))
+        #expect(await recorder.requests.count == 1)
+    }
+
+    @Test("캘린더 조회 실패가 차트·요약을 오염시키지 않는다")
+    func calendarFailureLeavesChartAndSummaryIntact() async {
+        // 지수를 요청하지 않는 쪽이 곧 캘린더 조회다.
+        let viewModel = makeViewModel(comparison: { _, _, indices in
+            guard indices.isEmpty else { return PerformanceSampleData.comparison }
+            throw AppError.network("시세 서버 응답 없음")
+        })
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.calendarState.error != nil)
+        #expect(viewModel.trendState.value != nil)
+        #expect(viewModel.summaryState.value != nil)
+        // 캘린더는 카드 안에서 스스로 실패를 말한다 — 상단 배지를 켜지 않는다.
+        #expect(viewModel.isStale == false)
+    }
+
+    @Test("기록이 없는 달은 실패가 아니라 빈 결과로 남는다")
+    func emptyMonthStaysLoaded() async {
+        let viewModel = makeViewModel(
+            trend: { _, _, _ in [] },
+            comparison: { _, _, _ in BenchmarkComparison(portfolio: [], benchmarks: []) }
+        )
+
+        await viewModel.loadCalendar()
+
+        #expect(viewModel.calendarState.value == [])
+        #expect(viewModel.calendarState.error == nil)
+    }
+
+    @Test("첫 로딩이 캘린더도 채운다")
+    func firstLoadFillsCalendar() async {
+        let viewModel = makeViewModel()
+
+        await viewModel.loadIfNeeded()
+
+        // 표본 8개 점 중 7월에 드는 것은 마지막 하나뿐이다.
+        #expect(viewModel.calendarState.value?.map(\.date) == [PerformanceSampleData.date(at: 7)])
+    }
+
+    @Test("refresh 가 캘린더도 다시 받아온다")
+    func refreshReloadsCalendar() async {
+        let recorder = ComparisonRequestRecorder()
+        let viewModel = makeViewModel(comparison: { start, _, indices in
+            await recorder.record(ComparisonRequest(start: start, indices: indices))
+            return PerformanceSampleData.comparison
+        })
+        await viewModel.loadIfNeeded()
+
+        await viewModel.refresh()
+
+        let calendarRequests = await recorder.requests.filter { $0.indices.isEmpty }
+        #expect(calendarRequests.count == 2)
+    }
+
+    @Test("달을 빠르게 두 번 넘겨도 나중에 시작한 조회 결과만 반영된다")
+    func rapidMonthNavigationKeepsLatestRequestWinning() async {
+        // 4월 25일부터 하루 간격 42개 점 — 6월 구간에는 5개, 5월 구간에는 31개가 남는다.
+        let dataset = Self.dailySamples(from: Self.date(year: 2026, month: 4, day: 25), count: 42)
+        let gate = RequestGate()
+        let junePeriodStart = Self.date(year: 2026, month: 5, day: 31)
+        let viewModel = makeViewModel(
+            trend: { start, end, _ in
+                if start == junePeriodStart { await gate.wait() }
+                return Self.trendPoints(of: Self.samples(in: dataset, from: start, to: end))
+            },
+            comparison: { start, end, _ in
+                Self.comparison(of: Self.samples(in: dataset, from: start, to: end))
+            }
+        )
+
+        async let previousMonth: Void = viewModel.showPreviousMonth()
+        async let twoMonthsBack: Void = viewModel.showPreviousMonth()
+        await twoMonthsBack
+
+        #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 5, day: 1))
+        #expect(viewModel.calendarState.value?.count == Constants.mayCellCount)
+
+        await gate.signal()
+        await previousMonth
+
+        // 6월 조회가 나중에 끝나도 5월 격자를 덮어쓰지 않는다.
+        #expect(viewModel.calendarMonth == Self.date(year: 2026, month: 5, day: 1))
+        #expect(viewModel.calendarState.value?.count == Constants.mayCellCount)
+    }
+
     // MARK: - Function
 
-    private static var calendar: Calendar {
+    nonisolated private static func date(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int = 0,
+        minute: Int = 0,
+        second: Int = 0
+    ) -> Date {
+        let components = DateComponents(
+            year: year,
+            month: month,
+            day: day,
+            hour: hour,
+            minute: minute,
+            second: second
+        )
+        return calendar.date(from: components) ?? .distantPast
+    }
+
+    /// 하루 간격으로 누적 등락률이 조금씩 오르는 표본. 캘린더가 며칠치를 받았는지로만
+    /// 구분하면 되므로 값 자체에는 의미를 두지 않는다.
+    nonisolated private static func dailySamples(
+        from start: Date,
+        count: Int
+    ) -> [(date: Date, rate: Decimal)] {
+        (0..<count).map { offset in
+            let date = calendar.date(byAdding: .day, value: offset, to: start) ?? start
+            return (date, Decimal(offset) / Constants.dailyRateDivisor)
+        }
+    }
+
+    /// 저장소가 하는 일 — 요청한 구간에 드는 기록만 돌려준다.
+    nonisolated private static func samples(
+        in dataset: [(date: Date, rate: Decimal)],
+        from start: Date,
+        to end: Date
+    ) -> [(date: Date, rate: Decimal)] {
+        dataset.filter { $0.date >= start && $0.date <= end }
+    }
+
+    nonisolated private static func trendPoints(
+        of samples: [(date: Date, rate: Decimal)]
+    ) -> [NetWorthTrendPoint] {
+        samples.map {
+            NetWorthTrendPoint(
+                date: $0.date,
+                total: .krw(Constants.sampleOpeningTotal * (1 + $0.rate))
+            )
+        }
+    }
+
+    nonisolated private static func comparison(
+        of samples: [(date: Date, rate: Decimal)]
+    ) -> BenchmarkComparison {
+        BenchmarkComparison(
+            portfolio: samples.map { BenchmarkPoint(date: $0.date, rate: $0.rate) },
+            benchmarks: []
+        )
+    }
+
+    nonisolated private static var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .gmt
         return calendar
@@ -408,14 +862,51 @@ private actor CallCounter {
 
 private struct TrendRequest: Equatable, Sendable {
     let start: Date
+    let end: Date
     let granularity: TrendGranularity
 }
 
 private actor TrendRequestRecorder {
     private(set) var requests: [TrendRequest] = []
 
+    /// 차트가 낸 조회만. 차트 구간은 언제나 `now` 에서 끝나고(`dateRange(for:now:calendar:)`),
+    /// 캘린더는 그 달 말일 23:59:59 에서 끝나므로 종료 시각으로 둘을 가른다.
+    var chartRequests: [TrendRequest] {
+        requests.filter { $0.end == PerformanceSampleData.now }
+    }
+
     func record(_ request: TrendRequest) {
         requests.append(request)
+    }
+}
+
+/// 어떤 지수를 함께 요청했는지 남긴다. 캘린더 조회는 지수를 하나도 달지 않으므로
+/// `indices.isEmpty` 가 곧 "이건 캘린더 조회다" 라는 표식이 된다.
+private struct ComparisonRequest: Equatable, Sendable {
+    let start: Date
+    let indices: [BenchmarkIndex]
+}
+
+private actor ComparisonRequestRecorder {
+    private(set) var requests: [ComparisonRequest] = []
+
+    func record(_ request: ComparisonRequest) {
+        requests.append(request)
+    }
+}
+
+/// 스텁 클로저 하나를 원하는 시점까지 붙잡아 두는 문. 두 조회가 겹칠 때 어느 쪽이
+/// 먼저 끝나는지를 테스트가 직접 정하기 위해 쓴다.
+private actor RequestGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func wait() async {
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func signal() {
+        continuation?.resume()
+        continuation = nil
     }
 }
 
@@ -426,4 +917,9 @@ fileprivate enum Constants {
     static let expectedExcessReturn = Decimal(string: "0.043") ?? 0
     /// 화면에는 0.1%p 까지만 찍히므로 그보다 잘게 따질 이유가 없다.
     static let excessReturnTolerance = Decimal(string: "0.0001") ?? 0
+    /// 2026년 5월은 31일. 6월 구간(5개)과 자릿수부터 달라 어느 달의 결과가 남았는지 구분된다.
+    static let mayCellCount = 31
+    /// 하루마다 0.1%p 씩 올리는 분모. 값 자체는 테스트 판정에 쓰지 않는다.
+    static let dailyRateDivisor: Decimal = 1_000
+    static let sampleOpeningTotal: Decimal = 120_000_000
 }

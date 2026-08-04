@@ -99,6 +99,66 @@ struct AmountFormatterTests {
         #expect(AmountFormatter.quantity(0.0521, unit: "개") == "0.0521개")
         #expect(AmountFormatter.quantity(10, unit: nil) == "10")
     }
+
+    // MARK: - narrow
+
+    /// `compact` 는 `₩12억 3,457만` 처럼 두 단위를 이어 붙여 열한 자까지 자란다.
+    /// 홀은 그 길이를 못 받으므로 `narrow` 는 큰 단위 하나에서 끊는다.
+    @Test("좁은 자리 표기는 단위를 하나만 쓴다")
+    func narrowFoldsIntoSingleUnit() {
+        #expect(AmountFormatter.compact(.krw(1_234_567_890)) == "₩12억 3,457만")
+        #expect(AmountFormatter.narrow(.krw(1_234_567_890)) == "₩12.35억")
+    }
+
+    @Test("원화는 100만부터 접는다 — 그 아래는 여덟 자로 이미 들어간다")
+    func narrowKrwFoldsFromMillion() {
+        #expect(AmountFormatter.narrow(.krw(999_999)) == "₩999,999")
+        #expect(AmountFormatter.narrow(.krw(1_000_000)) == "₩100만")
+        #expect(AmountFormatter.narrow(.krw(1_234_567)) == "₩123.5만")
+    }
+
+    /// `compact` 가 1,000만 미만을 손대지 않아 `₩9,876,543` 을 열 자로 내보내는 구간이다.
+    /// 홀은 이 구간에서도 접혀야 한다.
+    @Test("compact 가 접지 않는 백만 원대도 narrow 는 접는다")
+    func narrowCoversCompactGap() {
+        #expect(AmountFormatter.compact(.krw(9_876_543)) == "₩9,876,543")
+        #expect(AmountFormatter.narrow(.krw(9_876_543)) == "₩987.7만")
+    }
+
+    @Test("유효숫자는 어느 구간에서도 네 자리로 남는다")
+    func narrowKeepsFourSignificantDigits() {
+        #expect(AmountFormatter.narrow(.krw(13_371_000)) == "₩1,337만")
+        #expect(AmountFormatter.narrow(.krw(134_371_000)) == "₩1.344억")
+        #expect(AmountFormatter.narrow(.krw(12_345_678_900)) == "₩123.5억")
+        #expect(AmountFormatter.narrow(.krw(123_456_789_000)) == "₩1,235억")
+    }
+
+    /// 네 자리로 반올림하다 단위 경계를 넘으면 `₩10,000만` 이 되어 자릿수가 하나 늘어난다.
+    @Test("만 단위가 반올림으로 넘치면 억으로 올라간다")
+    func narrowPromotesRoundedUnit() {
+        #expect(AmountFormatter.narrow(.krw(99_996_000)) == "₩1억")
+        #expect(AmountFormatter.narrow(.krw(99_994_000)) == "₩9,999만")
+    }
+
+    @Test("뒤따르는 0 은 자리만 먹으므로 지운다")
+    func narrowTrimsTrailingZeros() {
+        #expect(AmountFormatter.narrow(.krw(2_000_000)) == "₩200만")
+        #expect(AmountFormatter.narrow(.krw(300_000_000)) == "₩3억")
+    }
+
+    @Test("달러는 1,000부터 접는다")
+    func narrowUsdFoldsFromThousand() {
+        #expect(AmountFormatter.narrow(.usd(999.99)) == "$999.99")
+        #expect(AmountFormatter.narrow(.usd(96_412.50)) == "$96.41K")
+        #expect(AmountFormatter.narrow(.usd(1_234_567.89)) == "$1.235M")
+    }
+
+    @Test("부호는 전체 표기와 같은 자리 — 통화기호 앞이다")
+    func narrowKeepsSignPlacement() {
+        #expect(AmountFormatter.narrow(.krw(-13_371_000)) == "-₩1,337만")
+        #expect(AmountFormatter.narrow(.krw(13_371_000), showsPositiveSign: true) == "+₩1,337만")
+        #expect(AmountFormatter.narrow(.krw(0)) == "₩0")
+    }
 }
 
 @Suite("ChangePillContent")

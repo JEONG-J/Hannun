@@ -73,6 +73,28 @@ public enum AmountFormatter {
         return sign + money.currency.symbol + body
     }
 
+    /// 한 줄이 아니라 한 낱말 폭밖에 없는 자리(도넛 중앙 홀)에 넣는 축약 금액 —
+    /// `₩123.5만` · `₩12.35억` · `$1.235M`.
+    ///
+    /// `compact(_:)` 와 갈리는 지점은 **단위를 하나만 쓴다**는 것이다. `₩12억 3,457만` 은
+    /// 열한 자여서 지름 124pt 홀에 못 들어간다. 큰 단위 하나에 소수를 붙이면 유효숫자 네 자리를
+    /// 그대로 지키면서 여덟 자를 넘지 않는다.
+    ///
+    /// 접기 시작하는 경계도 `compact(_:)` 보다 한 단계 이르다 — 원화는 100만, 달러는 1,000
+    /// 부터다. 그 아래는 자릿수를 다 적어도 여덟 자를 넘지 않아 접을 이유가 없다.
+    ///
+    /// 단위는 억(달러는 M)에서 멈춘다. 여덟 자 보장이 깨지는 건 원화 10조·달러 1,000억부터인데
+    /// 개인 자산 앱의 사정권 밖이라 조 단위를 새로 들이지 않는다.
+    public static func narrow(_ money: Money, showsPositiveSign: Bool = false) -> String {
+        let sign = sign(of: money.amount, showsPositiveSign: showsPositiveSign)
+        let magnitude = money.amount.magnitude
+        let body = switch money.currency {
+        case .krw: narrowKrw(magnitude)
+        case .usd: narrowUsd(magnitude)
+        }
+        return sign + money.currency.symbol + body
+    }
+
     /// 축약 수익률 — `+12.4%`. 소수 두 자리는 캡션 폭에서 값보다 노이즈가 크다.
     public static func compactPercentage(ratio: Decimal, showsPositiveSign: Bool = true) -> String {
         let magnitude = ratio.magnitude.formatted(
@@ -181,6 +203,57 @@ public enum AmountFormatter {
         return decimalString(magnitude, fractionDigits: Currency.usd.fractionDigits)
     }
 
+    /// 100만부터 만, 1억부터 억. `compact` 가 1,000만에서 접기 시작하는 것보다 한 단계 이른데,
+    /// 여기서는 유효숫자가 아니라 **폭**이 경계를 정하기 때문이다 — `₩1,000,000` 은 열 자라
+    /// 이미 홀을 넘고 `₩999,999` 는 여덟 자로 들어간다.
+    private static func narrowKrw(_ magnitude: Decimal) -> String {
+        guard magnitude >= Constants.million else {
+            return integerString(rounded(magnitude, scale: 0, mode: .plain))
+        }
+
+        // 9,999.6만 이 네 자리로 반올림되며 10,000만 이 되면 만으로 적을 수 없다 — 억으로 넘긴다.
+        let tenThousands = magnitude / Constants.tenThousand
+        guard magnitude < Constants.hundredMillion,
+              rounded(tenThousands, scale: 0, mode: .plain) < Constants.tenThousand else {
+            return significantString(magnitude / Constants.hundredMillion)
+                + Constants.hundredMillionUnit
+        }
+
+        return significantString(tenThousands) + Constants.tenThousandUnit
+    }
+
+    private static func narrowUsd(_ magnitude: Decimal) -> String {
+        guard magnitude >= Constants.thousand else {
+            return decimalString(magnitude, fractionDigits: Currency.usd.fractionDigits)
+        }
+
+        let thousands = magnitude / Constants.thousand
+        guard magnitude < Constants.million,
+              rounded(thousands, scale: 0, mode: .plain) < Constants.thousand else {
+            return significantString(magnitude / Constants.million) + Constants.millionUnit
+        }
+
+        return significantString(thousands) + Constants.thousandUnit
+    }
+
+    /// 유효숫자를 네 자리로 맞춘다 — `1.235` · `12.35` · `123.5` · `1,235`.
+    /// 뒤따르는 0 은 지운다. `₩100.0만` 의 마지막 자리는 정보가 아니라 자리만 먹는다.
+    private static func significantString(_ value: Decimal) -> String {
+        let fractionDigits = if value >= Constants.thousand {
+            0
+        } else if value >= Constants.hundred {
+            1
+        } else if value >= Constants.ten {
+            2
+        } else {
+            Constants.narrowSignificantDigits - 1
+        }
+
+        return value.formatted(
+            .number.precision(.fractionLength(0...fractionDigits)).grouping(.automatic)
+        )
+    }
+
     private static func integerString(_ value: Decimal) -> String {
         value.formatted(.number.precision(.fractionLength(0)).grouping(.automatic))
     }
@@ -252,6 +325,10 @@ fileprivate enum Constants {
     static let tenThousand: Decimal = 10_000
     static let million: Decimal = 1_000_000
     static let thousand: Decimal = 1_000
+    static let hundred: Decimal = 100
+    static let ten: Decimal = 10
+    /// 단위 하나로 접어도 두 값의 대소가 뒤집히지 않게 남기는 자릿수. `compact` 와 같은 약속이다.
+    static let narrowSignificantDigits = 4
     static let hundredMillionUnit = "억"
     static let tenThousandUnit = "만"
     static let millionUnit = "M"

@@ -216,7 +216,7 @@ design-system.md의 variant 표를 화면 요소에 대응시킨다. 구현 시 
 | 액세서리 **내부** 주요 액션 버튼 | **glass 금지** | `brand` 채움(solid) + `onBrand` 라벨 |
 | 액세서리 **내부** 보조 액션 버튼 | **glass 금지** | `brand` 1pt 스트로크 캡슐 + 라이트 `brand`/다크 `textPrimary` 라벨 + `brand` 아이콘 |
 | KRW/USD 통화 토글 | `.regular.interactive()` | capsule. 순자산 탭에서는 액세서리 내부로 이동(§4.1) → glass 금지 규칙 적용 |
-| 기간 세그먼트(성과 탭) | `.regular.interactive()` | 차트 아래 인라인 배치 (액세서리 아님 — §4.3) |
+| 기간 세그먼트(`PeriodSegment`) | `.regular.interactive()` | **예약** — 성과 탭은 기간을 액세서리 + 시트로 옮겨 인라인 자리가 없다(§4.3). 인라인 기간 선택을 쓰는 화면이 생기면 이 규칙을 적용한다 |
 | 일지 작성 버튼 | `brand` 채움 | 액세서리 우측 **라벨 캡슐**(expanded) / 아이콘 원형(inline) — FAB 대체, §4.4 |
 | sheet 저장(Primary) 버튼 | `.glassProminent` (ButtonStyle) | |
 | sheet 취소(Secondary) 버튼 | `.glass` (ButtonStyle) | |

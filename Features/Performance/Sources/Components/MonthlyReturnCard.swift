@@ -28,9 +28,9 @@ struct MonthlyReturnCard: View {
     /// 카드와 컴포넌트가 서로 다른 시간대를 쓰면 상세 한 줄이 엉뚱한 날을 집는다.
     @Environment(\.calendar) private var calendar
 
-    /// 탭한 셀. 시트가 아니라 카드 안 한 줄로 펼친다 — 이 탭에는 이미 기간·벤치마크 시트가
-    /// 둘이라 셋째를 띄우면 "눌렀더니 또 시트" 가 된다.
-    @State private var selectedCell: HeatmapCell?
+    /// 일 격자가 12개월 격자로 뒤집혀 있는지. 어느 달을 보는지는 재조회를 부르므로 ViewModel
+    /// 이 갖지만, 격자가 뒤집혔는지는 화면을 떠나면 잊어도 그만인 순수한 뷰 상태다.
+    @State private var isMonthPickerExpanded = false
 
     private let viewModel: PerformanceViewModel
 
@@ -39,6 +39,14 @@ struct MonthlyReturnCard: View {
     init(viewModel: PerformanceViewModel) {
         self.viewModel = viewModel
     }
+
+    #if DEBUG
+    /// 프리뷰 전용. 뒤집힌 격자는 탭으로만 도달하는 상태라 정적 프리뷰가 볼 방법이 없다.
+    init(viewModel: PerformanceViewModel, isMonthPickerExpanded: Bool) {
+        self.viewModel = viewModel
+        _isMonthPickerExpanded = State(initialValue: isMonthPickerExpanded)
+    }
+    #endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: .spacingM) {
@@ -53,43 +61,96 @@ struct MonthlyReturnCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.spacingL)
         .hannunGlass(.contentSurface, in: .hannunContainer())
-        .hannunAnimation(.selection, value: selectedCell)
-        // 달을 옮기면 지난 달 날짜를 가리키던 한 줄이 남는다 — 선택을 함께 푼다.
-        .onChange(of: viewModel.calendarMonth) { selectedCell = nil }
+        .hannunAnimation(.selection, value: viewModel.selectedDate)
+        .hannunAnimation(.selection, value: isMonthPickerExpanded)
     }
 
+    /// 화살표는 격자가 뒤집힌 동안 **년 이동**이 된다 — 12개월이 한눈에 있는데 그 위에서
+    /// 월 화살표를 남겨 두면 같은 일을 두 손잡이가 하게 된다.
     private var header: some View {
         HStack(spacing: .spacingS) {
-            monthButton(
-                systemImageName: Constants.previousMonthSymbolName,
-                accessibilityLabel: Constants.previousMonthAccessibilityLabel,
+            arrowButton(
+                systemImageName: Constants.previousSymbolName,
+                accessibilityLabel: isMonthPickerExpanded
+                    ? Constants.previousYearAccessibilityLabel
+                    : Constants.previousMonthAccessibilityLabel,
                 isEnabled: true
             ) {
-                await viewModel.showPreviousMonth()
+                if isMonthPickerExpanded {
+                    await viewModel.showPreviousYear()
+                } else {
+                    await viewModel.showPreviousMonth()
+                }
             }
 
             Spacer(minLength: 0)
 
-            Text(monthTitle)
-                .hannunFont(.subtext, tabularFigures: true)
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(Constants.monthTitleMinimumScaleFactor)
+            titleButton
 
             Spacer(minLength: 0)
 
-            monthButton(
-                systemImageName: Constants.nextMonthSymbolName,
-                accessibilityLabel: Constants.nextMonthAccessibilityLabel,
-                isEnabled: viewModel.canShowNextMonth
+            arrowButton(
+                systemImageName: Constants.nextSymbolName,
+                accessibilityLabel: isMonthPickerExpanded
+                    ? Constants.nextYearAccessibilityLabel
+                    : Constants.nextMonthAccessibilityLabel,
+                isEnabled: isMonthPickerExpanded
+                    ? viewModel.canShowNextYear
+                    : viewModel.canShowNextMonth
             ) {
-                await viewModel.showNextMonth()
+                if isMonthPickerExpanded {
+                    await viewModel.showNextYear()
+                } else {
+                    await viewModel.showNextMonth()
+                }
             }
         }
     }
 
+    /// 월 라벨 자체가 격자를 뒤집는 손잡이다. 셰브런을 붙여 눌린다고 말한다 — 시트를 여는
+    /// 액세서리 캡션과 달리 여기서는 위아래로 뒤집히므로 방향이 그대로 의미가 된다.
+    private var titleButton: some View {
+        Button {
+            isMonthPickerExpanded.toggle()
+        } label: {
+            HStack(spacing: .spacingXS) {
+                Text(title)
+                    .hannunFont(.subtext, tabularFigures: true)
+                    .foregroundStyle(Color.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(Constants.monthTitleMinimumScaleFactor)
+
+                Image(systemName: isMonthPickerExpanded
+                    ? Constants.collapseSymbolName
+                    : Constants.expandSymbolName)
+                    .hannunFont(.caption)
+                    .foregroundStyle(Color.textSecondary)
+            }
+            .frame(minHeight: .minimumTouchTarget)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityHint(isMonthPickerExpanded
+            ? Constants.collapseAccessibilityHint
+            : Constants.expandAccessibilityHint)
+    }
+
     @ViewBuilder
     private var content: some View {
+        if isMonthPickerExpanded {
+            MonthPickerGrid(
+                year: viewModel.displayedYear,
+                selectedMonth: viewModel.displayedMonth,
+                disabledMonths: viewModel.disabledMonths
+            ) { selectMonth($0) }
+        } else {
+            calendarContent
+        }
+    }
+
+    @ViewBuilder
+    private var calendarContent: some View {
         switch viewModel.calendarState {
         case .idle, .loading:
             ProgressView()
@@ -108,9 +169,9 @@ struct MonthlyReturnCard: View {
             CalendarHeatmap(
                 month: viewModel.calendarMonth,
                 cells: dailyReturns.map { HeatmapCell(date: $0.date, ratio: $0.rate) },
-                calendar: calendar,
-                onSelect: select
-            )
+                selectedDate: viewModel.selectedDate,
+                calendar: calendar
+            ) { viewModel.selectDate($0.date) }
         case let .failed(error):
             EmptyStateView(
                 systemImageName: Constants.failureSymbolName,
@@ -125,7 +186,7 @@ struct MonthlyReturnCard: View {
 
     // MARK: - Function
 
-    private func monthButton(
+    private func arrowButton(
         systemImageName: String,
         accessibilityLabel: String,
         isEnabled: Bool,
@@ -147,9 +208,12 @@ struct MonthlyReturnCard: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
-    /// 같은 셀을 다시 누르면 접힌다 — 펼친 줄을 닫을 다른 손잡이를 만들지 않기 위해서다.
-    private func select(_ cell: HeatmapCell) {
-        selectedCell = selectedCell?.date == cell.date ? nil : cell
+    /// 고른 달로 접으면서 옮긴다. 년은 **접기 전** 값을 잡아 둔다 — 재조회가 끝나기 전에
+    /// 격자가 사라지므로 `viewModel` 을 다시 읽을 시점이 애매해진다.
+    private func selectMonth(_ month: Int) {
+        let year = viewModel.displayedYear
+        isMonthPickerExpanded = false
+        Task { await viewModel.showMonth(year: year, month: month) }
     }
 
     /// "8월 3일 · +1.2% · +₩142,000".
@@ -190,29 +254,42 @@ struct MonthlyReturnCard: View {
         return rate > 0 ? .gain : .loss
     }
 
-    /// 셀은 금액을 들고 있지 않다(`HeatmapCell` 은 비율만 안다) — 날짜로 파생값을 되찾는다.
-    /// 양쪽 모두 `startOfDay` 로 맞춘다. 스냅샷 `recordedOn` 에는 시:분이 섞여 있어서
-    /// 원시 `Date` 로 비교하면 늘 어긋난다.
+    /// 고른 날의 파생값. 양쪽 모두 `startOfDay` 로 맞춘다 — 스냅샷 `recordedOn` 에는 시:분이
+    /// 섞여 있어서 원시 `Date` 로 비교하면 늘 어긋난다.
+    ///
+    /// 월 격자가 펼쳐진 동안에는 상세 줄을 접는다. 격자에 없는 날을 가리키는 한 줄이 12개월
+    /// 아래 남으면 그 달의 값처럼 읽힌다.
     private var selectedReturn: DailyReturn? {
         guard
-            let selectedCell,
+            !isMonthPickerExpanded,
+            let selectedDate = viewModel.selectedDate,
             let dailyReturns = viewModel.calendarState.value
         else { return nil }
 
-        let selectedDay = calendar.startOfDay(for: selectedCell.date)
+        let selectedDay = calendar.startOfDay(for: selectedDate)
         return dailyReturns.first { calendar.startOfDay(for: $0.date) == selectedDay }
     }
 
-    private var monthTitle: String {
-        viewModel.calendarMonth.formatted(.dateTime.year().month(.wide))
+    /// 격자가 뒤집혀 있으면 년만 말한다 — 그 아래에서 고를 대상이 달이기 때문이다.
+    private var title: String {
+        guard !isMonthPickerExpanded else {
+            return viewModel.calendarMonth.formatted(.dateTime.year())
+        }
+        return viewModel.calendarMonth.formatted(.dateTime.year().month(.wide))
     }
 }
 
 fileprivate enum Constants {
-    static let previousMonthSymbolName = "chevron.left"
-    static let nextMonthSymbolName = "chevron.right"
+    static let previousSymbolName = "chevron.left"
+    static let nextSymbolName = "chevron.right"
+    static let expandSymbolName = "chevron.down"
+    static let collapseSymbolName = "chevron.up"
     static let previousMonthAccessibilityLabel = "이전 달"
     static let nextMonthAccessibilityLabel = "다음 달"
+    static let previousYearAccessibilityLabel = "이전 해"
+    static let nextYearAccessibilityLabel = "다음 해"
+    static let expandAccessibilityHint = "두 번 탭하면 다른 달을 고를 수 있어요"
+    static let collapseAccessibilityHint = "두 번 탭하면 달력으로 돌아갑니다"
     static let emptyMessage = "이 달에는 기록이 없어요"
     static let failureSymbolName = "exclamationmark.triangle"
     static let failureTitle = "캘린더를 불러오지 못했어요"
@@ -229,15 +306,18 @@ private struct MonthlyReturnCardPreview: View {
 
     @State private var viewModel: PerformanceViewModel
 
+    private let isMonthPickerExpanded: Bool
+
     // MARK: - Body
 
     @MainActor
-    init(viewModel: PerformanceViewModel) {
+    init(viewModel: PerformanceViewModel, isMonthPickerExpanded: Bool = false) {
         _viewModel = State(initialValue: viewModel)
+        self.isMonthPickerExpanded = isMonthPickerExpanded
     }
 
     var body: some View {
-        MonthlyReturnCard(viewModel: viewModel)
+        MonthlyReturnCard(viewModel: viewModel, isMonthPickerExpanded: isMonthPickerExpanded)
             .padding(.spacingL)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.backgroundPrimary)
@@ -258,6 +338,21 @@ private struct MonthlyReturnCardPreview: View {
 /// 헤더 한 줄(화살표 · 월 라벨)과 7열 격자가 AX5 에서도 무너지지 않는지 본다.
 #Preview("월간 수익률 캘린더 · AX5") {
     MonthlyReturnCardPreview(viewModel: .previewWithCalendar)
+        .dynamicTypeSize(.accessibility5)
+}
+
+/// 날짜를 고른 상태 — 격자의 선택 링과 아래 상세 한 줄이 같은 날을 가리키는지 본다.
+#Preview("월간 수익률 캘린더 · 날짜 선택") {
+    MonthlyReturnCardPreview(viewModel: .previewWithSelectedDate)
+}
+
+/// 12개월 격자로 뒤집힌 상태. 카드 높이가 일 격자와 크게 어긋나지 않는지 함께 본다.
+#Preview("월간 수익률 캘린더 · 월 선택 격자") {
+    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, isMonthPickerExpanded: true)
+}
+
+#Preview("월간 수익률 캘린더 · 월 선택 격자 AX5") {
+    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, isMonthPickerExpanded: true)
         .dynamicTypeSize(.accessibility5)
 }
 

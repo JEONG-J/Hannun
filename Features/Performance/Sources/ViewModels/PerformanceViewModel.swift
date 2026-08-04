@@ -33,6 +33,9 @@ final class PerformanceViewModel {
     private(set) var granularity: TrendGranularity = Constants.initialGranularity
     private(set) var selectedBenchmark: BenchmarkIndex?
 
+    /// 캘린더에서 고른 날. 다음 선택이나 월 이동 전까지 남는다.
+    private(set) var selectedDate: Date?
+
     /// 스크럽 중인 시점. 차트가 직접 갱신하므로 바인딩할 수 있어야 한다.
     var scrubbedDate: Date? {
         didSet {
@@ -87,21 +90,59 @@ final class PerformanceViewModel {
     /// 캘린더 실패는 여기 들어오지 않는다 — 캘린더는 카드 안에서 직접 실패를 말한다.
     var isStale: Bool { isSummaryStale || isTrendStale }
 
+    /// 화면이 "지금 보고 있는" 시점.
+    ///
+    /// 두 선택을 **합치지 않고 겹친다**. 스크럽은 손을 떼면 사라지는 일시 값이고 캘린더
+    /// 선택은 다음 조작까지 남는 지속 값이라, 하나로 합치면 스크럽이 끝나는 순간
+    /// (`scrubbedDate = nil`) 캘린더 선택까지 함께 지워진다. 겹쳐 두면 손을 뗀 뒤 캘린더
+    /// 선택으로 돌아오는 코드를 따로 쓰지 않아도 된다.
+    var focusedDate: Date? { scrubbedDate ?? selectedDate }
+
+    /// 차트가 실제로 그릴 커서 위치. 차트가 그 시점을 담고 있지 않으면 `nil` 이다.
+    var chartCursorDate: Date? { focusedPoint?.date }
+
     /// 다음 달로 넘어갈 수 있는지. 아직 오지 않은 달에는 칠할 기록이 없다.
     var canShowNextMonth: Bool {
         guard let currentMonth = Self.startOfMonth(now(), calendar: calendar) else { return false }
         return calendarMonth < currentMonth
     }
 
-    /// 상단 큰 숫자. 스크럽 중이면 그 시점 값이 연초 대비 값을 대신한다.
+    /// 다음 해로 넘어갈 수 있는지. 월 점프 격자가 년 이동 화살표에 쓴다.
+    var canShowNextYear: Bool {
+        displayedYear < currentYear
+    }
+
+    /// 월 점프 격자에서 고를 수 없는 달.
+    ///
+    /// **미래 달만 막는다.** "기록이 없는 달"까지 막으려면 첫 스냅샷 날짜를 알아야 하고 그건
+    /// ALL 구간 조회를 한 번 더 태워야 한다 — 들어가 봐야 이미 있는 "이 달에는 기록이 없어요"
+    /// 가 말해 주므로 그 비용을 쓰지 않는다.
+    var disabledMonths: Set<Int> {
+        let latest = latestSelectableMonth(inYear: displayedYear)
+        guard latest < Constants.monthsPerYear else { return [] }
+
+        return Set((latest + 1)...Constants.monthsPerYear)
+    }
+
+    /// 캘린더가 보고 있는 년. 월 점프 격자의 헤더와 비활성 계산이 함께 쓴다.
+    var displayedYear: Int {
+        calendar.component(.year, from: calendarMonth)
+    }
+
+    /// 캘린더가 보고 있는 달의 번호(1~12).
+    var displayedMonth: Int {
+        calendar.component(.month, from: calendarMonth)
+    }
+
+    /// 상단 큰 숫자. 보고 있는 시점이 있으면 그 값이 연초 대비 값을 대신한다.
     var headline: PerformanceHeadline? {
-        if let scrubbedHeadline { return scrubbedHeadline }
+        if let focusedHeadline { return focusedHeadline }
         guard
             let summary = summaryState.value,
             case let .calculated(rate, gain) = summary
         else { return nil }
 
-        return PerformanceHeadline(scrubbedDate: nil, rate: rate, amount: gain)
+        return PerformanceHeadline(focusedDate: nil, rate: rate, amount: gain)
     }
 
     /// 요약도 추이도 그릴 값이 하나도 없는 상태.
@@ -126,12 +167,6 @@ final class PerformanceViewModel {
         return !hasScrubbed && trend.portfolio.count > 1
     }
 
-    /// 액세서리 왼쪽이 기본으로 말하는 한 줄 — "YTD · 일별". 기간과 단위를 한 곳에서 고치므로
-    /// 무엇이 바뀌어도 이 문구만 다시 읽으면 된다.
-    var periodSummary: String {
-        "\(period.title) · \(granularity.title)"
-    }
-
     /// 차트에 겹칠 벤치마크. 비교가 꺼져 있거나 선택이 없거나 조회에 실패한 지수면
     /// 아무것도 그리지 않는다.
     var overlaidBenchmark: BenchmarkSeries? {
@@ -153,18 +188,39 @@ final class PerformanceViewModel {
         return mine - theirs
     }
 
-    private var scrubbedHeadline: PerformanceHeadline? {
-        guard
-            let scrubbedDate,
-            let trend = trendState.value,
-            let point = trend.portfolio.first(where: { $0.date == scrubbedDate })
-        else { return nil }
+    /// `focusedDate` 에 대응하는 차트 점. 없으면 차트가 그 시점을 담고 있지 않다는 뜻이다.
+    ///
+    /// 단위별로 매칭을 다르게 하는 이유: 캘린더에서 온 `focusedDate` 는 언제나 **하루**지만
+    /// 차트는 월별 단위면 달마다 점 하나로 샘플링돼 있다. 날짜를 그대로 비교하면 월별에서는
+    /// 어떤 날을 골라도 커서가 뜨지 않는다.
+    ///
+    /// 차트가 담지 않은 시점(3년 전 달의 셀 같은)이면 `nil` 이고, 그 상태가 곧 "차트는
+    /// 가만히 둔다" 다 — 기간을 자동으로 넓히지 않으므로 별도 분기가 필요 없다.
+    private var focusedPoint: BenchmarkPoint? {
+        guard let focusedDate, let trend = trendState.value else { return nil }
+
+        return trend.portfolio.first { point in
+            switch granularity {
+            case .daily:
+                calendar.isDate(point.date, inSameDayAs: focusedDate)
+            case .monthly:
+                calendar.isDate(point.date, equalTo: focusedDate, toGranularity: .month)
+            }
+        }
+    }
+
+    private var focusedHeadline: PerformanceHeadline? {
+        guard let point = focusedPoint, let trend = trendState.value else { return nil }
 
         return PerformanceHeadline(
-            scrubbedDate: scrubbedDate,
+            focusedDate: point.date,
             rate: point.rate,
-            amount: trend.totals[scrubbedDate]
+            amount: trend.totals[point.date]
         )
+    }
+
+    private var currentYear: Int {
+        calendar.component(.year, from: now())
     }
 
     // MARK: - Function
@@ -264,13 +320,50 @@ final class PerformanceViewModel {
     }
 
     func showPreviousMonth() async {
-        await showMonth(offsetBy: -1)
+        guard
+            let month = calendar.date(byAdding: .month, value: -1, to: calendarMonth)
+        else { return }
+
+        await setMonth(month)
     }
 
     /// 화살표가 이미 `.disabled` 지만 guard 로 우회까지 막는다.
     func showNextMonth() async {
-        guard canShowNextMonth else { return }
-        await showMonth(offsetBy: 1)
+        guard
+            canShowNextMonth,
+            let month = calendar.date(byAdding: .month, value: 1, to: calendarMonth)
+        else { return }
+
+        await setMonth(month)
+    }
+
+    /// 월 점프 격자가 부른다. 년·월을 직접 받으므로 ◀▶ 를 열일곱 번 누를 일이 없다.
+    ///
+    /// 격자가 이미 미래 달을 `.disabled` 로 두지만 guard 로 우회까지 막는다.
+    func showMonth(year: Int, month: Int) async {
+        guard
+            month <= latestSelectableMonth(inYear: year),
+            let target = calendar.date(from: DateComponents(year: year, month: month))
+        else { return }
+
+        await setMonth(target)
+    }
+
+    /// 월 점프 격자가 펼쳐진 동안 ◀▶ 가 부른다.
+    func showPreviousYear() async {
+        await showYear(offsetBy: -1)
+    }
+
+    func showNextYear() async {
+        guard canShowNextYear else { return }
+        await showYear(offsetBy: 1)
+    }
+
+    /// 캘린더 셀 탭의 유일한 진입점. 같은 날을 다시 누르면 선택이 풀린다 — 펼친 상세 줄을
+    /// 닫을 다른 손잡이를 만들지 않는다.
+    func selectDate(_ date: Date) {
+        let day = calendar.startOfDay(for: date)
+        selectedDate = selectedDate.map { calendar.startOfDay(for: $0) } == day ? nil : day
     }
 
     /// 기간 선택 시트가 부른다. 고른 값과 무관하게 시트를 닫는다 — 이미 보고 있던 기간을
@@ -290,12 +383,6 @@ final class PerformanceViewModel {
         self.granularity = granularity
         scrubbedDate = nil
         await loadTrend()
-    }
-
-    /// 액세서리 오른쪽 단위 토글. `.daily` ↔ `.monthly` 를 오가며 기존 `selectGranularity(_:)` 를
-    /// 그대로 불러 재조회·스크럽 해제 규칙을 다시 구현하지 않는다.
-    func toggleGranularity() async {
-        await selectGranularity(granularity == .daily ? .monthly : .daily)
     }
 
     /// 같은 지수를 다시 고르면 선택이 풀린다 — 겹칠 벤치마크는 0~1개다 (UI 스펙 §4.3).
@@ -366,14 +453,35 @@ final class PerformanceViewModel {
         calendar.date(from: calendar.dateComponents([.year, .month], from: date))
     }
 
-    /// 옮긴 달의 값을 받아오기 전까지 이전 달 셀을 화면에 남기지 않는다 — 라벨은 새 달인데
-    /// 격자는 옛 달이면 잠깐이라도 거짓말을 하는 화면이 된다.
-    private func showMonth(offsetBy months: Int) async {
-        guard let month = calendar.date(byAdding: .month, value: months, to: calendarMonth) else {
+    /// 해를 옮겨도 보고 있던 달을 그대로 유지한다. 다만 옮긴 해에서 그 달이 아직 오지
+    /// 않았다면 그 해의 마지막 유효한 달로 당긴다 — 년 화살표 한 번에 미래로 넘어가면
+    /// 격자가 전부 비활성인 채 "기록이 없어요" 만 뜬다.
+    private func showYear(offsetBy years: Int) async {
+        let year = displayedYear + years
+        let month = min(displayedMonth, latestSelectableMonth(inYear: year))
+
+        guard let target = calendar.date(from: DateComponents(year: year, month: month)) else {
             return
         }
 
+        await setMonth(target)
+    }
+
+    /// 그 해에서 고를 수 있는 마지막 달. 지난 해는 12월까지, 올해는 이번 달까지다.
+    private func latestSelectableMonth(inYear year: Int) -> Int {
+        if year < currentYear { return Constants.monthsPerYear }
+        if year > currentYear { return 0 }
+        return calendar.component(.month, from: now())
+    }
+
+    /// ◀▶ 와 월 점프가 함께 쓰는 진입점 — 선택 해제·로딩 표시·재조회를 한 곳에서 한다.
+    ///
+    /// 옮긴 달의 값을 받아오기 전까지 이전 달 셀을 화면에 남기지 않는다 — 라벨은 새 달인데
+    /// 격자는 옛 달이면 잠깐이라도 거짓말을 하는 화면이 된다. 고른 날도 함께 푼다: 지난
+    /// 달 날짜를 가리키는 상세 줄이 새 격자 아래 남으면 안 된다.
+    private func setMonth(_ month: Date) async {
         calendarMonth = month
+        selectedDate = nil
         calendarState = .loading
         await loadCalendar()
     }
@@ -462,4 +570,5 @@ fileprivate enum Constants {
     static let baseCurrency: Currency = .krw
     static let initialPeriod: ChartPeriod = .yearToDate
     static let initialGranularity: TrendGranularity = .daily
+    static let monthsPerYear = 12
 }

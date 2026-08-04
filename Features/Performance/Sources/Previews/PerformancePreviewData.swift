@@ -183,6 +183,10 @@ enum PerformanceCalendarSampleData {
         benchmarks: []
     )
 
+    /// `previewWithSelectedDate` 가 고르는 날 — 7월 20일. 전날보다 +1.4%p 오른 이익 셀이라
+    /// 선택 링이 채움 위에 어떻게 얹히는지 함께 보인다.
+    static let selectedDate = date(offsetBy: 19)
+
     /// `dayOffset` 0 이 7월 1일, -1 이 그 전날이다. `cumulativeRate` 는 6월 30일을 0 으로 둔
     /// 누적 등락률 — 일간 수익률은 `DailyReturn.series` 가 이웃한 두 값의 차로 되돌린다.
     private static let samples: [(dayOffset: Int, cumulativeRate: Decimal)] = [
@@ -231,23 +235,40 @@ extension PerformanceViewModel {
         return viewModel
     }
 
-    /// 히어로(큰 수익률)가 스크롤로 밀려난 뒤 상태. 액세서리 왼쪽이 기간·단위 대신 내
-    /// 수익률을 말하는지 본다. computed property 안에서 즉석으로 만들면 부모가 다시 그려질
-    /// 때마다 상태가 초기화되므로, 다른 프리뷰들처럼 이름 붙은 static 프로퍼티로 둔다.
-    @MainActor
-    static var previewWithHeroHidden: PerformanceViewModel {
-        let viewModel = PerformanceViewModel.preview
-        viewModel.isHeroVisible = false
-        return viewModel
-    }
-
     /// 아직 아무 지수도 고르지 않은 상태. 벤치마크 시트의 "차트에 겹치기" 스위치가
-    /// `.disabled(true)` 로 내려가는지 본다.
+    /// `.disabled(true)` 로 내려가는지, 액세서리 오른쪽이 `비교` 로 바뀌는지 본다.
     @MainActor
     static var previewWithoutBenchmark: PerformanceViewModel {
         let viewModel = PerformanceViewModel.preview
         viewModel.selectBenchmark(nil)
         return viewModel
+    }
+
+    /// 차트가 담고 있는 시점 하나를 고른 상태. 히어로·액세서리 왼쪽이 연초 대비 대신 그 시점의
+    /// "기간 시작 대비" 값을 말하는지 본다. 캘린더 격자가 아니라 **차트** 표본이라
+    /// `previewWithSelectedDate` 와 고르는 대상이 다르다.
+    @MainActor
+    static var previewWithFocusedDate: PerformanceViewModel {
+        let viewModel = PerformanceViewModel.preview
+        viewModel.selectDate(PerformanceSampleData.date(at: 3))
+        return viewModel
+    }
+
+    /// 캘린더에서 하루를 고른 상태. 선택 링과 그 아래 상세 한 줄을 본다.
+    @MainActor
+    static var previewWithSelectedDate: PerformanceViewModel {
+        let viewModel = PerformanceViewModel.previewWithCalendar
+        viewModel.selectDate(PerformanceCalendarSampleData.selectedDate)
+        return viewModel
+    }
+
+    /// 히어로(큰 수익률)가 스크롤로 밀려난 상태로 바꿔 돌려준다 — 액세서리 왼쪽 대역은
+    /// 그때부터 갈린다. 조합마다 static 을 하나씩 두면 이름이 끝없이 길어지므로 한 단계만
+    /// 얹는 손잡이로 둔다. 받는 쪽은 `@State` 로 붙잡아 다시 그려질 때 초기화되지 않게 한다.
+    @MainActor
+    func hidingHero() -> PerformanceViewModel {
+        isHeroVisible = false
+        return self
     }
 
     /// 캘린더 카드 전용. 차트에는 같은 표본이 한 달치만 들어가 어울리지 않으므로 이 인스턴스는

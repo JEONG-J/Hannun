@@ -26,8 +26,8 @@ import SwiftUI
 /// 켜짐/꺼짐이 **한 대상의 두 상태**일 때만 `.isSelected` trait 을 붙인다(비교 on/off).
 /// 통화 전환처럼 누를 때마다 대상이 바뀌는 컨트롤은 선택 상태가 아니므로 붙이지 않고,
 /// 라벨에는 **지금 상태**를 적는다 — `KRW` 가 보이면 지금 원화로 보고 있다는 뜻이다.
-/// 눌러서 바뀔 대상은 `accessibilityHint` 가 말한다(`NetWorthAccessory` 의 통화 전환·
-/// 성과 탭의 일별/월별 전환과 같은 문법).
+/// 눌러서 바뀔 대상은 `accessibilityHint` 가 말한다(`NetWorthAccessory` 의 통화 전환과
+/// 같은 문법).
 public struct AccessoryControlButton: View {
 
     // MARK: - Property

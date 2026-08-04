@@ -64,13 +64,20 @@ public struct TrendSeries: Identifiable, Equatable, Sendable {
 /// 선 모양만 남아 "얼마나" 에 답하지 못한다 — 내려간 구간이 손실인지 고점 대비 조정인지,
 /// 벤치마크와 벌어진 간격이 1%p 인지 10%p 인지 읽히지 않는다. 대신 눈금선(grid)은 긋지
 /// 않아 시안의 빈 플롯을 최대한 지킨다: X축 라벨 3개, Y축 라벨 2개와 기준선 하나가 전부다.
-public struct TrendLineChart: View {
+///
+/// ## 맨 윗줄은 호출부에 열려 있다
+///
+/// `header:` 슬롯에 넘긴 것이 범례 오른쪽에 앉는다. 차트 축을 바꾸는 컨트롤(단위 세그먼트)
+/// 자리인데, 그 어휘는 Domain 개념이라 이 컴포넌트가 알아서는 안 된다 — 슬롯으로 열어 두면
+/// 차트는 "맨 윗줄이 있다" 까지만 알면 된다.
+public struct TrendLineChart<Header: View>: View {
 
     // MARK: - Property
 
     private let points: [TrendPoint]
     private let benchmarks: [TrendSeries]
     private let insufficientDataMessage: String
+    private let header: Header
     @Binding private var selection: Date?
 
     @State private var scrubbedDate: Date?
@@ -81,18 +88,20 @@ public struct TrendLineChart: View {
         points: [TrendPoint],
         benchmarks: [TrendSeries] = [],
         insufficientDataMessage: String,
-        selection: Binding<Date?>
+        selection: Binding<Date?>,
+        @ViewBuilder header: () -> Header
     ) {
         self.points = points
         self.benchmarks = benchmarks
         self.insufficientDataMessage = insufficientDataMessage
+        self.header = header()
         _selection = selection
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: .spacingS) {
-            if showsLegend {
-                legend
+            if showsHeaderRow {
+                headerRow
             }
 
             Group {
@@ -106,7 +115,30 @@ public struct TrendLineChart: View {
         }
     }
 
-    /// 액세서리 leading 이 곧 기간·단위 안내로 채워져 범례를 그릴 자리가 없어지므로 이
+    /// 범례와 슬롯이 한 줄을 나눠 쓴다. AX5 에서 둘이 한 줄에 안 들어가면 범례 → 슬롯
+    /// 2행으로 접는다 — 어느 쪽도 줄이지 않는다. 가로 갈래에서 슬롯을 `fixedSize` 로
+    /// 묶는 이유는 세그먼트가 `maxWidth: .infinity` 로 남은 폭을 다 먹어 범례를 밀어내지
+    /// 않게 하기 위해서다.
+    private var headerRow: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: .spacingM) {
+                if showsLegend { legend }
+
+                Spacer(minLength: 0)
+
+                header
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+
+            VStack(alignment: .leading, spacing: .spacingS) {
+                if showsLegend { legend }
+
+                header
+            }
+        }
+    }
+
+    /// 액세서리 leading 이 곧 기간·수익률 문구로 채워져 범례를 그릴 자리가 없어지므로 이
     /// 컴포넌트 안으로 옮겼다. 주선("내 수익률")은 화면에서 유일한 굵은 brand 선이라 넣지
     /// 않는다 — 헷갈릴 대상이 없는데 넣으면 한 줄이 두 항목으로 늘어 240pt 로 줄인 세로를
     /// 다시 먹는다.
@@ -238,6 +270,13 @@ public struct TrendLineChart: View {
         points.count > 1 && !benchmarks.isEmpty
     }
 
+    /// 슬롯에 내용이 있으면 범례가 없어도 맨 윗줄을 그린다. 데이터가 1건 이하라 플롯 대신
+    /// 안내 문구를 그리는 상태에서도 마찬가지다 — 단위를 바꾸면 점 개수가 달라질 수 있어
+    /// 그 상태에서야말로 컨트롤이 필요하다.
+    private var showsHeaderRow: Bool {
+        showsLegend || Header.self != EmptyView.self
+    }
+
     private var selectedPoint: TrendPoint? {
         selection.flatMap { date in points.first { $0.date == date } }
     }
@@ -248,6 +287,24 @@ public struct TrendLineChart: View {
         points.min {
             abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
         }
+    }
+}
+
+public extension TrendLineChart where Header == EmptyView {
+    /// 맨 윗줄에 얹을 컨트롤이 없는 호출부 전용.
+    init(
+        points: [TrendPoint],
+        benchmarks: [TrendSeries] = [],
+        insufficientDataMessage: String,
+        selection: Binding<Date?>
+    ) {
+        self.init(
+            points: points,
+            benchmarks: benchmarks,
+            insufficientDataMessage: insufficientDataMessage,
+            selection: selection,
+            header: { EmptyView() }
+        )
     }
 }
 
@@ -288,6 +345,7 @@ private struct TrendLineChartPreview: View {
     )
 
     @State private var selection: Date?
+    @State private var granularity = "일별"
 
     // MARK: - Body
 
@@ -315,7 +373,9 @@ private struct TrendLineChartPreview: View {
                 ],
                 insufficientDataMessage: "데이터가 쌓이면 추이가 표시됩니다",
                 selection: $selection
-            )
+            ) {
+                SegmentedPicker(["일별", "월별"], selection: $granularity) { $0 }
+            }
             .padding(.spacingL)
             .background(Color.surfacePrimary, in: .hannunContainer())
 
@@ -327,11 +387,15 @@ private struct TrendLineChartPreview: View {
             .padding(.spacingL)
             .background(Color.surfacePrimary, in: .hannunContainer())
 
+            // 점이 1건이라 플롯 대신 안내 문구가 뜨는 상태. 그 위에도 헤더 줄이 남는지 본다.
             TrendLineChart(
                 points: Array(myReturns.prefix(1)),
                 insufficientDataMessage: "데이터가 쌓이면 추이가 표시됩니다",
                 selection: $selection
-            )
+            ) {
+                SegmentedPicker(["일별", "월별"], selection: $granularity) { $0 }
+            }
+            .padding(.spacingL)
             .background(Color.surfacePrimary, in: .hannunContainer())
         }
         .padding(.spacingL)

@@ -80,19 +80,22 @@ struct PerformanceTrend: Equatable, Sendable {
 
 /// 상단 큰 숫자 블록이 표시할 값.
 ///
-/// 스크럽 중에는 기준선이 연초가 아니라 **기간 시작** 으로 바뀐다 — 차트가 그 축으로 정규화돼
-/// 있기 때문이다. 그래서 날짜를 함께 들고 다니며 라벨도 같이 바뀌게 한다.
+/// 특정 시점을 보고 있을 때는 기준선이 연초가 아니라 **기간 시작** 으로 바뀐다 — 차트가 그
+/// 축으로 정규화돼 있기 때문이다. 그래서 날짜를 함께 들고 다니며 라벨도 같이 바뀌게 한다.
+///
+/// 그 시점이 스크럽에서 왔는지 캘린더 선택에서 왔는지는 여기서 구분하지 않는다. 기준선이
+/// 양쪽 모두 기간 시작이라 문장이 같고, 출처를 구분해 봐야 쓸 데가 없다.
 struct PerformanceHeadline: Equatable, Sendable {
 
     // MARK: - Property
 
-    /// 스크럽 중이면 그 시점, 아니면 nil (연초 대비).
-    let scrubbedDate: Date?
+    /// 보고 있는 시점, 없으면 nil (연초 대비).
+    let focusedDate: Date?
 
     let rate: Decimal
 
-    /// 연초 대비일 때는 손익 금액, 스크럽 중일 때는 그 시점의 총자산.
+    /// 연초 대비일 때는 손익 금액, 특정 시점을 볼 때는 그 시점의 총자산.
     let amount: Money?
 
-    var isScrubbing: Bool { scrubbedDate != nil }
+    var isFocused: Bool { focusedDate != nil }
 }

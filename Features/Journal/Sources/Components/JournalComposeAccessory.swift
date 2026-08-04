@@ -8,18 +8,15 @@
 import HannunDesignSystem
 import SwiftUI
 
-/// 매매일지 탭의 하단 액세서리 — 목록 상태 한 줄 + 작성 하나 (JR-2).
+/// 매매일지 탭의 하단 액세서리 — 작성 하나 (JR-2).
 ///
-/// 왼쪽은 기록이 없을 때만 CTA 로 말하고, 한 건이라도 쌓이면 **이번 달 몇 건**인지로 바뀐다.
-/// "오늘의 매매를 기록해보세요"를 계속 띄우면 이미 쓰고 있는 사람에게는 아무 정보도 주지
-/// 않는 장식이 된다. 필터·검색이 걸려 있으면 지금 무엇을 보고 있는지를 대신 말한다
-/// (디자인 문서 §4.0).
+/// 목록 상태("이번 달 7건")는 큰 제목 아래 `navigationSubtitle` 로 옮겼다. 그 줄은 지금 무엇을
+/// 보고 있는지를 말하는 **제목의 일부**라서, 화면 반대쪽 끝에 떼어 놓으면 제목과 눈이 두 번
+/// 오간다. 남은 동작이 작성 하나뿐이므로 캡슐째 버튼으로 쓴다 — 오른쪽 알약 하나만 눌리게
+/// 두면 좁은 과녁을 위해 캡슐 나머지가 죽는다 (`BottomAccessory` 규칙).
 ///
-/// 이 탭에는 스크롤로 밀려 나가는 히어로가 없다 — 큰 숫자 없이 목록으로 시작하므로
-/// 교대할 상대가 없다 (디자인 문서 §6).
-///
-/// 값이 아니라 ViewModel 을 받는다 — 액세서리 클로저는 첫 등장 시점에 붙잡히므로 값을
-/// 꺼내 넘기면 그 시점에 굳는다.
+/// 캡슐이 이미 버튼이라 안에는 알약을 겹치지 않는다. `AccessoryActionButton` 을 넣으면
+/// 버튼 안의 버튼이 되고, 채운 알약이 캡슐 안에 캡슐로 한 겹 더 쌓인다.
 struct JournalComposeAccessory: View {
 
     // MARK: - Property
@@ -27,84 +24,54 @@ struct JournalComposeAccessory: View {
     @Environment(\.accessoryLayout) private var layout
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private let viewModel: JournalListViewModel
     private let onCompose: () -> Void
 
     // MARK: - Body
 
-    init(viewModel: JournalListViewModel, onCompose: @escaping () -> Void) {
-        self.viewModel = viewModel
+    init(onCompose: @escaping () -> Void) {
         self.onCompose = onCompose
     }
 
     var body: some View {
-        BottomAccessory {
-            caption
-        } trailing: {
-            composeButton
+        Button(action: onCompose) {
+            BottomAccessory {
+                composeLabel
+            }
+            // 캡슐 전체가 과녁이 되려면 둘 다 필요하다 — 버튼의 히트 영역은 라벨이 그린
+            // 픽셀이라, 없으면 글자 주변 빈 자리가 눌리지 않는다.
+            .frame(maxHeight: .infinity)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Constants.composeTitle)
     }
 
     // MARK: - Function
 
-    @ViewBuilder
-    private var caption: some View {
-        switch viewModel.caption {
-        case .none:
-            AccessoryCaption(hintText)
+    private var composeLabel: some View {
+        HStack(spacing: .spacingXS) {
+            Image(systemName: Constants.composeSymbolName)
+                .imageScale(.small)
 
-        case .empty:
-            AccessoryCaption(hintText)
-
-        case let .filtered(name, count):
-            AccessoryCaption(.plain(name), .value(countText(count)))
-
-        case let .thisMonth(count):
-            AccessoryCaption(.plain(Constants.thisMonthPrefix), .value(countText(count)))
-
-        case let .total(count):
-            AccessoryCaption(.plain(Constants.totalPrefix), .value(countText(count)))
+            Text(title)
+                .lineLimit(1)
         }
+        .hannunFont(.pillLabel)
+        .foregroundStyle(Color.brand)
+        .frame(maxWidth: .infinity, minHeight: .minimumTouchTarget)
     }
 
-    /// 축약에서는 아이콘 원형으로 줄이되 VoiceOver 라벨은 같은 의미를 유지한다.
-    @ViewBuilder
-    private var composeButton: some View {
-        if layout == .inline {
-            AccessoryActionButton(
-                systemImageName: Constants.composeSymbolName,
-                accessibilityLabel: Constants.composeAccessibilityLabel,
-                action: onCompose
-            )
-        } else {
-            AccessoryActionButton(
-                Constants.composeTitle,
-                systemImageName: Constants.composeSymbolName,
-                action: onCompose
-            )
-        }
-    }
-
-    /// 축약 문구는 inline 만이 아니라 AX 사이즈에서도 쓴다 — 힌트는 빈 상태의 CTA 라
-    /// 숨기는 대신 줄인다.
-    private var hintText: String {
+    /// 축약 문구는 inline 만이 아니라 AX 사이즈에서도 쓴다 — 이 탭의 유일한 진입점이라
+    /// 라벨이 잘리게 두는 대신 짧은 쪽으로 바꾼다.
+    private var title: String {
         layout == .inline || dynamicTypeSize.isAccessibilitySize
-            ? Constants.inlineHintText
-            : Constants.hintText
-    }
-
-    private func countText(_ count: Int) -> String {
-        "\(count)\(Constants.countUnit)"
+            ? Constants.inlineComposeTitle
+            : Constants.composeTitle
     }
 }
 
 fileprivate enum Constants {
-    static let hintText = "오늘의 매매를 기록해보세요"
-    static let inlineHintText = "매매 기록"
-    static let thisMonthPrefix = "이번 달"
-    static let totalPrefix = "전체"
-    static let countUnit = "건"
+    static let composeTitle = "매매일지 작성"
+    static let inlineComposeTitle = "작성"
     static let composeSymbolName = "pencil.line"
-    static let composeTitle = "작성"
-    static let composeAccessibilityLabel = "일지 작성"
 }

@@ -47,6 +47,34 @@ struct FailingFetchHoldingsUseCase: FetchHoldingsUseCaseProtocol {
     }
 }
 
+/// 초안 생성기 대역. 실제 구현은 FoundationModels 를 타므로 테스트에서 부를 수 없다 —
+/// 여기서는 화면이 **무엇을 재료로 넘겼는지**만 받아 둔다.
+actor SpyDraftJournalContentUseCase: DraftJournalContentUseCaseProtocol {
+    private let readiness: JournalContentAvailability
+    private let draft: Result<String, AppError>
+
+    private(set) var lastRequest: JournalContentRequest?
+
+    init(
+        readiness: JournalContentAvailability = .ready,
+        draft: Result<String, AppError> = .success(SpyDraftJournalContentUseCase.sampleDraft)
+    ) {
+        self.readiness = readiness
+        self.draft = draft
+    }
+
+    static let sampleDraft = "환율 부담이 커져 반도체 비중을 줄였다."
+
+    func availability() async -> JournalContentAvailability {
+        readiness
+    }
+
+    func execute(_ request: JournalContentRequest) async throws -> String {
+        lastRequest = request
+        return try draft.get()
+    }
+}
+
 /// 테스트가 공유하는 매매일지 픽스처 조립기.
 enum JournalFixture {
     static let samsung = SampleRecords.holding(

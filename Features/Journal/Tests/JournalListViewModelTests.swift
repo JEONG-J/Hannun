@@ -5,6 +5,7 @@
 //  Created by euijjang97 on 8/1/26.
 //
 
+import Foundation
 import HannunDomain
 import Testing
 @testable import JournalFeature
@@ -56,6 +57,29 @@ struct JournalListViewModelTests {
         #expect(viewModel.visibleEntries.count == 3)
     }
 
+    /// 칩 줄이 툴바 메뉴로 바뀌면서 고른 종목이 화면에 글자로 남지 않는다 — 메뉴 버튼의
+    /// 접근성 값과 채운 아이콘이 그 자리를 대신하므로 이름을 꺼내올 수 있어야 한다.
+    @Test("고른 종목의 이름을 툴바가 읽을 수 있게 내준다")
+    func exposesSelectedHoldingName() async {
+        let viewModel = makeViewModel()
+        await viewModel.load()
+
+        await viewModel.selectHolding(JournalFixture.samsung.id)
+
+        #expect(viewModel.selectedHoldingName == "삼성전자")
+    }
+
+    @Test("필터가 없거나 종목이 사라졌으면 읽을 이름도 없다")
+    func hasNoSelectedHoldingNameWithoutMatch() async {
+        let viewModel = makeViewModel()
+        await viewModel.load()
+        #expect(viewModel.selectedHoldingName == nil)
+
+        await viewModel.selectHolding(UUID())
+
+        #expect(viewModel.selectedHoldingName == nil)
+    }
+
     @Test("검색어가 제목과 본문을 함께 훑는다")
     func filtersEntriesBySearchText() async {
         let viewModel = makeViewModel()
@@ -76,24 +100,27 @@ struct JournalListViewModelTests {
         #expect(viewModel.placeholder == .noMatch)
     }
 
-    @Test("일지에 달린 종목 식별자를 종목명으로 바꾼다")
-    func mapsHoldingIdentifiersToNames() async throws {
+    /// 태그 캡슐이 분류색을 입으므로 이름만이 아니라 분류까지 따라와야 한다.
+    @Test("일지에 달린 종목 식별자를 종목으로 되돌린다")
+    func mapsHoldingIdentifiersToHoldings() async throws {
         let viewModel = makeViewModel()
         await viewModel.load()
 
         let entry = try #require(viewModel.visibleEntries.first)
+        let tagged = viewModel.taggedHoldings(for: entry)
 
-        #expect(viewModel.tagNames(for: entry) == ["AAPL"])
+        #expect(tagged.map(\.name) == ["AAPL"])
+        #expect(tagged.map(\.category) == [.overseasStock])
     }
 
-    @Test("이름을 찾지 못한 태그는 그리지 않는다")
+    @Test("종목을 찾지 못한 태그는 그리지 않는다")
     func skipsUnknownHoldingTags() async throws {
         let viewModel = makeViewModel(holdings: [])
         await viewModel.load()
 
         let entry = try #require(viewModel.visibleEntries.first)
 
-        #expect(viewModel.tagNames(for: entry).isEmpty)
+        #expect(viewModel.taggedHoldings(for: entry).isEmpty)
     }
 
     @Test("목록 조회가 실패하면 인라인 실패 상태가 된다")

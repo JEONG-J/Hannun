@@ -5,6 +5,7 @@
 //  Created by euijjang97 on 7/31/26.
 //
 
+import HannunCore
 import SwiftUI
 
 /// Liquid Glass 적용/금지 규칙과 variant 매핑을 코드로 옮긴 것.
@@ -16,7 +17,10 @@ import SwiftUI
 /// 탭바 하단 액세서리 **캡슐 자체**의 역할은 여기 없다. 시스템이
 /// `tabViewBottomAccessory(content:)` 컨테이너에 이미 재질과 크기를 입히므로 우리가 그릴 면이
 /// 아니다 — 안에서 한 번 더 얹으면 glass 위 glass 가 되어 테두리가 사라진다 (`BottomAccessory`).
-public enum GlassRole: CaseIterable, Sendable {
+///
+/// `CaseIterable` 이 아니다 — `categoryTag` 이 분류를 달고 다녀서 "모든 역할" 이 유한 목록으로
+/// 떨어지지 않는다. 역할을 훑어야 할 곳도 없다(프리뷰는 필요한 것만 골라 그린다).
+public enum GlassRole: Sendable {
     /// 콘텐츠 영역의 필터 칩(벤치마크·종목·카테고리). 그룹은 `GlassEffectContainer` +
     /// `glassEffectUnion` 으로 묶어 오프스크린 렌더링을 줄인다.
     case filterChip
@@ -35,6 +39,21 @@ public enum GlassRole: CaseIterable, Sendable {
     case accessoryPrimaryAction
     /// 성과 탭 기간 세그먼트. 액세서리가 아니라 차트 바로 아래 인라인이라 glass 를 쓴다.
     case periodSegment
+    /// 일지 셀·상세의 **읽기 전용** 종목 태그. 분류색을 tint 로 먹여 캡슐 자체가 "무슨 자산에
+    /// 달린 기록인가" 를 말하게 한다 — 태그가 전부 같은 회색이면 이름을 읽기 전에는 구분이 안 된다.
+    ///
+    /// `.regular` 가 아니라 `.clear` 인 이유는 이 캡슐이 카드 **위**가 아니라 카드 **안**에
+    /// 놓이기 때문이다. `.regular` 는 뒤를 흐려 카드에서 한 겹 떠 보이는데, 태그는 셀의
+    /// 일부지 떠 있는 컨트롤이 아니다. `.clear` 는 흐림 없이 tint 만 남긴다.
+    ///
+    /// 원색이 아니라 `glassWash` 로 민 값을 먹인다. 채도를 그대로 먹이면 캡슐이 꽉 찬 색면이
+    /// 되어 그 위의 `textPrimary` 가 묻힌다. 라벨 색을 분류마다 다시 고르는 대신 면을 옅게
+    /// 하는 쪽을 택했다 — 라벨은 분류가 다섯이라 대비를 다섯 번 맞춰야 하지만, 면은 규칙
+    /// 하나로 끝나고 라벨은 카드 면에 맞춰 둔 대비를 그대로 쓴다.
+    ///
+    /// 작성 폼의 **선택형** 칩은 이 역할을 쓰지 않는다 — 폼 안 컨트롤은 불투명이 규칙이라
+    /// (UI 스펙 §5) 같은 분류색을 `HannunTint.wash(_:)` 로 깔아 색만 맞춘다 (`TagPill`).
+    case categoryTag(AssetCategory)
     /// 카드·차트·리스트·금액 블록. 규칙상 glass 금지 영역이다.
     case contentSurface
 }
@@ -60,6 +79,8 @@ public extension GlassRole {
             .solid(AnyShapeStyle(Color.brand))
         case .periodSegment:
             .glass(.regular.interactive())
+        case let .categoryTag(category):
+            .glass(.clear.tint(category.color.glassWash))
         case .contentSurface:
             .solid(AnyShapeStyle(Color.surfacePrimary))
         }

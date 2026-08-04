@@ -5,6 +5,8 @@
 //  Created by euijjang97 on 8/1/26.
 //
 
+import Foundation
+import HannunCore
 import SwiftUI
 
 /// 매매일지 리스트 셀.
@@ -20,11 +22,11 @@ public struct JournalCell: View {
     private let dateText: String
     private let title: String
     private let preview: String
-    private let tags: [String]
+    private let tags: [JournalTag]
 
     // MARK: - Body
 
-    public init(dateText: String, title: String, preview: String, tags: [String] = []) {
+    public init(dateText: String, title: String, preview: String, tags: [JournalTag] = []) {
         self.dateText = dateText
         self.title = title
         self.preview = preview
@@ -56,10 +58,12 @@ public struct JournalCell: View {
         .background(Color.surfacePrimary, in: .hannunContainer())
     }
 
+    /// "+n" 만 분류색을 입지 않는다 — 가려진 태그들의 분류가 하나가 아니라서 어떤 색을 골라도
+    /// 거짓말이 된다.
     private var tagRow: some View {
         HStack(spacing: .spacingXS) {
-            ForEach(tags.prefix(Constants.visibleTagLimit), id: \.self) { tag in
-                TagPill(tag)
+            ForEach(tags.prefix(Constants.visibleTagLimit)) { tag in
+                TagPill(tag.name, category: tag.category)
             }
 
             if overflowCount > 0 {
@@ -92,14 +96,19 @@ private struct JournalCellPreview: View {
                 dateText: "오늘",
                 title: "반도체 비중을 절반으로 줄였다",
                 preview: "환율이 더 밀릴 것 같아 해외 비중부터 정리했다. 다음 분기 실적을 보고…",
-                tags: ["삼성전자", "SK하이닉스", "NVDA", "TSM"]
+                tags: [
+                    tag("삼성전자", .domesticStock),
+                    tag("SK하이닉스", .domesticStock),
+                    tag("NVDA", .overseasStock),
+                    tag("BTC", .crypto),
+                ]
             )
 
             JournalCell(
                 dateText: "7월 25일 (금)",
                 title: "현금 비중 20% 유지 결정",
                 preview: "지수가 고점이라 추가 매수는 보류. 배당 입금분만 예수금에 남겨둔다.",
-                tags: ["원화 예수금"]
+                tags: [tag("원화 예수금", .cash)]
             )
 
             JournalCell(
@@ -111,6 +120,12 @@ private struct JournalCellPreview: View {
         .padding(.spacingL)
         .frame(maxWidth: .infinity)
         .background(Color.backgroundPrimary)
+    }
+
+    // MARK: - Function
+
+    private func tag(_ name: String, _ category: AssetCategory) -> JournalTag {
+        JournalTag(id: UUID(), name: name, category: category)
     }
 }
 

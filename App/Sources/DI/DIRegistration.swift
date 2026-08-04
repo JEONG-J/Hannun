@@ -66,6 +66,10 @@ enum DIRegistration {
         }
         container.register((any MarketDataServiceProtocol).self) { market.marketData }
         container.register((any ExchangeRateServiceProtocol).self) { market.exchangeRate }
+        // 기기 안에서 도는 모델이라 토큰도 세션도 공유할 게 없다 — 부를 때마다 새로 만든다.
+        container.register((any JournalContentWriterProtocol).self) {
+            OnDeviceJournalContentWriter()
+        }
     }
 
     /// 팩토리는 컨테이너보다 오래 살 수 없으므로 `unowned` 로 잡아 순환 참조를 만들지 않는다.
@@ -153,6 +157,11 @@ enum DIRegistration {
         container.register((any DeleteJournalUseCaseProtocol).self) { [unowned container] in
             DeleteJournalUseCase(
                 journalRepository: container.resolve((any JournalRepositoryProtocol).self)
+            )
+        }
+        container.register((any DraftJournalContentUseCaseProtocol).self) { [unowned container] in
+            DraftJournalContentUseCase(
+                contentWriter: container.resolve((any JournalContentWriterProtocol).self)
             )
         }
     }

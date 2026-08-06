@@ -16,9 +16,6 @@ import SwiftUI
 /// 카드 모서리·행 좌우 여백·구분선이 끊기는 위치를 전부 코드가 정해야 해서 `List` 를 쓰지
 /// 않는다. `List` 의 섹션 모델은 헤더를 행 배경 바깥에 두므로 헤더와 행이 카드 하나를
 /// 공유하는 시안 구조를 만들 수 없다. 대신 잃은 `swipeActions` 는 행 `contextMenu` 가 받는다.
-///
-/// 필터 칩 줄만 세로 스크롤 밖에 고정한다 — glass 칩이 목록 콘텐츠 안으로 들어가면 행이
-/// 지나갈 때마다 재질을 다시 계산한다. 칩 줄 자체의 가로 스크롤은 그 바깥에서 따로 돈다.
 struct PortfolioListView: View {
 
     // MARK: - Property
@@ -128,8 +125,8 @@ struct PortfolioListView: View {
     ///
     /// 안쪽은 동시에 여러 개를 켤 수 있어 `Picker` 가 아니라 `Toggle` 이다 — 메뉴 안 `Toggle`
     /// 은 체크마크로 그려져 `Picker` 와 같은 결로 읽히면서 다중 선택을 표현한다. 행마다
-    /// 카테고리 심볼만 얹고 색은 넣지 않는다. 메뉴 행은 시스템이 그리는 영역이라 색이 반영된다는
-    /// 보장이 없고, 카테고리 색은 아래 필터 칩의 범례 dot 이 이미 나른다.
+    /// 카테고리 심볼만 얹고 색은 넣지 않는다 — 메뉴 행은 시스템이 그리는 영역이라 색이
+    /// 반영된다는 보장이 없다.
     private var categoryFilterMenu: some View {
         Menu {
             Toggle(isOn: allCategoriesSelection) {
@@ -225,14 +222,10 @@ struct PortfolioListView: View {
     @ViewBuilder
     private var loaded: some View {
         if viewModel.hasHoldings {
-            VStack(spacing: 0) {
-                activeFilterChips
-
-                if viewModel.sections.isEmpty {
-                    filteredEmpty
-                } else {
-                    holdingList
-                }
+            if viewModel.sections.isEmpty {
+                filteredEmpty
+            } else {
+                holdingList
             }
         } else {
             // 추가 버튼을 여기 한 번 더 두지 않는다 — 오른쪽 위 툴바가 목록이 비었든 찼든
@@ -243,34 +236,6 @@ struct PortfolioListView: View {
                 title: Constants.emptyTitle,
                 message: Constants.emptyMessage
             )
-        }
-    }
-
-    /// 시안 §6.2 에 칩 줄은 없다. 순자산 탭에서 카테고리를 물고 들어오는 NW-4 경로와 좌상단
-    /// 메뉴가 걸어 둔 필터를 되돌릴 자리가 필요한 동안에만 그린다. 필터를 풀면 줄 자체가
-    /// 사라져 기본 화면은 시안과 같아진다.
-    ///
-    /// 선택이 다중이 되면서 가로 스크롤을 켰다 — 다섯 카테고리를 다 켜면 "전체" 까지 여섯
-    /// 칩이라 한 줄에 들어가지 않는다. 스크롤이 없으면 뒤쪽 칩이 잘려 그 카테고리만 골라
-    /// 끄지 못한다.
-    @ViewBuilder
-    private var activeFilterChips: some View {
-        if viewModel.isCategoryFiltered {
-            ChipGroup {
-                FilterChip(Constants.allCategoriesTitle, isSelected: false) {
-                    viewModel.clearCategoryFilter()
-                }
-
-                // 켜진 칩을 누르면 그 카테고리 하나만 빠진다. 나머지 선택은 그대로 남아야
-                // 여러 개를 켜 둔 사람이 하나씩 좁혀 갈 수 있다.
-                ForEach(viewModel.selectedCategoryList, id: \.self) { category in
-                    FilterChip(category.title, isSelected: true, tint: category.color) {
-                        viewModel.toggleCategory(category)
-                    }
-                }
-            }
-            .padding(.horizontal, .spacingL)
-            .padding(.top, .spacingM)
         }
     }
 
@@ -310,8 +275,8 @@ struct PortfolioListView: View {
     /// 검색 중인지에 따라 문구를 갈아 끼운다. "다른 카테고리를 골라 보세요" 는 검색어를
     /// 넣은 사람에게는 손댈 곳을 잘못 가리킨다.
     ///
-    /// 되돌리는 버튼을 화면 안에 둔다. 칩 줄은 카테고리 필터일 때만 그려지고 검색창은
-    /// 최소화되어 접히므로, 검색어만 걸린 0건 화면에는 되돌릴 자리가 하나도 남지 않는다.
+    /// 되돌리는 버튼을 화면 안에 둔다. 검색창은 최소화되어 접히고 카테고리 해제는 좌상단
+    /// 메뉴 안에 접혀 있어, 0건 화면에는 되돌릴 자리가 눈에 보이지 않는다.
     /// 둘 다 걸렸으면 검색어를 먼저 푼다 — 그래도 0건이면 다음 화면이 필터 해제를 내민다.
     private var filteredEmpty: some View {
         let isSearching = viewModel.isSearching

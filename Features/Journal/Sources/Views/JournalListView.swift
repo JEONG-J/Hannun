@@ -136,7 +136,6 @@ struct JournalListView: View {
         case .loaded:
             if let placeholder = viewModel.placeholder {
                 placeholderView(placeholder)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 entryList
             }
@@ -149,7 +148,6 @@ struct JournalListView: View {
             ) {
                 Task { await viewModel.reload() }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -182,6 +180,12 @@ struct JournalListView: View {
 
     // MARK: - Function
 
+    /// `.noEntry` 만 CTA 를 비운다 — 하단 액세서리 캡슐 전체가 작성 버튼이라 여기 버튼을 더
+    /// 두면 같은 동작이 한 화면에 둘이 된다. 캡슐이 축약돼도 라벨이 "작성" 으로 줄 뿐 사라지지
+    /// 않으므로 다음 행동은 화면에 남는다.
+    ///
+    /// `.noMatch` 는 반대다. 무엇이 걸러냈는지가 툴바 아이콘과 접힌 검색창에만 남아 있어,
+    /// 되돌릴 버튼이 없으면 목록이 텅 빈 채로 갇힌다.
     @ViewBuilder
     private func placeholderView(_ placeholder: JournalListPlaceholder) -> some View {
         switch placeholder {
@@ -195,8 +199,11 @@ struct JournalListView: View {
             EmptyStateView(
                 systemImageName: Constants.noMatchSymbolName,
                 title: Constants.noMatchTitle,
-                message: Constants.noMatchMessage
-            )
+                message: Constants.noMatchMessage,
+                actionTitle: Constants.clearFiltersTitle
+            ) {
+                Task { await viewModel.clearFilters() }
+            }
         }
     }
 
@@ -264,6 +271,7 @@ fileprivate enum Constants {
     static let noMatchSymbolName = "magnifyingglass"
     static let noMatchTitle = "조건에 맞는 일지가 없어요"
     static let noMatchMessage = "검색어나 종목 필터를 바꿔보세요."
+    static let clearFiltersTitle = "검색·필터 해제"
 
     static let loadFailureSymbolName = "exclamationmark.triangle"
     static let loadFailureTitle = "일지를 불러오지 못했어요"

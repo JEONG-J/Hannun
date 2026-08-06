@@ -100,6 +100,24 @@ struct JournalListViewModelTests {
         #expect(viewModel.placeholder == .noMatch)
     }
 
+    /// 결과 0건 화면의 "검색·필터 해제" 가 누르는 자리. 둘 중 하나만 풀면 여전히 0건인
+    /// 화면이 남을 수 있어 한 번에 둘 다 푼다.
+    @Test("검색·필터 해제는 검색어와 종목 필터를 함께 되돌린다")
+    func clearsSearchAndHoldingFilterTogether() async {
+        let viewModel = makeViewModel()
+        await viewModel.load()
+        await viewModel.selectHolding(JournalFixture.samsung.id)
+        viewModel.searchText = "존재하지 않는 문구"
+        #expect(viewModel.placeholder == .noMatch)
+
+        await viewModel.clearFilters()
+
+        #expect(viewModel.searchText.isEmpty)
+        #expect(viewModel.selectedHoldingID == nil)
+        #expect(viewModel.placeholder == nil)
+        #expect(viewModel.visibleEntries.count == 3)
+    }
+
     /// 태그 캡슐이 분류색을 입으므로 이름만이 아니라 분류까지 따라와야 한다.
     @Test("일지에 달린 종목 식별자를 종목으로 되돌린다")
     func mapsHoldingIdentifiersToHoldings() async throws {

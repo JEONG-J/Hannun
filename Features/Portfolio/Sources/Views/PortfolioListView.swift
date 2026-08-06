@@ -307,19 +307,28 @@ struct PortfolioListView: View {
     ///
     /// 검색 중인지에 따라 문구를 갈아 끼운다. "다른 카테고리를 골라 보세요" 는 검색어를
     /// 넣은 사람에게는 손댈 곳을 잘못 가리킨다.
+    ///
+    /// 되돌리는 버튼을 화면 안에 둔다. 칩 줄은 카테고리 필터일 때만 그려지고 검색창은
+    /// 최소화되어 접히므로, 검색어만 걸린 0건 화면에는 되돌릴 자리가 하나도 남지 않는다.
+    /// 둘 다 걸렸으면 검색어를 먼저 푼다 — 그래도 0건이면 다음 화면이 필터 해제를 내민다.
     private var filteredEmpty: some View {
         let isSearching = viewModel.isSearching
 
-        return VStack {
-            EmptyStateView(
-                systemImageName: isSearching
-                    ? Constants.searchEmptySymbolName
-                    : Constants.filteredEmptySymbolName,
-                title: isSearching ? Constants.searchEmptyTitle : Constants.filteredEmptyTitle,
-                message: isSearching ? Constants.searchEmptyMessage : Constants.filteredEmptyMessage
-            )
-
-            Spacer(minLength: 0)
+        return EmptyStateView(
+            systemImageName: isSearching
+                ? Constants.searchEmptySymbolName
+                : Constants.filteredEmptySymbolName,
+            title: isSearching ? Constants.searchEmptyTitle : Constants.filteredEmptyTitle,
+            message: isSearching ? Constants.searchEmptyMessage : Constants.filteredEmptyMessage,
+            actionTitle: isSearching
+                ? Constants.clearSearchTitle
+                : Constants.clearCategoryFilterTitle
+        ) {
+            if isSearching {
+                viewModel.search("")
+            } else {
+                viewModel.clearCategoryFilter()
+            }
         }
     }
 
@@ -384,8 +393,10 @@ fileprivate enum Constants {
     static let emptyMessage = "보유 중인 현금과 종목을 넣으면 평가금액을 계산해 드려요."
     static let filteredEmptySymbolName = "line.3.horizontal.decrease"
     static let filteredEmptyTitle = "고른 카테고리에 종목이 없어요"
-    static let filteredEmptyMessage = "위 '전체'를 누르면 모든 종목을 볼 수 있어요."
+    static let filteredEmptyMessage = "필터를 풀면 모든 종목을 볼 수 있어요."
+    static let clearCategoryFilterTitle = "필터 해제"
     static let searchEmptySymbolName = "magnifyingglass"
     static let searchEmptyTitle = "검색 결과가 없어요"
     static let searchEmptyMessage = "종목명이나 티커의 일부만 넣어도 찾을 수 있어요."
+    static let clearSearchTitle = "검색어 지우기"
 }

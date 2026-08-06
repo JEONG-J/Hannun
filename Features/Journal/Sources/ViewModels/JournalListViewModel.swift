@@ -159,6 +159,13 @@ final class JournalListViewModel {
         await loadEntries()
     }
 
+    /// 검색어와 종목 필터를 한 번에 푼다 — 결과 0건 화면에서 되돌리는 유일한 경로라
+    /// 둘 중 무엇이 걸렀는지 모르는 사람도 한 번에 목록으로 돌아온다.
+    func clearFilters() async {
+        searchText = ""
+        await selectHolding(nil)
+    }
+
     private func isInCurrentMonth(_ date: Date) -> Bool {
         calendar.isDate(date, equalTo: now(), toGranularity: .month)
     }

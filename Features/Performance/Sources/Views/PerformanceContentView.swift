@@ -54,6 +54,9 @@ struct PerformanceContentView: View {
             .padding(.horizontal, .spacingL)
             .padding(.top, .spacingS)
         }
+        // 기록이 없어 빈 상태 하나만 남는 화면에서는 가운데로 세운다. 차트·캘린더가 붙어
+        // 뷰포트를 채우면 `.alignment` 는 쓰이지 않는다.
+        .defaultScrollAnchor(viewModel.hasNoRecords ? .center : .top, for: .alignment)
         .background(Color.backgroundPrimary)
         .refreshable { await viewModel.refresh() }
         // 액세서리 캡슐이 마지막 컨트롤을 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
@@ -94,8 +97,6 @@ struct PerformanceContentView: View {
         ) {
             appRouter?.navigate(to: .portfolio(category: nil))
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, .spacingXXL)
     }
 
     /// 차트는 콘텐츠라 glass 를 깔지 않는다 — 불투명 surface 카드 위에 얹는다 (UI 스펙 §4.3).

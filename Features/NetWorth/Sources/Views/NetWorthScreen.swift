@@ -35,6 +35,9 @@ struct NetWorthScreen: View {
                     .padding(.horizontal, .spacingL)
                     .padding(.top, .spacingXS)
             }
+            // 빈 상태 한 덩어리만 남는 화면에서는 가운데로 세운다. 목록·스켈레톤처럼 뷰포트를
+            // 채우는 내용에는 영향이 없다 — `.alignment` 는 내용이 더 짧을 때만 쓰인다.
+            .defaultScrollAnchor(scrollAlignment, for: .alignment)
             .background(Color.backgroundPrimary)
             // 시세 수동 갱신 경로. 액세서리 캡션은 정적이므로 이게 유일한 갱신 수단이다 (NW-2).
             .refreshable { await viewModel.load() }
@@ -58,11 +61,26 @@ struct NetWorthScreen: View {
         case .idle, .loading:
             skeleton
 
+        case let .loaded(summary) where summary.isEmpty:
+            empty
+
         case let .loaded(summary):
             loaded(summary)
 
         case let .failed(error):
             failure(error)
+        }
+    }
+
+    /// 스크롤 내용이 빈 상태 하나뿐이라 위에서부터 쌓을 이유가 없는 화면.
+    private var scrollAlignment: UnitPoint {
+        switch viewModel.summary {
+        case let .loaded(summary):
+            summary.isEmpty ? .center : .top
+        case .failed:
+            .center
+        case .idle, .loading:
+            .top
         }
     }
 
@@ -79,6 +97,23 @@ struct NetWorthScreen: View {
         .accessibilityLabel(Constants.skeletonAccessibilityLabel)
     }
 
+    /// 보유가 0건이면 히어로를 접는다. `₩0` + 변동 없음은 바로 아래 "첫 자산을 추가해 보세요"
+    /// 와 같은 말이라, 화면에서 가장 큰 숫자 자리를 빈 값에 내주면 안내가 묻힌다.
+    /// 총자산을 말할 자리는 액세서리가 그대로 들고 있다 (히어로가 없으니 교대도 없다).
+    private var empty: some View {
+        EmptyStateView(
+            systemImageName: Constants.emptySymbolName,
+            title: Constants.emptyTitle,
+            message: Constants.emptyMessage,
+            actionTitle: Constants.emptyActionTitle
+        ) {
+            appRouter?.navigate(to: .portfolio(category: nil))
+        }
+        // 히어로가 사라지면 교대 신호도 멈춘다 — 마지막으로 내려간 값이 남아 있으면
+        // 액세서리가 계속 `₩0` 을 말한다.
+        .onAppear { viewModel.isHeroVisible = true }
+    }
+
     private func loaded(_ summary: NetWorthSummary) -> some View {
         VStack(alignment: .leading, spacing: .spacingL) {
             TotalAssetBlock(total: summary.total, change: summary.dailyChange)
@@ -87,24 +122,11 @@ struct NetWorthScreen: View {
                     viewModel.isHeroVisible = $0
                 }
 
-            if summary.isEmpty {
-                EmptyStateView(
-                    systemImageName: Constants.emptySymbolName,
-                    title: Constants.emptyTitle,
-                    message: Constants.emptyMessage,
-                    actionTitle: Constants.emptyActionTitle
-                ) {
-                    appRouter?.navigate(to: .portfolio(category: nil))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, .spacingXXL)
-            } else {
-                AllocationCard(
-                    breakdown: summary.fundedBreakdown,
-                    selection: $viewModel.selectedCategory
-                ) { category in
-                    appRouter?.navigate(to: .portfolio(category: category))
-                }
+            AllocationCard(
+                breakdown: summary.fundedBreakdown,
+                selection: $viewModel.selectedCategory
+            ) { category in
+                appRouter?.navigate(to: .portfolio(category: category))
             }
         }
         .hannunAnimation(.standard, value: summary)
@@ -119,8 +141,6 @@ struct NetWorthScreen: View {
         ) {
             Task { await viewModel.load() }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, .spacingXXL)
     }
 }
 

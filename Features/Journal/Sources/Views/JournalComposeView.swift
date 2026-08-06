@@ -19,11 +19,10 @@ import SwiftUI
 /// 끝이 있지만 제목·본문은 길이가 정해지지 않은 입력이다. 끝나는 입력을 위에 두면 아래로
 /// 내려갈수록 화면이 열리고, 키보드가 올라와도 그 아래에서 밀려날 것이 없다.
 ///
-/// 시스템이 그리는 면은 두 군데를 덮는다 — 섹션 배경(`surfacePrimary`)과 헤더 타이포다.
-/// Form 기본 헤더는 대문자로 갈아 버리는 caption 이라 `textCase(nil)` 로 되돌린 뒤 토큰
-/// 서체를 다시 입힌다. 섹션 모서리 반경은 시스템 insetGrouped 값(시안 §6.8 의 16 보다 작다)을
-/// 그대로 둔다 — 그 하나 때문에 리스트를 직접 그리면 폼이 주는 키보드·포커스 처리가 통째로
-/// 날아간다.
+/// 세 섹션 모두 헤더를 달지 않는다 — 행 라벨과 placeholder 가 이미 무엇을 적는 자리인지
+/// 말한다. 시스템이 그리는 면은 섹션 배경(`surfacePrimary`)으로 덮는다. 섹션 모서리 반경은
+/// 시스템 insetGrouped 값(시안 §6.8 의 16 보다 작다)을 그대로 둔다 — 그 하나 때문에 리스트를
+/// 직접 그리면 폼이 주는 키보드·포커스 처리가 통째로 날아간다.
 struct JournalComposeView: View {
     // MARK: - Property
 
@@ -140,8 +139,6 @@ struct JournalComposeView: View {
             }
 
             contentField
-        } header: {
-            sectionHeader(Constants.entrySectionTitle)
         }
         .listRowBackground(Color.surfacePrimary)
     }
@@ -236,15 +233,6 @@ struct JournalComposeView: View {
         return "\(count)\(Constants.selectionCountSuffix)"
     }
 
-    /// Form 기본 헤더는 대문자로 갈아 버리는 시스템 caption 이다. `textCase(nil)` 로 되돌린 뒤
-    /// 토큰 서체를 다시 입혀 다른 화면의 라벨과 같은 목소리로 만든다.
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .hannunFont(.caption)
-            .foregroundStyle(Color.textSecondary)
-            .textCase(nil)
-    }
-
     /// 셋 다 글자가 아니라 심볼로 세운다 — 인라인 제목 양옆에서 글자가 마주 서면 제목이
     /// 여러 덩어리 중 하나로 묻히고, 좁은 폭에서 먼저 잘리는 것도 이 자리다. 문구는 접근성
     /// 라벨로 남아 VoiceOver 에는 그대로 읽힌다 (일지 상세 툴바와 같은 형).
@@ -308,7 +296,6 @@ fileprivate enum Constants {
 
     static let writtenAtTitle = "작성 시각"
 
-    static let entrySectionTitle = "내용"
     static let titlePlaceholder = "제목"
     static let contentPlaceholder = "무엇을, 왜 샀는지 남겨보세요"
     static let contentLineLimit = 8

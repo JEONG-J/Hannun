@@ -249,6 +249,7 @@ private struct PerformanceContentPreview: View {
         NavigationStack {
             PerformanceContentView(viewModel: viewModel)
                 .navigationTitle("투자 성과")
+                .navigationBarTitleDisplayMode(.inline)
         }
         .task { await viewModel.loadIfNeeded() }
     }

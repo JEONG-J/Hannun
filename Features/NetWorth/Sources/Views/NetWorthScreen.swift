@@ -39,6 +39,7 @@ struct NetWorthScreen: View {
             // 시세 수동 갱신 경로. 액세서리 캡션은 정적이므로 이게 유일한 갱신 수단이다 (NW-2).
             .refreshable { await viewModel.load() }
             .navigationTitle(Constants.navigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
             // 액세서리 캡슐이 마지막 카드를 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
             .safeAreaPadding(.bottom, .spacingXL)
         }

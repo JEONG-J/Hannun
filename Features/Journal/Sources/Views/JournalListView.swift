@@ -45,6 +45,7 @@ struct JournalListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.backgroundPrimary)
                 .navigationTitle(Constants.screenTitle)
+                .navigationBarTitleDisplayMode(.inline)
                 .navigationSubtitle(subtitleText)
                 .navigationDestination(for: JournalRoute.self, destination: detail(for:))
                 .toolbar { holdingFilterItem }
@@ -61,7 +62,7 @@ struct JournalListView: View {
         .task { await viewModel.load() }
     }
 
-    /// 큰 제목 아래 한 줄 — 지금 목록이 무엇을 보여 주고 있는지 (디자인 문서 §4.0).
+    /// 제목 아래 한 줄 — 지금 목록이 무엇을 보여 주고 있는지 (디자인 문서 §4.0).
     /// 하단 액세서리에서 올라왔다. 목록의 범위를 말하는 문장이라 제목 옆이 제자리고,
     /// 화면 반대쪽 끝에 있으면 제목과 눈이 두 번 오간다.
     ///

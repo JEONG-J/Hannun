@@ -74,6 +74,8 @@ public struct TrendLineChart<Header: View>: View {
 
     // MARK: - Property
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private let points: [TrendPoint]
     private let benchmarks: [TrendSeries]
     private let insufficientDataMessage: String
@@ -115,12 +117,26 @@ public struct TrendLineChart<Header: View>: View {
         }
     }
 
-    /// 범례와 슬롯이 한 줄을 나눠 쓴다. AX5 에서 둘이 한 줄에 안 들어가면 범례 → 슬롯
+    /// 범례와 슬롯이 한 줄을 나눠 쓴다. AX 사이즈에서 둘이 한 줄에 안 들어가면 범례 → 슬롯
     /// 2행으로 접는다 — 어느 쪽도 줄이지 않는다. 가로 갈래에서 슬롯을 `fixedSize` 로
     /// 묶는 이유는 세그먼트가 `maxWidth: .infinity` 로 남은 폭을 다 먹어 범례를 밀어내지
     /// 않게 하기 위해서다.
+    ///
+    /// 폭을 실측하는 `ViewThatFits` 대신 Dynamic Type 으로 가르는 건 크래시 회피다.
+    /// `ViewThatFits` 는 후보를 **레이아웃 패스에서** 재고, 그때 범례와 슬롯의 `ForEach`
+    /// 항목이 만들어진다. `View` 준수로 그 클로저는 `@MainActor` 로 추론되는데 SwiftUI 는
+    /// `@preconcurrency` 라 컴파일 보장 대신 런타임 실행자 검사를 심는다 — 차트가 그려져
+    /// SwiftUI 가 레이아웃을 `AsyncRenderer` 스레드로 넘기면 그 검사가 메인 큐가 아니라며
+    /// 트랩한다. 재는 컨테이너를 없애면 항목 생성이 메인 스레드 업데이트 패스로 돌아온다.
+    @ViewBuilder
     private var headerRow: some View {
-        ViewThatFits(in: .horizontal) {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: .spacingS) {
+                if showsLegend { legend }
+
+                header
+            }
+        } else {
             HStack(spacing: .spacingM) {
                 if showsLegend { legend }
 
@@ -128,12 +144,6 @@ public struct TrendLineChart<Header: View>: View {
 
                 header
                     .fixedSize(horizontal: true, vertical: false)
-            }
-
-            VStack(alignment: .leading, spacing: .spacingS) {
-                if showsLegend { legend }
-
-                header
             }
         }
     }

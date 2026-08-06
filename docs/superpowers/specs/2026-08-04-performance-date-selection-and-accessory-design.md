@@ -269,7 +269,10 @@ TrendLineChart(points:benchmarks:insufficientDataMessage:selection:) {
 - 헤더 줄은 **범례가 없어도** 슬롯 내용이 있으면 그린다(현재는 `showsLegend` 하나로 결정)
 - 데이터 1건 이하로 `insufficientDataNotice` 를 그릴 때도 헤더 줄은 남긴다 — 단위를 바꾸면
   점 개수가 달라질 수 있으므로 그 상태에서야말로 컨트롤이 필요하다
-- AX5 에서 범례 + 세그먼트가 한 줄에 안 들어가면 `ViewThatFits` 로 2행(범례 → 세그먼트) 폴백
+- AX 사이즈에서 범례 + 세그먼트가 한 줄에 안 들어가면 2행(범례 → 세그먼트)으로 접는다.
+  분기는 `dynamicTypeSize.isAccessibilitySize` 로 한다 — `ViewThatFits` 는 후보를 레이아웃
+  패스에서 재고, 그 안의 `ForEach` 항목 생성이 SwiftUI `AsyncRenderer` 스레드로 넘어가면
+  `@MainActor` 런타임 실행자 검사가 트랩한다
 
 ### 5.4 액세서리에서 제거
 
@@ -408,7 +411,7 @@ TrendLineChart(points:benchmarks:insufficientDataMessage:selection:) {
 | 위험 | 완화 |
 |------|------|
 | 선택 링과 손실 스트로크가 겹쳐 지저분해 보인다 | 채움을 전 셀 2pt 인셋해 두 테두리를 물리적으로 분리. 손실 셀 선택 프리뷰로 눈으로 확인 |
-| 차트 헤더에 범례 + 세그먼트가 AX5 에서 넘친다 | `ViewThatFits` 2행 폴백 + AX5 프리뷰 |
+| 차트 헤더에 범례 + 세그먼트가 AX5 에서 넘친다 | `isAccessibilitySize` 2행 폴백 + AX5 프리뷰 |
 | 지수 이름이 길어 `.expanded` 액세서리가 좁아진다 | §3.1 규칙대로 leading 이 먼저 양보한다 (`AccessoryCaption.expandable()` 이 이미 그 역할) |
 | `PeriodSegment` 재구현이 예약 컴포넌트를 깬다 | 호출부가 없어 회귀 대상이 없다. 프리뷰로 시각 동등성만 확인 |
 | 월 점프 격자 전환 중 재조회가 겹친다 | 기존 `calendarRequestID` 세대 토큰이 그대로 막는다 |

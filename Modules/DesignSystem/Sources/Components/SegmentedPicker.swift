@@ -19,14 +19,15 @@ import SwiftUI
 /// ```swift
 /// SegmentedPicker(TrendGranularity.allCases, selection: $granularity) { $0.title }
 /// ```
-public struct SegmentedPicker<Value: Hashable>: View {
+/// `Value` 에 `Sendable` 을 요구하는 이유는 아래 `row(isEvenlyDivided:)` 주석에 있다.
+public struct SegmentedPicker<Value: Hashable & Sendable>: View {
 
     // MARK: - Property
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let values: [Value]
-    private let label: (Value) -> String
+    private let label: @Sendable (Value) -> String
 
     @Binding private var selection: Value
 
@@ -35,15 +36,19 @@ public struct SegmentedPicker<Value: Hashable>: View {
     public init(
         _ values: [Value],
         selection: Binding<Value>,
-        label: @escaping (Value) -> String
+        label: @escaping @Sendable (Value) -> String
     ) {
         self.values = values
         self.label = label
         _selection = selection
     }
 
+    /// 서체와 버튼 스타일은 세그먼트마다 붙이지 않고 트랙에 한 번 건다 — 둘 다 환경으로 흘러
+    /// 하위 `Text`·`Button` 에 그대로 닿고, 아래 `row(isEvenlyDivided:)` 가 메인 액터를 벗어날 수 있다.
     public var body: some View {
         track
+            .hannunFont(.pillLabel)
+            .buttonStyle(.plain)
             .hannunGlass(.periodSegment)
             .hannunAnimation(.selection, value: selection)
     }
@@ -63,20 +68,38 @@ public struct SegmentedPicker<Value: Hashable>: View {
         }
     }
 
-    private func row(isEvenlyDivided: Bool) -> some View {
-        HStack(spacing: 0) {
-            ForEach(values, id: \.self) { segment($0, isEvenlyDivided: isEvenlyDivided) }
+    /// `ForEach` 의 내용 클로저는 `nonisolated` 로 만든다 — 여기가 이 컨트롤의 크래시 지점이었다.
+    ///
+    /// `View` 프로토콜이 `@preconcurrency @MainActor` 라 이 타입 전체가 `@MainActor` 로 추론되는데,
+    /// `ForEach.content` 는 격리 없는 `(Data.Element) -> Content` 다. `@MainActor` 클로저를 그 자리에
+    /// 넣으면 컴파일러가 **런타임 실행자 검사**를 심고, SwiftUI 가 `com.apple.SwiftUI.AsyncRenderer`
+    /// 스레드에서 레이아웃을 돌며 이 지연 클로저를 당기는 순간 `dispatch_assert_queue` 로 트랩한다.
+    /// 애니메이션이 붙은 차트 헤더에 들어갔을 때 실제로 터졌다.
+    ///
+    /// 뷰를 조립하는 순수 계산이라 메인 액터가 필요 없다 (`CalendarHeatmap` 의 `nonisolated` 와 같은 이유).
+    /// 격리를 떼면 검사가 사라져 어느 스레드가 당겨도 안전하다 — 대신 `self` 를 건너보내야 하므로
+    /// `Value: Sendable`(→ `Binding` 도 Sendable) 과 `@Sendable` 라벨이 따라온다.
+    nonisolated private func row(isEvenlyDivided: Bool) -> some View {
+        let selection = _selection.wrappedValue
+
+        return HStack(spacing: 0) {
+            ForEach(values, id: \.self) {
+                segment($0, isSelected: $0 == selection, isEvenlyDivided: isEvenlyDivided)
+            }
         }
         .padding(Constants.trackPadding)
     }
 
-    private func segment(_ value: Value, isEvenlyDivided: Bool) -> some View {
+    nonisolated private func segment(
+        _ value: Value,
+        isSelected: Bool,
+        isEvenlyDivided: Bool
+    ) -> some View {
         Button {
-            selection = value
+            _selection.wrappedValue = value
         } label: {
             Text(label(value))
-                .hannunFont(.pillLabel)
-                .foregroundStyle(value == selection ? Color.brand : Color.textSecondary)
+                .foregroundStyle(isSelected ? Color.brand : Color.textSecondary)
                 .lineLimit(1)
                 .fixedSize(horizontal: !isEvenlyDivided, vertical: false)
                 .padding(.horizontal, isEvenlyDivided ? 0 : .spacingM)
@@ -85,14 +108,13 @@ public struct SegmentedPicker<Value: Hashable>: View {
                     minHeight: .minimumTouchTarget
                 )
                 .background {
-                    if value == selection {
+                    if isSelected {
                         Capsule().fill(HannunTint.brandTint)
                     }
                 }
                 .contentShape(.capsule)
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(value == selection ? .isSelected : [])
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

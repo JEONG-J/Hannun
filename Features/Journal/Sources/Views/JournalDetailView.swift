@@ -96,8 +96,11 @@ struct JournalDetailView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            Button(Constants.editTitle) { onEdit(viewModel.record) }
-                .disabled(viewModel.isDeleting)
+            Button(Constants.editTitle, systemImage: Constants.editSymbolName) {
+                onEdit(viewModel.record)
+            }
+            .labelStyle(.iconOnly)
+            .disabled(viewModel.isDeleting)
         }
 
         ToolbarItem(placement: .topBarTrailing) {
@@ -118,5 +121,6 @@ fileprivate enum Constants {
     static let screenTitle = "일지"
     static let editTitle = "수정"
     static let deleteTitle = "삭제"
+    static let editSymbolName = "square.and.pencil"
     static let deleteSymbolName = "trash"
 }

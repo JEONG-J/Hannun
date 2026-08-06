@@ -51,6 +51,7 @@ struct PortfolioListView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.backgroundPrimary)
             .navigationTitle(Constants.screenTitle)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 listControlToolbarItem
                 addHoldingToolbarItem

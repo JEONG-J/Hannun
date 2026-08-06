@@ -45,6 +45,7 @@ private struct PerformanceScreen: View {
         NavigationStack {
             PerformanceContentView(viewModel: viewModel)
                 .navigationTitle(Constants.navigationTitle)
+                .navigationBarTitleDisplayMode(.inline)
                 // 벤치마크는 저빈도라 액세서리가 아니라 툴바 아이콘 하나로 내렸다 (문서 §7).
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {

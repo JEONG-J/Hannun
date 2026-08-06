@@ -41,6 +41,42 @@ enum PerformanceSummary: Equatable, Sendable {
     }
 }
 
+/// 성과 화면이 지금 무슨 값을 그리고 있는지. 차트 축과 액세서리 컨트롤이 함께 본다.
+///
+/// 바꿔도 다시 조회하지 않는다 — `PerformanceTrend` 가 수익률과 시점별 총자산을 이미 둘 다
+/// 들고 있어서 같은 데이터를 다른 축으로 옮겨 그리는 일이다.
+enum PerformanceValueUnit: Equatable, Sendable {
+
+    /// 기간 시작을 0 으로 둔 % 정규화 값.
+    case percent
+
+    /// 그 시점의 총자산.
+    case amount
+
+    // MARK: - Property
+
+    /// 컨트롤에 적는 글리프. 라벨이 곧 **지금** 켜진 단위다 (UI 스펙 §3.1 전환형 컨트롤).
+    var title: String {
+        switch self {
+        case .percent: "%"
+        case .amount: "₩"
+        }
+    }
+
+    /// VoiceOver 가 읽을 이름. 글리프를 그대로 읽히면 "퍼센트 기호" 가 된다.
+    var displayName: String {
+        switch self {
+        case .percent: "수익률"
+        case .amount: "평가금액"
+        }
+    }
+
+    /// 누르면 넘어갈 단위. 두 갈래뿐이라 반대편이 곧 다음 상태다.
+    var toggled: PerformanceValueUnit {
+        self == .percent ? .amount : .percent
+    }
+}
+
 /// 차트가 한 번에 그릴 데이터 묶음 (PM-2, PM-4).
 struct PerformanceTrend: Equatable, Sendable {
 

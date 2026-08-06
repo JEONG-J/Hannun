@@ -132,6 +132,12 @@ public enum AmountFormatter {
         NSDecimalNumber(decimal: ratio * Constants.percentScale).doubleValue
     }
 
+    /// 차트 축에 올릴 금액. `percentPlotValue(ratio:)` 의 금액 갈래이며 배율을 두지 않는다 —
+    /// 축 값이 곧 원 단위 금액이라 `currencyAxisLabel(plotValue:)` 이 그대로 되읽는다.
+    public static func currencyPlotValue(_ money: Money) -> Double {
+        NSDecimalNumber(decimal: money.amount).doubleValue
+    }
+
     /// 차트 Y축 눈금 라벨 — `+9%` · `0%` · `-3%`.
     ///
     /// `percentPlotValue(ratio:)` 가 옮겨 놓은 백분율 눈금을 그대로 받는다. 축은 라벨을 놓을
@@ -148,6 +154,17 @@ public enum AmountFormatter {
         )
         let sign = sign(of: Decimal(rounded), showsPositiveSign: true)
         return sign + magnitude + Constants.percentUnit
+    }
+
+    /// 차트 Y축 눈금 라벨의 금액 갈래 — `₩1.234억` · `₩5,234만`.
+    ///
+    /// 통화를 원화로 못 박는다. 축 값은 통화를 잃은 `Double` 이고, 이 라벨을 쓰는 추이 차트는
+    /// 기준통화(원화)로 환산된 총자산만 그린다 — 다른 통화가 들어올 자리가 없다.
+    ///
+    /// 접는 규칙은 `narrow(_:)` 를 그대로 빌린다. 240pt 플롯의 축 라벨 두 개는 도넛 홀과 같은
+    /// 폭 제약을 받으므로 두 단위를 이어 붙이는 `compact(_:)` 는 들어가지 않는다.
+    public static func currencyAxisLabel(plotValue: Double) -> String {
+        narrow(.krw(Decimal(plotValue)))
     }
 
     /// 소수 자릿수를 값에 맞춰 줄인다 — 10주는 `10`, 0.0521 BTC 는 `0.0521` 로 찍힌다.

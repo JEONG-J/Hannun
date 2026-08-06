@@ -67,6 +67,11 @@ private struct PerformanceScreen: View {
         .sheet(isPresented: $viewModel.isBenchmarkPickerPresented) {
             BenchmarkPickerSheet(viewModel: self.viewModel)
         }
+        // 기간 구간 시트도 같은 층이다 — 여는 손잡이(차트 헤더의 기간 메뉴)는 본문에 있지만,
+        // 본문 화면이 바뀌어도 고르던 구간이 함께 사라지면 안 된다.
+        .sheet(isPresented: $viewModel.isPeriodRangePickerPresented) {
+            PeriodRangeSheet(viewModel: self.viewModel)
+        }
         .task { await viewModel.loadIfNeeded() }
     }
 }

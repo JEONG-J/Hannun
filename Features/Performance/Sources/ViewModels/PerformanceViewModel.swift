@@ -33,6 +33,9 @@ final class PerformanceViewModel {
     private(set) var granularity: TrendGranularity = Constants.initialGranularity
     private(set) var selectedBenchmark: BenchmarkIndex?
 
+    /// 차트와 액세서리가 지금 말하는 단위. 액세서리 오른쪽 컨트롤이 뒤집는다.
+    private(set) var valueUnit: PerformanceValueUnit = Constants.initialValueUnit
+
     /// 캘린더에서 고른 날. 다음 선택이나 월 이동 전까지 남는다.
     private(set) var selectedDate: Date?
 
@@ -56,6 +59,9 @@ final class PerformanceViewModel {
 
     /// 벤치마크 선택 시트가 떠 있는지. 툴바 아이콘을 눌러 연다 (디자인 문서 §7).
     var isBenchmarkPickerPresented = false
+
+    /// 기간 구간 시트가 떠 있는지. 기간 메뉴의 "직접 선택…" 이 연다.
+    var isPeriodRangePickerPresented = false
 
     /// 본문 헤드라인이 아직 화면에 있는지. 액세서리 왼쪽이 무엇을 말할지를 이 값이 정한다.
     var isHeroVisible = true
@@ -115,10 +121,7 @@ final class PerformanceViewModel {
     /// ALL 구간 조회를 한 번 더 태워야 한다 — 들어가 봐야 이미 있는 "이 달에는 기록이 없어요"
     /// 가 말해 주므로 그 비용을 쓰지 않는다.
     var disabledMonths: Set<Int> {
-        let latest = latestSelectableMonth(inYear: displayedYear)
-        guard latest < Constants.monthsPerYear else { return [] }
-
-        return Set((latest + 1)...Constants.monthsPerYear)
+        disabledMonths(inYear: displayedYear)
     }
 
     /// 캘린더가 보고 있는 년. 월 점프 격자의 헤더와 비활성 계산이 함께 쓴다.
@@ -129,6 +132,12 @@ final class PerformanceViewModel {
     /// 캘린더가 보고 있는 달의 번호(1~12).
     var displayedMonth: Int {
         calendar.component(.month, from: calendarMonth)
+    }
+
+    /// 올해. 년 점프 격자가 가장 최신 페이지의 끝을 이 값으로 잡는다 — 주입된 시계를 함께
+    /// 써야 프리뷰·테스트에서 격자와 비활성 계산이 같은 "오늘" 을 본다.
+    var currentYear: Int {
+        calendar.component(.year, from: now())
     }
 
     /// 상단 큰 숫자. 보고 있는 시점이 있으면 그 값이 연초 대비 값을 대신한다.
@@ -166,9 +175,25 @@ final class PerformanceViewModel {
 
     /// 차트에 겹칠 벤치마크. 비교가 꺼져 있거나 선택이 없거나 조회에 실패한 지수면
     /// 아무것도 그리지 않는다.
+    ///
+    /// **금액 축을 그리는 동안에도 아무것도 내주지 않는다.** 지수는 등락률이라 원화 축에
+    /// 얹으면 두 선의 기울기가 서로 무관해진다 (UI 스펙 §4.3 오버레이 규칙). 여기 한 곳만
+    /// 막으면 차트 오버레이와 액세서리의 초과수익 문구가 함께 사라진다 — 호출부마다 분기하면
+    /// 언젠가 한쪽만 남는다.
     var overlaidBenchmark: BenchmarkSeries? {
-        guard isBenchmarkOverlayEnabled, let selectedBenchmark else { return nil }
+        guard valueUnit == .percent, isBenchmarkOverlayEnabled, let selectedBenchmark else {
+            return nil
+        }
+
         return trendState.value?.benchmarks.first { $0.index == selectedBenchmark }
+    }
+
+    /// 추이 마지막 시점의 총자산. 액세서리 왼쪽이 히어로가 보이는 동안 말하는 값이다.
+    ///
+    /// `totals` 는 딕셔너리라 순서가 없어 가장 늦은 날짜로 고른다. 추이가 아직 없거나 그
+    /// 구간에 기록이 없으면 `nil` 이고, 그때 액세서리는 아래 대역으로 흘러간다.
+    var latestTotal: Money? {
+        trendState.value?.totals.max { $0.key < $1.key }?.value
     }
 
     /// 액세서리 한 줄이 말하는 초과수익 — "S&P500 대비 +1.4%p".
@@ -214,10 +239,6 @@ final class PerformanceViewModel {
             rate: point.rate,
             amount: trend.totals[point.date]
         )
-    }
-
-    private var currentYear: Int {
-        calendar.component(.year, from: now())
     }
 
     // MARK: - Function
@@ -353,14 +374,32 @@ final class PerformanceViewModel {
         await setMonth(target)
     }
 
+    /// 년 점프 격자가 부르는 진입점 — 해를 옮겨도 보고 있던 달을 그대로 유지한다.
+    ///
+    /// 다만 옮긴 해에서 그 달이 아직 오지 않았다면 그 해의 마지막 유효한 달로 당긴다. 그러지
+    /// 않으면 한 걸음에 미래로 넘어가 격자가 전부 비활성인 채 "기록이 없어요" 만 뜬다.
+    ///
+    /// 미래 해는 고를 수 있는 달이 아예 없어(`0`) guard 에 걸린다 — 격자가 미래 연도를
+    /// 그리지 않지만, 0 을 그대로 넘기면 `DateComponents` 가 전 해 12월로 굴러간다.
+    func showYear(_ year: Int) async {
+        let month = min(displayedMonth, latestSelectableMonth(inYear: year))
+
+        guard
+            month > 0,
+            let target = calendar.date(from: DateComponents(year: year, month: month))
+        else { return }
+
+        await setMonth(target)
+    }
+
     /// 월 점프 격자가 펼쳐진 동안 ◀▶ 가 부른다.
     func showPreviousYear() async {
-        await showYear(offsetBy: -1)
+        await showYear(displayedYear - 1)
     }
 
     func showNextYear() async {
         guard canShowNextYear else { return }
-        await showYear(offsetBy: 1)
+        await showYear(displayedYear + 1)
     }
 
     /// 캘린더 셀 탭의 유일한 진입점. 같은 날을 다시 누르면 선택이 풀린다 — 펼친 상세 줄을
@@ -387,6 +426,12 @@ final class PerformanceViewModel {
         await loadTrend()
     }
 
+    /// 액세서리 오른쪽 컨트롤이 부른다. 축만 바꾸므로 재조회하지 않는다 — 시점별 총자산은
+    /// 이미 `trend.totals` 에 들어 있다.
+    func toggleValueUnit() {
+        valueUnit = valueUnit.toggled
+    }
+
     /// 같은 지수를 다시 고르면 선택이 풀린다 — 겹칠 벤치마크는 0~1개다 (UI 스펙 §4.3).
     func toggleBenchmark(_ index: BenchmarkIndex) {
         selectBenchmark(selectedBenchmark == index ? nil : index)
@@ -407,34 +452,48 @@ final class PerformanceViewModel {
         isBenchmarkOverlayEnabled.toggle()
     }
 
+    /// 그 해에서 고를 수 없는 달. 캘린더 카드의 월 점프 격자와 기간 구간 시트가 함께 쓴다 —
+    /// 두 격자가 같은 달을 놓고 서로 다른 답을 내면 안 되므로 규칙을 여기 하나만 둔다.
+    func disabledMonths(inYear year: Int) -> Set<Int> {
+        let latest = latestSelectableMonth(inYear: year)
+        guard latest < Constants.monthsPerYear else { return [] }
+
+        return Set((latest + 1)...Constants.monthsPerYear)
+    }
+
     /// 아직 받아오기 전에는 전부 활성으로 둔다 — 없다고 단정할 근거가 없다.
     func isBenchmarkAvailable(_ index: BenchmarkIndex) -> Bool {
         guard let trend = trendState.value else { return true }
         return !trend.unavailableIndices.contains(index)
     }
 
-    /// 기간 세그먼트가 고른 구간. `.all` 은 첫 기록 시점을 알 수 없어 하한을 두지 않는다.
+    /// 기간 메뉴가 고른 구간. `.all` 은 첫 기록 시점을 알 수 없어 하한을 두지 않는다.
+    ///
+    /// 종료 시각까지 함께 고르는 건 `.custom` 뿐이다 — 프리셋은 전부 "지금까지" 라서
+    /// `now` 로 끝난다.
     static func dateRange(
         for period: ChartPeriod,
         now: Date,
         calendar: Calendar
     ) -> (start: Date, end: Date) {
-        let start: Date? = switch period {
+        let range: (start: Date?, end: Date) = switch period {
         case .oneMonth:
-            calendar.date(byAdding: .month, value: -1, to: now)
+            (calendar.date(byAdding: .month, value: -1, to: now), now)
         case .threeMonths:
-            calendar.date(byAdding: .month, value: -3, to: now)
+            (calendar.date(byAdding: .month, value: -3, to: now), now)
         case .sixMonths:
-            calendar.date(byAdding: .month, value: -6, to: now)
+            (calendar.date(byAdding: .month, value: -6, to: now), now)
         case .yearToDate:
-            calendar.date(from: calendar.dateComponents([.year], from: now))
+            (calendar.date(from: calendar.dateComponents([.year], from: now)), now)
         case .oneYear:
-            calendar.date(byAdding: .year, value: -1, to: now)
+            (calendar.date(byAdding: .year, value: -1, to: now), now)
         case .all:
-            Date.distantPast
+            (Date.distantPast, now)
+        case let .custom(start, end):
+            (start, end)
         }
 
-        return (start ?? .distantPast, now)
+        return (range.start ?? .distantPast, range.end)
     }
 
     /// 캘린더가 조회할 구간 — **그 달 1일의 하루 전 ~ 말일 끝**.
@@ -453,20 +512,6 @@ final class PerformanceViewModel {
 
     static func startOfMonth(_ date: Date, calendar: Calendar) -> Date? {
         calendar.date(from: calendar.dateComponents([.year, .month], from: date))
-    }
-
-    /// 해를 옮겨도 보고 있던 달을 그대로 유지한다. 다만 옮긴 해에서 그 달이 아직 오지
-    /// 않았다면 그 해의 마지막 유효한 달로 당긴다 — 년 화살표 한 번에 미래로 넘어가면
-    /// 격자가 전부 비활성인 채 "기록이 없어요" 만 뜬다.
-    private func showYear(offsetBy years: Int) async {
-        let year = displayedYear + years
-        let month = min(displayedMonth, latestSelectableMonth(inYear: year))
-
-        guard let target = calendar.date(from: DateComponents(year: year, month: month)) else {
-            return
-        }
-
-        await setMonth(target)
     }
 
     /// 그 해에서 고를 수 있는 마지막 달. 지난 해는 12월까지, 올해는 이번 달까지다.
@@ -572,5 +617,6 @@ fileprivate enum Constants {
     static let baseCurrency: Currency = .krw
     static let initialPeriod: ChartPeriod = .yearToDate
     static let initialGranularity: TrendGranularity = .daily
+    static let initialValueUnit: PerformanceValueUnit = .percent
     static let monthsPerYear = 12
 }

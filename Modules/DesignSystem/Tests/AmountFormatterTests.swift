@@ -86,6 +86,24 @@ struct AmountFormatterTests {
         #expect(AmountFormatter.percentAxisLabel(plotValue: plotValue) == "+9.4%")
     }
 
+    /// 축 라벨 두 개가 240pt 플롯 옆에 서므로 도넛 홀과 같은 폭 제약을 받는다 — 단위를
+    /// 이어 붙이는 `compact` 가 아니라 하나로 끊는 `narrow` 규칙을 쓴다.
+    @Test("금액 Y축 눈금은 단위 하나로 접는다")
+    func currencyAxisLabelFoldsIntoSingleUnit() {
+        #expect(AmountFormatter.currencyAxisLabel(plotValue: 123_400_000) == "₩1.234억")
+        #expect(AmountFormatter.currencyAxisLabel(plotValue: 52_340_000) == "₩5,234만")
+        #expect(AmountFormatter.currencyAxisLabel(plotValue: 0) == "₩0")
+    }
+
+    /// 금액 축은 배율을 두지 않는다 — 플롯 값이 곧 원 단위라 라벨이 그대로 되읽는다.
+    @Test("금액 Y축 라벨은 플롯 값과 같은 눈금을 읽는다")
+    func currencyAxisLabelReadsPlotScale() {
+        let plotValue = AmountFormatter.currencyPlotValue(.krw(123_400_000))
+
+        #expect(plotValue == 123_400_000)
+        #expect(AmountFormatter.currencyAxisLabel(plotValue: plotValue) == "₩1.234억")
+    }
+
     @Test("수량은 값에 맞춰 소수부를 줄인다")
     func quantityTrimsFractionDigits() {
         #expect(AmountFormatter.quantity(10) == "10")

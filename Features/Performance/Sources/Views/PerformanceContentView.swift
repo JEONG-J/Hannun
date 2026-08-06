@@ -12,12 +12,15 @@ import SwiftUI
 
 /// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트 → 월간 수익률 캘린더.
 ///
-/// 차트를 바꾸는 컨트롤은 전부 차트 카드 안에 있다 — 단위(일별/월별)는 가로축 바로 위 헤더에,
-/// 기간은 플롯 바로 아래 세그먼트에. 둘 다 바꾸는 대상에 붙어 있어야 무엇이 달라졌는지 눈이
-/// 따라간다 (UI 스펙 §4.3). 벤치마크 고르기만 툴바 + 시트로 내렸다.
+/// 차트의 **가로축**을 바꾸는 컨트롤은 차트 카드 헤더 한 줄에 모여 있다 — 왼쪽에 기간 메뉴,
+/// 오른쪽에 단위(일별/월별) 세그먼트. 둘 다 바꾸는 대상 바로 위에 붙어 있어야 무엇이
+/// 달라졌는지 눈이 따라간다 (UI 스펙 §4.3). 벤치마크 고르기는 툴바 + 시트로 내렸고,
+/// 세로축을 뒤집는 %↔₩ 전환만 액세서리에 있다 — 그 축은 액세서리 왼쪽 문구와 함께 바뀐다.
 struct PerformanceContentView: View {
 
     // MARK: - Property
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Bindable private var viewModel: PerformanceViewModel
 
@@ -28,37 +31,42 @@ struct PerformanceContentView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: .spacingXL) {
-                if viewModel.isStale {
-                    StaleBadge(message: Constants.staleMessage)
-                }
-
-                headline
-                    // 히어로가 밀려 나가면 액세서리가 수익률을 대신 말한다 (디자인 문서 §6).
-                    .onScrollVisibilityChange(threshold: Constants.heroVisibilityThreshold) {
-                        viewModel.isHeroVisible = $0
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: .spacingXL) {
+                    if viewModel.isStale {
+                        StaleBadge(message: Constants.staleMessage)
                     }
 
-                // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
-                // 쌓이면…" 안내가 같은 화면에 두 번 나온다. 캘린더도 같이 감춘다 — 기록이
-                // 없으면 어느 달로 넘겨도 빈 격자라 넘길 이유 자체가 없다.
-                if !viewModel.hasNoRecords {
-                    chartCard
+                    headline
+                        // 히어로가 밀려 나가면 액세서리가 수익률을 대신 말한다 (디자인 문서 §6).
+                        .onScrollVisibilityChange(threshold: Constants.heroVisibilityThreshold) {
+                            viewModel.isHeroVisible = $0
+                        }
 
-                    MonthlyReturnCard(viewModel: viewModel)
+                    // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
+                    // 쌓이면…" 안내가 같은 화면에 두 번 나온다. 캘린더도 같이 감춘다 — 기록이
+                    // 없으면 어느 달로 넘겨도 빈 격자라 넘길 이유 자체가 없다.
+                    if !viewModel.hasNoRecords {
+                        chartCard
+
+                        MonthlyReturnCard(viewModel: viewModel) {
+                            scrollToCalendarCard(proxy)
+                        }
+                        .id(Constants.calendarCardIdentifier)
+                    }
                 }
+                .padding(.horizontal, .spacingL)
+                .padding(.top, .spacingS)
             }
-            .padding(.horizontal, .spacingL)
-            .padding(.top, .spacingS)
+            // 기록이 없어 빈 상태 하나만 남는 화면에서는 가운데로 세운다. 차트·캘린더가 붙어
+            // 뷰포트를 채우면 `.alignment` 는 쓰이지 않는다.
+            .defaultScrollAnchor(viewModel.hasNoRecords ? .center : .top, for: .alignment)
+            .background(Color.backgroundPrimary)
+            .refreshable { await viewModel.refresh() }
+            // 액세서리 캡슐이 마지막 컨트롤을 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
+            .safeAreaPadding(.bottom, .spacingXL)
         }
-        // 기록이 없어 빈 상태 하나만 남는 화면에서는 가운데로 세운다. 차트·캘린더가 붙어
-        // 뷰포트를 채우면 `.alignment` 는 쓰이지 않는다.
-        .defaultScrollAnchor(viewModel.hasNoRecords ? .center : .top, for: .alignment)
-        .background(Color.backgroundPrimary)
-        .refreshable { await viewModel.refresh() }
-        // 액세서리 캡슐이 마지막 컨트롤을 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
-        .safeAreaPadding(.bottom, .spacingXL)
     }
 
     @ViewBuilder
@@ -99,14 +107,12 @@ struct PerformanceContentView: View {
 
     /// 차트는 콘텐츠라 glass 를 깔지 않는다 — 불투명 surface 카드 위에 얹는다 (UI 스펙 §4.3).
     ///
-    /// 기간 세그먼트는 플롯 **바로 아래**다. 헤더 줄에 얹으면 6칸이 범례와 단위 세그먼트를
-    /// 밀어내고, 스크럽 가이드 아래로 내리면 그 한 줄이 사라지는 순간 세그먼트가 따라 올라가
-    /// 손이 가던 자리가 움직인다.
+    /// 기간은 헤더 줄로 올라갔다. 6칸을 플롯 아래 펼쳐 두면 그 자리가 스크럽 가이드가 사라질
+    /// 때마다 따라 움직였고, 축을 바꾸는 컨트롤 둘이 플롯을 사이에 두고 갈라져 있었다.
+    /// 축약 메뉴 캡슐 하나면 단위 세그먼트 옆에 나란히 서고 플롯 아래는 안내 한 줄만 남는다.
     private var chartCard: some View {
         VStack(alignment: .leading, spacing: .spacingS) {
             chart
-
-            PeriodSegment(selection: periodBinding)
 
             if viewModel.isScrubHintVisible {
                 Text(Constants.scrubHintMessage)
@@ -133,11 +139,18 @@ struct PerformanceContentView: View {
             TrendLineChart(
                 points: plotPoints(of: trend),
                 benchmarks: overlay,
+                valueFormat: chartValueFormat,
                 insufficientDataMessage: Constants.insufficientDataMessage,
                 selection: cursorBinding
             ) {
-                SegmentedPicker(TrendGranularity.allCases, selection: granularityBinding) {
-                    $0.title
+                HStack(spacing: .spacingS) {
+                    PeriodMenu(selection: periodBinding) {
+                        viewModel.isPeriodRangePickerPresented = true
+                    }
+
+                    SegmentedPicker(TrendGranularity.allCases, selection: granularityBinding) {
+                        $0.title
+                    }
                 }
             }
             // `.contain` 이 없으면 라벨이 서브트리 전체를 하나로 합쳐 범례의
@@ -160,6 +173,22 @@ struct PerformanceContentView: View {
     }
 
     // MARK: - Function
+
+    /// 캘린더 카드가 격자를 펼치거나 접을 때마다 그 카드 아래쪽을 뷰포트 바닥에 붙인다.
+    ///
+    /// 카드는 페이지 맨 아래라 높이가 바뀌어도 스크롤은 그대로 있는다 — 펼친 격자가 화면
+    /// 밖에 남고, 접으면 더 긴 일 격자가 같은 이유로 밀린다. 위가 아니라 **아래**를 맞추는
+    /// 이유는 방금 바뀐 부분이 카드 아래쪽이기 때문이다. 액세서리 캡슐 자리는
+    /// `.safeAreaPadding(.bottom)` 이 이미 비워 둔다.
+    ///
+    /// `hannunAnimation` 을 못 쓰는 자리(값 변화가 아니라 명령이다)라 Reduce Motion 분기를
+    /// 여기서 직접 한다.
+    private func scrollToCalendarCard(_ proxy: ScrollViewProxy) {
+        let motion = HannunMotion.standard
+        withAnimation(reduceMotion ? motion.reducedMotion : motion.animation) {
+            proxy.scrollTo(Constants.calendarCardIdentifier, anchor: .bottom)
+        }
+    }
 
     /// 차트 커서를 그릴 시점.
     ///
@@ -212,8 +241,26 @@ struct PerformanceContentView: View {
         ]
     }
 
+    private var chartValueFormat: TrendValueFormat {
+        switch viewModel.valueUnit {
+        case .percent: .percent
+        case .amount: .currency
+        }
+    }
+
+    /// 같은 시점을 액세서리가 켜 둔 축으로 옮긴다. 금액 축에서 `totals` 에 없는 시점은 그릴
+    /// 값이 없으므로 버린다 — 0 으로 채우면 그 자리에서 선이 바닥까지 떨어진다.
     private func plotPoints(of trend: PerformanceTrend) -> [TrendPoint] {
-        trend.portfolio.map(plotPoint)
+        switch viewModel.valueUnit {
+        case .percent:
+            trend.portfolio.map(plotPoint)
+        case .amount:
+            trend.portfolio.compactMap { point in
+                trend.totals[point.date].map {
+                    TrendPoint(date: point.date, value: AmountFormatter.currencyPlotValue($0))
+                }
+            }
+        }
     }
 
     private func plotPoint(_ point: BenchmarkPoint) -> TrendPoint {
@@ -228,6 +275,7 @@ fileprivate enum Constants {
         amount: .krw(0)
     )
     static let staleMessage = "갱신 실패 · 마지막으로 받아온 값입니다"
+    static let calendarCardIdentifier = "monthlyReturnCard"
     static let insufficientDataMessage = "데이터가 쌓이면 추이가 표시됩니다"
     static let emptySymbolName = "chart.line.uptrend.xyaxis"
     static let emptyTitle = "아직 계산할 성과가 없어요"
@@ -287,5 +335,11 @@ private struct PerformanceContentPreview: View {
 /// 커서가 서는지 본다.
 #Preview("성과 본문 · 비교 ON + 날짜 선택") {
     PerformanceContentPreview(viewModel: .previewWithFocusedDate)
+}
+
+/// 금액 축으로 뒤집은 상태. 지수를 골라 둔 채라 오버레이와 범례가 함께 사라지는지,
+/// Y축이 원화 눈금으로 바뀌는지 본다.
+#Preview("성과 본문 · 금액 모드") {
+    PerformanceContentPreview(viewModel: .previewShowingAmount)
 }
 #endif

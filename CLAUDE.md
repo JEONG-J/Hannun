@@ -93,6 +93,11 @@ View ←→ ViewModel(@Observable) → UseCase(Protocol) → Repository → Data
 > 새 파일을 만든 직후 Xcode/SourceKit 이 `No such module` 을 띄우는 건 정상이다 —
 > `make generate` 전까지 프로젝트에 포함되지 않은 상태라서 그렇다. 실제 컴파일 에러가 아니다.
 
+> **큰 글자 크기는 빌드·시뮬레이터로 검증하지 않는다.** `xcrun simctl ui … content_size` 를
+> 쓰지 않는다 — 앱을 다시 띄워 탭 위치·시드 상태를 매번 새로 잡아야 하는데 결과 레이아웃은
+> `.dynamicTypeSize(.accessibility5)` 를 건 `#Preview` 와 같다. AX 크기 확인은 프리뷰에서
+> 하고, 시뮬레이터 캡처는 **라이트/다크 × 기본 글자 크기**까지다 (UI 스펙 §6.3).
+
 외부 SPM 의존성은 **없다**(`Tuist/Package.swift` 미존재) — 네트워크는 `URLSession` + actor 로
 직접 구현한다. 그래서 `make install` 은 사실상 no-op 이고 `tuist install` 단계가 필요 없다.
 

@@ -19,8 +19,6 @@ struct PerformanceContentView: View {
 
     // MARK: - Property
 
-    @Environment(\.appRouter) private var appRouter
-
     @Bindable private var viewModel: PerformanceViewModel
 
     // MARK: - Body
@@ -87,16 +85,16 @@ struct PerformanceContentView: View {
         }
     }
 
-    /// 기록이 없어 계산할 수 없는 상태는 실패가 아니다 — 다시 시도 대신 첫 종목 등록으로 보낸다.
+    /// 기록이 없어 계산할 수 없는 상태는 실패가 아니다 — "다시 시도" 를 두지 않는 이유다.
+    ///
+    /// 등록 CTA 도 두지 않는다. 종목은 포트폴리오 탭에서 넣으므로 버튼은 탭만 옮겨 놓고
+    /// 거기서 다시 오른쪽 위 `+` 를 찾게 만든다. 갈 곳을 문구로 알리는 편이 걸음이 짧다.
     private var noRecordsState: some View {
         EmptyStateView(
             systemImageName: Constants.emptySymbolName,
             title: Constants.emptyTitle,
-            message: Constants.emptyMessage,
-            actionTitle: Constants.emptyActionTitle
-        ) {
-            appRouter?.navigate(to: .portfolio(category: nil))
-        }
+            message: Constants.emptyMessage
+        )
     }
 
     /// 차트는 콘텐츠라 glass 를 깔지 않는다 — 불투명 surface 카드 위에 얹는다 (UI 스펙 §4.3).
@@ -218,8 +216,8 @@ fileprivate enum Constants {
     static let insufficientDataMessage = "데이터가 쌓이면 추이가 표시됩니다"
     static let emptySymbolName = "chart.line.uptrend.xyaxis"
     static let emptyTitle = "아직 계산할 성과가 없어요"
-    static let emptyMessage = "보유 종목을 등록하면 연초 대비 수익률을 볼 수 있어요."
-    static let emptyActionTitle = "종목 추가"
+    /// 등록하는 자리를 짚어 준다 — 이 탭에는 추가 경로가 없다.
+    static let emptyMessage = "포트폴리오 탭에서 종목을 등록하면 연초 대비 수익률을 볼 수 있어요."
     static let summaryFailureTitle = "수익률을 계산하지 못했어요"
     static let trendFailureTitle = "추이를 불러오지 못했어요"
     static let retryTitle = "다시 시도"

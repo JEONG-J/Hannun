@@ -100,15 +100,15 @@ struct NetWorthScreen: View {
     /// 보유가 0건이면 히어로를 접는다. `₩0` + 변동 없음은 바로 아래 "첫 자산을 추가해 보세요"
     /// 와 같은 말이라, 화면에서 가장 큰 숫자 자리를 빈 값에 내주면 안내가 묻힌다.
     /// 총자산을 말할 자리는 액세서리가 그대로 들고 있다 (히어로가 없으니 교대도 없다).
+    ///
+    /// CTA 는 두지 않는다 — 등록은 이 탭이 아니라 포트폴리오에서 한다. 버튼을 누르면 탭을
+    /// 옮겨 놓고 거기서 다시 오른쪽 위 `+` 를 찾게 만드는 두 번 걸음이라, 갈 곳만 알린다.
     private var empty: some View {
         EmptyStateView(
             systemImageName: Constants.emptySymbolName,
             title: Constants.emptyTitle,
-            message: Constants.emptyMessage,
-            actionTitle: Constants.emptyActionTitle
-        ) {
-            appRouter?.navigate(to: .portfolio(category: nil))
-        }
+            message: Constants.emptyMessage
+        )
         // 히어로가 사라지면 교대 신호도 멈춘다 — 마지막으로 내려간 값이 남아 있으면
         // 액세서리가 계속 `₩0` 을 말한다.
         .onAppear { viewModel.isHeroVisible = true }
@@ -156,8 +156,8 @@ fileprivate enum Constants {
 
     static let emptySymbolName = "tray"
     static let emptyTitle = "첫 자산을 추가해 보세요"
-    static let emptyMessage = "보유 종목을 등록하면 자산군별 비중을 볼 수 있어요."
-    static let emptyActionTitle = "종목 추가"
+    /// 등록하는 자리를 짚어 준다 — 이 탭에는 추가 경로가 없다.
+    static let emptyMessage = "포트폴리오 탭에서 종목을 등록하면 자산군별 비중을 볼 수 있어요."
 
     static let failureSymbolName = "exclamationmark.triangle"
     static let failureTitle = "순자산을 불러오지 못했어요"

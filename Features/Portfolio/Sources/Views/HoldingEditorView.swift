@@ -326,7 +326,9 @@ fileprivate enum Constants {
     static let identityTitle = "종목 정보"
     static let positionTitle = "보유 정보"
     static let nameTitle = "종목명"
-    static let tickerTitle = "티커"
+    /// 이 칸이 받는 값은 `KRW-BTC`·`005930`·`NAS:AAPL`·`AAPL` 넷이다. 국내 6자리를 "티커" 로만
+    /// 부르면 무엇을 넣는 자리인지 읽히지 않아 국내·해외를 함께 적는다.
+    static let tickerTitle = "티커·종목코드"
     static let currencyTitle = "통화"
     static let averagePriceTitle = "평단가"
     static let currentPriceTitle = "현재가"
@@ -343,3 +345,36 @@ fileprivate enum Constants {
     static let doneTitle = "완료"
     static let checkmarkSymbolName = "checkmark"
 }
+
+#if DEBUG
+/// 프리뷰는 폼 레이아웃만 본다 — 저장은 성공한 셈 친다.
+private struct StubSaveHoldingUseCase: SaveHoldingUseCaseProtocol {
+    func execute(_ holding: HoldingRecord) async throws {}
+}
+
+@MainActor
+private func previewEditor() -> some View {
+    let container = DIContainer()
+    container.register((any SaveHoldingUseCaseProtocol).self) { StubSaveHoldingUseCase() }
+
+    return HoldingEditorView(
+        container: container,
+        errorHandler: ErrorHandler(),
+        mode: .create,
+        onSaved: {}
+    )
+}
+
+/// 자산유형을 고르고 `다음` 을 누르면 종목 정보 단계가 나온다 — "티커·종목코드" 라벨과 입력
+/// 칸이 한 행에서 좌·우로 갈라지는지 본다.
+#Preview("종목 추가 · 기본 글자") {
+    previewEditor()
+}
+
+/// 같은 행을 최대 글자 크기로 본다. 라벨이 길어지면 여러 줄로 접힐 뿐 입력 칸을 밀어내지
+/// 않아야 한다.
+#Preview("종목 추가 · AX5") {
+    previewEditor()
+        .dynamicTypeSize(.accessibility5)
+}
+#endif

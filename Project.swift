@@ -33,7 +33,7 @@ let project = Project(
             deploymentTargets: hannunDeploymentTargets,
             infoPlist: .file(path: "App/Resources/Info.plist"),
             sources: ["App/Sources/**"],
-            resources: ["App/Resources/Assets.xcassets"],
+            resources: ["App/Resources/Assets.xcassets", "App/Resources/AppIcon.icon"],
             entitlements: .file(path: "App/Config/Hannun.entitlements"),
             dependencies: [
                 .project(target: "NetWorthFeature", path: .relativeToRoot("Features/NetWorth")),

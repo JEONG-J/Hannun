@@ -235,12 +235,13 @@ struct PortfolioListView: View {
                 }
             }
         } else {
+            // 추가 버튼을 여기 한 번 더 두지 않는다 — 오른쪽 위 툴바가 목록이 비었든 찼든
+            // 같은 자리를 지키므로, 같은 동작이 한 화면에 둘이 되면 손이 어느 쪽을 눌러야
+            // 하는지부터 고르게 된다. 대신 그 자리를 문구가 가리킨다.
             EmptyStateView(
                 systemImageName: "chart.pie",
                 title: Constants.emptyTitle,
-                message: Constants.emptyMessage,
-                actionTitle: Constants.addHoldingTitle,
-                action: { router.presentHoldingEditor(.create) }
+                message: Constants.emptyMessage
             )
         }
     }
@@ -391,7 +392,8 @@ fileprivate enum Constants {
     static let retryTitle = "다시 시도"
     static let failureTitle = "불러오지 못했어요"
     static let emptyTitle = "아직 등록한 종목이 없어요"
-    static let emptyMessage = "보유 중인 현금과 종목을 넣으면 평가금액을 계산해 드려요."
+    /// 오른쪽 위 툴바 버튼을 가리킨다 — 빈 상태에 버튼을 하나 더 두는 대신 있는 자리를 알린다.
+    static let emptyMessage = "오른쪽 위 + 를 눌러 첫 종목을 등록해 보세요."
     static let filteredEmptySymbolName = "line.3.horizontal.decrease"
     static let filteredEmptyTitle = "고른 카테고리에 종목이 없어요"
     static let filteredEmptyMessage = "필터를 풀면 모든 종목을 볼 수 있어요."

@@ -13,9 +13,10 @@
 - 제외: 가계부(수입/지출) 기능, 은행/증권사 자동 연동(오픈뱅킹 등), 앱 자체 잠금(생체인증)
 
 ### 타겟
-- iOS 26.0 이상, 개인(1인) 사용, 여러 기기(아이폰/아이패드) 간 데이터 동기화 필요
-- 배포 타깃을 iOS 26.0으로 확정한 이유: UI 스펙이 Liquid Glass·`tabViewBottomAccessory`·
-  `ConcentricRectangle` 같은 iOS 26 전용 API를 전제로 작성됐다. 하위 버전은 지원하지 않는다
+- iOS 26.4 이상, 개인(1인) 사용, 여러 기기(아이폰/아이패드) 간 데이터 동기화 필요
+- 배포 타깃을 iOS 26.4로 확정한 이유: UI 스펙이 Liquid Glass·`tabViewBottomAccessory`·
+  `ConcentricRectangle` 같은 iOS 26 전용 API를 전제로 작성됐다. 1인용 앱이라 하위 버전을
+  끌고 갈 이유가 없어 26.1+ API(`tabViewBottomAccessory(isEnabled:)`)까지 제약 없이 쓴다
   (`docs/design/2026-07-30-tuist-module-target-spec.md` §1·§11-①)
 
 ## 2. MVP 범위

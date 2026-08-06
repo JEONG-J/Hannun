@@ -56,6 +56,29 @@ struct SnapshotRepositoryTests {
         #expect(stored.first?.totalInKRW == .krw(110_000_000))
     }
 
+    /// 옮겨 적은 기록이라는 표식이 저장·덮어쓰기 양쪽에서 살아남아야 캘린더가 "앱을 안 켠 날"
+    /// 을 알아본다. 새로 만들 때(`init`)와 같은 날을 갱신할 때(`apply`) 경로가 달라 둘 다 본다.
+    @Test("옮겨 적은 기록이라는 표식이 저장 후에도 남는다")
+    func persistsCarriedForwardFlag() async throws {
+        let repository = try makeRepository()
+        let day = SampleRecords.day(2026, 3, 2)
+
+        try await repository.save([
+            SampleRecords.snapshot(
+                recordedOn: day,
+                totalInKRW: 100_000_000,
+                isCarriedForward: true
+            ),
+        ])
+        #expect(try await repository.latest()?.isCarriedForward == true)
+
+        // 같은 날 앱을 켜서 실측을 남기면 표식이 도로 벗겨져야 한다.
+        try await repository.save([
+            SampleRecords.snapshot(recordedOn: day, totalInKRW: 110_000_000),
+        ])
+        #expect(try await repository.latest()?.isCarriedForward == false)
+    }
+
     @Test("가장 최근 스냅샷을 돌려준다")
     func returnsLatest() async throws {
         let repository = try makeRepository()

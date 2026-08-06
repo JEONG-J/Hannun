@@ -273,6 +273,9 @@ final class PerformanceViewModel {
     ///
     /// 조회 구간이 그 달 1일이 아니라 **하루 전**부터인 이유: 1일의 일간 수익률은 전날 총자산이
     /// 있어야 낼 수 있다. 그래서 하루를 더 받아 파생한 뒤, 그 하루는 결과에서 다시 걷어낸다.
+    ///
+    /// 앱을 안 켠 날은 추이 조회에서 `isCarriedForward` 로 표시돼 온다. 그 날짜를 모아
+    /// `DailyReturn.series` 에 넘기면 캘린더에서만 빠진다 — 차트는 같은 점을 그대로 그린다.
     func loadCalendar() async {
         if calendarState.value == nil { calendarState = .loading }
 
@@ -307,7 +310,11 @@ final class PerformanceViewModel {
                 points.map { ($0.date, $0.total) },
                 uniquingKeysWith: { _, latest in latest }
             )
-            let series = DailyReturn.series(cumulative: comparison.portfolio, totals: totals)
+            let series = DailyReturn.series(
+                cumulative: comparison.portfolio,
+                totals: totals,
+                carriedForwardDates: Set(points.filter(\.isCarriedForward).map(\.date))
+            )
 
             calendarState = .loaded(series.filter { isInDisplayedMonth($0.date, month: month) })
         } catch {

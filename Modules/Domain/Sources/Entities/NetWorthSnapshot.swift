@@ -40,13 +40,20 @@ public final class NetWorthSnapshot {
     /// 딕셔너리·정렬 관계를 쓰지 않으려는 형태다.
     public var categorySubtotals: [CategorySubtotal] = []
 
+    /// 앱을 켜지 않아 직전 값을 옮겨 적은 날이면 `true`.
+    ///
+    /// 기본값이 `false` 라 이 속성이 생기기 전에 저장된 기록은 전부 실측으로 남는다 —
+    /// 출처를 되살릴 방법이 없어 소급 재계산은 하지 않는다.
+    public var isCarriedForward: Bool = false
+
     public var record: NetWorthRecord {
         NetWorthRecord(
             id: id,
             recordedOn: recordedOn,
             totalInKRW: .krw(totalInKRW),
             totalInUSD: .usd(totalInUSD),
-            categorySubtotals: categorySubtotals
+            categorySubtotals: categorySubtotals,
+            isCarriedForward: isCarriedForward
         )
     }
 
@@ -58,6 +65,7 @@ public final class NetWorthSnapshot {
         totalInKRW = record.totalInKRW.amount
         totalInUSD = record.totalInUSD.amount
         categorySubtotals = record.categorySubtotals
+        isCarriedForward = record.isCarriedForward
     }
 
     public func apply(_ record: NetWorthRecord) {
@@ -65,6 +73,7 @@ public final class NetWorthSnapshot {
         totalInKRW = record.totalInKRW.amount
         totalInUSD = record.totalInUSD.amount
         categorySubtotals = record.categorySubtotals
+        isCarriedForward = record.isCarriedForward
     }
 }
 
@@ -78,6 +87,13 @@ public struct NetWorthRecord: Identifiable, Equatable, Sendable {
     public var totalInUSD: Money
     public var categorySubtotals: [CategorySubtotal]
 
+    /// 실측이 아니라 직전 값을 그대로 옮겨 적은 날인지.
+    ///
+    /// 추이선은 이 날도 함께 그리지만, **전일 대비 차분인 일간 수익률은 여기서 반드시 `0`**
+    /// 이 나온다 — 시세를 못 받은 날과 정말로 안 움직인 날이 같은 값이 되므로 파생 쪽에서
+    /// 이 표식을 보고 갈라야 한다.
+    public var isCarriedForward: Bool
+
     // MARK: - Function
 
     public init(
@@ -85,13 +101,15 @@ public struct NetWorthRecord: Identifiable, Equatable, Sendable {
         recordedOn: Date,
         totalInKRW: Money,
         totalInUSD: Money,
-        categorySubtotals: [CategorySubtotal] = []
+        categorySubtotals: [CategorySubtotal] = [],
+        isCarriedForward: Bool = false
     ) {
         self.id = id
         self.recordedOn = recordedOn
         self.totalInKRW = totalInKRW
         self.totalInUSD = totalInUSD
         self.categorySubtotals = categorySubtotals
+        self.isCarriedForward = isCarriedForward
     }
 
     public func total(in currency: Currency) -> Money {
@@ -107,7 +125,8 @@ public struct NetWorthRecord: Identifiable, Equatable, Sendable {
             recordedOn: date,
             totalInKRW: totalInKRW,
             totalInUSD: totalInUSD,
-            categorySubtotals: categorySubtotals
+            categorySubtotals: categorySubtotals,
+            isCarriedForward: true
         )
     }
 }

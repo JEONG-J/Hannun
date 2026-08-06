@@ -79,14 +79,16 @@ public enum SampleRecords {
         recordedOn: Date,
         totalInKRW: Decimal,
         totalInUSD: Decimal = 0,
-        categorySubtotals: [CategorySubtotal] = []
+        categorySubtotals: [CategorySubtotal] = [],
+        isCarriedForward: Bool = false
     ) -> NetWorthRecord {
         NetWorthRecord(
             id: id,
             recordedOn: recordedOn,
             totalInKRW: .krw(totalInKRW),
             totalInUSD: .usd(totalInUSD),
-            categorySubtotals: categorySubtotals
+            categorySubtotals: categorySubtotals,
+            isCarriedForward: isCarriedForward
         )
     }
 

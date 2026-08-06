@@ -21,13 +21,20 @@ public struct NetWorthTrendPoint: Identifiable, Equatable, Sendable {
     public let date: Date
     public let total: Money
 
+    /// 실측 없이 직전 값을 옮겨 적은 날인지 — `NetWorthRecord.isCarriedForward` 를 그대로 잇는다.
+    ///
+    /// 선을 끊지 않으려면 이 점도 그려야 하지만, 전일 대비 차분을 쓰는 쪽은 이 날을 걸러야
+    /// 한다. 추이선과 캘린더가 같은 조회 결과에서 서로 다른 걸 볼 수 있게 하는 표식이다.
+    public let isCarriedForward: Bool
+
     public var id: Date { date }
 
     // MARK: - Function
 
-    public init(date: Date, total: Money) {
+    public init(date: Date, total: Money, isCarriedForward: Bool = false) {
         self.date = date
         self.total = total
+        self.isCarriedForward = isCarriedForward
     }
 }
 
@@ -70,7 +77,11 @@ public struct FetchNetWorthTrendUseCase: FetchNetWorthTrendUseCaseProtocol {
         }
 
         return sampled.map {
-            NetWorthTrendPoint(date: $0.recordedOn, total: $0.total(in: baseCurrency))
+            NetWorthTrendPoint(
+                date: $0.recordedOn,
+                total: $0.total(in: baseCurrency),
+                isCarriedForward: $0.isCarriedForward
+            )
         }
     }
 

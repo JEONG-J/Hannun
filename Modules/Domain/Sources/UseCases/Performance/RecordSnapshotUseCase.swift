@@ -11,7 +11,9 @@ import HannunCore
 /// 오늘자 총자산 스냅샷을 남긴다.
 ///
 /// 앱을 며칠 켜지 않으면 그래프에 구멍이 생기므로, 마지막 기록과 오늘 사이의 빈 날은
-/// 직전 값으로 채워서 함께 저장한다.
+/// 직전 값으로 채워서 함께 저장한다. 채운 기록은 `isCarriedForward` 로 실측과 갈라 둔다 —
+/// 표시를 안 남기면 전일 대비 차분을 쓰는 쪽(캘린더 일간 수익률)이 시세를 못 받은 날을
+/// "변동 없음 0%" 로 읽는다.
 public protocol RecordSnapshotUseCaseProtocol: Sendable {
     @discardableResult
     func execute(asOf date: Date, exchangeRate: ExchangeRate) async throws -> NetWorthRecord

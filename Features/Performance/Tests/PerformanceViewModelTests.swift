@@ -719,6 +719,45 @@ struct PerformanceViewModelTests {
         )
     }
 
+    /// 이슈 #22 — 며칠 건너뛴 뒤 첫 실행. 백필된 날은 전일과 총자산이 같아 차분이 0 이라,
+    /// 걸러내지 않으면 "시세를 못 받은 날" 이 "변동 없던 날" 과 같은 회색 0% 셀이 된다.
+    @Test("앱을 안 켠 날은 캘린더에서 빠지고 다시 켠 날만 남는다")
+    func calendarExcludesCarriedForwardDays() async {
+        let samples: [(date: Date, rate: Decimal, isCarriedForward: Bool)] = [
+            (Self.date(year: 2026, month: 6, day: 30), 0, false),
+            (Self.date(year: 2026, month: 7, day: 1), 0.010, false),
+            (Self.date(year: 2026, month: 7, day: 2), 0.010, true),
+            (Self.date(year: 2026, month: 7, day: 3), 0.010, true),
+            (Self.date(year: 2026, month: 7, day: 4), 0.020, false),
+        ]
+        let viewModel = makeViewModel(
+            trend: { _, _, _ in
+                samples.map {
+                    NetWorthTrendPoint(
+                        date: $0.date,
+                        total: .krw(Constants.sampleOpeningTotal * (1 + $0.rate)),
+                        isCarriedForward: $0.isCarriedForward
+                    )
+                }
+            },
+            comparison: { _, _, _ in
+                BenchmarkComparison(
+                    portfolio: samples.map { BenchmarkPoint(date: $0.date, rate: $0.rate) },
+                    benchmarks: []
+                )
+            }
+        )
+
+        await viewModel.loadCalendar()
+
+        #expect(
+            viewModel.calendarState.value?.map(\.date) == [
+                Self.date(year: 2026, month: 7, day: 1),
+                Self.date(year: 2026, month: 7, day: 4),
+            ]
+        )
+    }
+
     @Test("이전 달로 옮기면 그 달 구간을 다시 조회한다")
     func showingPreviousMonthRequestsThatMonth() async {
         let recorder = TrendRequestRecorder()

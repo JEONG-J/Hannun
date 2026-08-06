@@ -43,6 +43,24 @@ struct RecordSnapshotUseCaseTests {
         #expect(records.last?.totalInKRW == .krw(110_000_000))
     }
 
+    @Test("채운 날만 옮겨 적었다고 표시하고 오늘치는 실측으로 남긴다")
+    func marksOnlyBackfilledDaysAsCarriedForward() {
+        let records = RecordSnapshotUseCase.backfilled(
+            latest: SampleRecords.snapshot(
+                recordedOn: SampleRecords.day(2026, 3, 1),
+                totalInKRW: 100_000_000
+            ),
+            current: SampleRecords.snapshot(
+                recordedOn: SampleRecords.day(2026, 3, 5),
+                totalInKRW: 110_000_000
+            ),
+            calendar: calendar
+        )
+
+        #expect(records.dropLast().allSatisfy { $0.isCarriedForward })
+        #expect(records.last?.isCarriedForward == false)
+    }
+
     @Test("어제 기록이 있으면 오늘치만 남긴다")
     func skipsBackfillWhenConsecutive() {
         let records = RecordSnapshotUseCase.backfilled(

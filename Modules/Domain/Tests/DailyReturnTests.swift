@@ -161,6 +161,51 @@ struct DailyReturnTests {
         #expect(dailyReturns.first?.rate == 0.10)
     }
 
+    @Test("앱을 안 켠 날은 결과에서 빠지고, 다시 켠 날이 그동안의 등락을 받는다")
+    func skipsCarriedForwardDays() {
+        // day1 은 day0 값을 그대로 옮겨 적은 날이라 누적 rate 가 day0 과 같다.
+        let cumulative = [
+            BenchmarkPoint(date: day0, rate: 0),
+            BenchmarkPoint(date: day1, rate: 0),
+            BenchmarkPoint(date: day2, rate: -0.05),
+        ]
+        let totals: [Date: Money] = [
+            day0: .krw(100_000_000),
+            day1: .krw(100_000_000),
+            day2: .krw(95_000_000),
+        ]
+
+        let dailyReturns = DailyReturn.series(
+            cumulative: cumulative,
+            totals: totals,
+            carriedForwardDates: [day1]
+        )
+
+        #expect(dailyReturns.map(\.date) == [day2])
+        // 빠진 하루의 등락이 사라지지 않고 앱을 다시 켠 날로 모인다.
+        #expect(dailyReturns[0].gain == .krw(-5_000_000))
+        #expect(dailyReturns[0].rate == -0.05)
+    }
+
+    @Test("실제로 안 움직인 날은 그대로 0 으로 남는다")
+    func keepsGenuineFlatDay() {
+        // 위 테스트와 입력이 같고 `carriedForwardDates` 만 비었다 — 두 상태가 표식 하나로만
+        // 갈린다는 것, 즉 값으로는 구별할 수 없다는 것이 이 이슈의 요지다.
+        let cumulative = [
+            BenchmarkPoint(date: day0, rate: 0),
+            BenchmarkPoint(date: day1, rate: 0),
+        ]
+        let totals: [Date: Money] = [
+            day0: .krw(100_000_000),
+            day1: .krw(100_000_000),
+        ]
+
+        let dailyReturns = DailyReturn.series(cumulative: cumulative, totals: totals)
+
+        #expect(dailyReturns.map(\.date) == [day1])
+        #expect(dailyReturns[0].rate == 0)
+    }
+
     @Test("빈 입력은 빈 배열을 돌려준다")
     func returnsEmptyForEmptyInput() {
         #expect(DailyReturn.series(cumulative: [], totals: [:]).isEmpty)

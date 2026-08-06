@@ -10,31 +10,31 @@ import HannunDesignSystem
 import HannunDomain
 import SwiftUI
 
-/// 성과 탭 하단 액세서리 — 지금 보고 있는 값 한 줄 + 벤치마크 비교 토글 (PM-2, PM-4, UI 스펙 §3.1).
+/// 성과 탭 하단 액세서리 — 지금 보고 있는 값 한 줄 + 표시 단위 전환 하나
+/// (PM-2, PM-3, UI 스펙 §3.1).
 ///
-/// 왼쪽은 눌러서 기간 선택 시트를 여는 손잡이이자 정보 한 줄이고, 오른쪽은 고른 지수를 차트에
-/// 겹칠지 끄고 켜는 토글이다. 일별/월별 세그먼트는 차트 축을 정하는 컨트롤이라 차트 카드
-/// 헤더로 옮겨 갔다 — 여기 있으면 무엇을 바꾸는지 화면에서 멀어진다 (디자인 문서 §4.2 · §7).
+/// 오른쪽 컨트롤은 차트 **세로축**과 왼쪽 문구를 `%` ↔ `₩` 로 뒤집는다. 캡슐에 남은 컨트롤은
+/// 이것 하나다 — 기간·단위(일별/월별)는 바꾸는 대상 옆이라 차트 카드 안이고, 벤치마크는
+/// 고르는 일도 겹치는 일도 툴바 시트가 맡는다.
 ///
-/// 무엇과 비교할지(`selectedBenchmark`)는 툴바 시트가, 비교할지 말지
-/// (`isBenchmarkOverlayEnabled`)는 이 토글이 맡는다. 둘을 나눠 두면 껐다 켜려고 매번 시트를
-/// 열지 않아도 되고, 껐다 켜도 고른 지수가 그대로 남는다.
+/// 라벨에는 **지금 켜진 단위**를 적는다. 순자산 탭 통화 라벨과 같은 문법이고, 눌러서 무엇이
+/// 되는지는 `accessibilityHint` 가 말한다 — 그래서 켜짐 채움도 `.isSelected` 도 쓰지 않는다.
 ///
-/// 벤치마크 범례 dot 은 여기 없다. 범례는 차트 카드 안으로 옮겨 갔으므로 액세서리가 다시
+/// 왼쪽은 눌리지 않는다 — 열 대상이 없으므로 `expandable()` 셰브런도 붙이지 않는다.
+/// 글리프 유무가 곧 "눌린다/안 눌린다" 신호다 (UI 스펙 §3.1).
+///
+/// 벤치마크 범례 dot 도 여기 없다. 범례는 차트 카드 안으로 옮겨 갔으므로 액세서리가 다시
 /// 말할 이유가 없다.
 ///
-/// 왼쪽은 스크롤과 조작에 따라 말을 바꾼다. 히어로(큰 수익률)가 보이는 동안에는 **지금 보는
-/// 기간**을, 히어로가 밀려 나가면 **지금 손으로 만지고 있는 값**부터 순서대로 말한다
-/// (디자인 문서 §6).
+/// 왼쪽은 스크롤과 조작에 따라 말을 바꾼다. 히어로(큰 수익률)가 보이는 동안에는 **총 평가금액**을 —
+/// 히어로는 수익률과 손익액만 말하므로 화면 어디에도 없는 값이다 — 히어로가 밀려 나가면
+/// **지금 손으로 만지고 있는 값**부터 순서대로 말한다 (디자인 문서 §6).
 ///
 /// 값이 아니라 ViewModel 을 받는다 — 액세서리 클로저는 첫 등장 시점에 붙잡히므로 값을
 /// 꺼내 넘기면 그 시점에 굳는다.
 struct PerformanceAccessory: View {
 
     /// 히어로가 밀려난 뒤 왼쪽이 말할 한 줄.
-    ///
-    /// 그리는 쪽과 `.accessibilityValue` 가 우선순위를 두 벌로 구현하면 언젠가 갈라지므로
-    /// 조각을 한 번만 만들고 양쪽이 그것을 읽는다.
     private struct ValueCaption {
 
         // MARK: - Property
@@ -44,14 +44,9 @@ struct PerformanceAccessory: View {
         let isLoss: Bool
 
         var color: Color { isLoss ? .loss : .gain }
-
-        /// VoiceOver 가 읽을 한 줄. 화면에서는 두 조각이지만 귀로는 한 문장이다.
-        var spoken: String { "\(prefix) \(value)" }
     }
 
     // MARK: - Property
-
-    @Environment(\.accessoryLayout) private var layout
 
     private let viewModel: PerformanceViewModel
 
@@ -63,41 +58,19 @@ struct PerformanceAccessory: View {
 
     var body: some View {
         BottomAccessory {
-            captionStrip
+            alternatingCaption
         } trailing: {
-            // 라벨이 지수 이름 ↔ "비교" 로 갈아 끼워질 때 `.contentTransition(.opacity)` 가
-            // 발화하려면 실제로 바뀌는 값에 트랜잭션이 걸려야 한다. 켜짐/꺼짐 전환은
-            // `AccessoryControlButton` 이 스스로 건다.
-            benchmarkToggle
-                .hannunAnimation(.selection, value: viewModel.selectedBenchmark)
+            valueUnitControl
         }
     }
 
     // MARK: - Function
 
-    /// 왼쪽 한 줄은 정보이면서 시트의 손잡이다 — 눌리는 캡션에는 `chevron.up` 을 붙여
-    /// 열 것이 있다는 걸 보이게 한다 (디자인 문서 R4).
-    ///
-    /// `.accessibilityLabel` 을 달면 버튼이 접근성 요소 하나로 접혀 자식 `Text` 가 말하던
-    /// 값이 전부 묻힌다 — 라벨은 브리프가 못 박은 문구 그대로 두고, `.accessibilityValue` 로
-    /// 지금 화면이 말하는 한 줄을 가산한다.
-    private var captionStrip: some View {
-        Button {
-            viewModel.isPeriodPickerPresented = true
-        } label: {
-            alternatingCaption
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Constants.pickerAccessibilityLabel)
-        .accessibilityValue(captionDescription)
-        .accessibilityHint(Constants.pickerAccessibilityHint)
-    }
-
     /// 두 문구를 겹쳐 두고 투명도만 바꾼다 — 프레임이 넓은 쪽에 고정되어 교대할 때
     /// 왼쪽 폭이 널뛰지 않고, 크로스페이드도 한 번에 얻는다.
     private var alternatingCaption: some View {
         ZStack(alignment: .leading) {
-            periodCaption
+            totalCaption
                 .opacity(viewModel.isHeroVisible ? 1 : 0)
                 .accessibilityHidden(!viewModel.isHeroVisible)
 
@@ -108,28 +81,53 @@ struct PerformanceAccessory: View {
         .hannunAnimation(.selection, value: viewModel.isHeroVisible)
     }
 
-    /// 1대역. 단위가 차트 카드로 떠나 기간 하나만 남았으므로 축약 배치에서 더 줄일 것이 없다.
-    private var periodCaption: some View {
-        AccessoryCaption(viewModel.period.title)
-            .expandable()
+    /// 1대역. 기간 이름을 적던 자리인데 그 이름은 바로 위 차트 알약에도 그대로 있어 같은 값이
+    /// 화면에 두 번 나왔다 (UI 스펙 §3.1). 평가금액은 히어로도 차트도 말하지 않는 값이라
+    /// 겹치지 않는다. 전체 자릿수는 캡슐 폭에 안 들어가므로 억·만으로 접는다.
+    ///
+    /// 낼 수 없으면 아래 대역이 그대로 올라온다 — 축약 배치에서도 한 줄이라 더 줄일 것이 없다.
+    @ViewBuilder
+    private var totalCaption: some View {
+        if let total = viewModel.latestTotal {
+            AccessoryCaption(.plain(Constants.totalPrefix), .value(AmountFormatter.compact(total)))
+        } else {
+            valueCaptionView
+        }
     }
 
-    /// 히어로가 사라진 뒤의 2~4 대역. 계산할 값이 하나도 없으면 기간으로 되돌아간다.
+    /// 히어로가 사라진 뒤의 2~4 대역. 계산할 값이 하나도 없으면 아무 말도 하지 않는다 —
+    /// 기간 이름으로 되돌아가면 지웠던 중복이 그대로 살아난다.
     @ViewBuilder
     private var valueCaptionView: some View {
         if let caption = valueCaption {
             AccessoryCaption(.plain(caption.prefix), .accent(caption.value, caption.color))
-                .expandable()
-        } else {
-            periodCaption
         }
+    }
+
+    /// 캡슐에 남은 단 하나의 컨트롤 (§3.1). 켜짐/꺼짐이 아니라 두 단위를 오가는 전환형이라
+    /// 채움도 `.isSelected` 도 쓰지 않는다 — 라벨이 지금 단위를 말하고 힌트가 다음을 말한다.
+    private var valueUnitControl: some View {
+        AccessoryControlButton(
+            viewModel.valueUnit.title,
+            isOn: false,
+            indicatesSelection: false,
+            accessibilityLabel: String(
+                format: Constants.unitLabelFormat,
+                viewModel.valueUnit.displayName
+            )
+        ) {
+            viewModel.toggleValueUnit()
+        }
+        .accessibilityHint(
+            String(format: Constants.unitSwitchHintFormat, viewModel.valueUnit.toggled.displayName)
+        )
     }
 
     /// 2~4 대역을 한 번에 고른다.
     ///
     /// 보고 있는 시점(스크럽·날짜 선택)이 초과수익보다 앞서는 이유는 **사용자가 지금 손으로
-    /// 만지고 있는 값**이기 때문이다. 그 다음이 비교 중인 초과수익 — 토글과 짝을 이루는
-    /// 정보라 켜 두면 몇 %p 이기고 있는지를 선 두 개의 간격으로 눈대중하지 않아도 된다.
+    /// 만지고 있는 값**이기 때문이다. 그 다음이 비교 중인 초과수익 — 겹쳐 둔 동안에는 몇 %p
+    /// 이기고 있는지를 선 두 개의 간격으로 눈대중하지 않아도 된다.
     private var valueCaption: ValueCaption? {
         if let headline = viewModel.headline, headline.isFocused {
             return ValueCaption(
@@ -158,102 +156,17 @@ struct PerformanceAccessory: View {
 
         return nil
     }
-
-    /// `alternatingCaption` 이 지금 그리는 대역을 말로 옮긴 것 — `.accessibilityValue` 전용.
-    private var captionDescription: String {
-        guard !viewModel.isHeroVisible, let caption = valueCaption else {
-            return viewModel.period.title
-        }
-
-        return caption.spoken
-    }
-
-    /// 오른쪽은 고른 지수를 차트에 겹칠지 끄고 켜는 컨트롤이다. 한 대상의 두 상태이므로
-    /// 선택 상태로 부호화한다 — 라벨은 **무엇과** 비교하는지를, 힌트는 누르면 무슨 일이
-    /// 일어나는지를 말한다.
-    ///
-    /// 지수를 아직 안 골랐어도 비활성으로 두지 않는다. 그 상태에서 할 일은 정확히 하나 —
-    /// 비교할 지수를 고르는 것 — 이고, 비활성 버튼은 그 하나를 막고 툴바를 찾게 만든다.
-    /// 그때는 켜짐/꺼짐이 아니라 "아직 없음" 이므로 선택 부호화도 함께 뗀다.
-    @ViewBuilder
-    private var benchmarkToggle: some View {
-        if layout == .inline {
-            AccessoryControlButton(
-                systemImageName: Constants.benchmarkSymbolName,
-                accessibilityLabel: benchmarkAccessibilityLabel,
-                isOn: isComparing,
-                indicatesSelection: hasBenchmark
-            ) {
-                toggleComparison()
-            }
-            .accessibilityHint(benchmarkAccessibilityHint)
-        } else {
-            AccessoryControlButton(
-                benchmarkTitle,
-                isOn: isComparing,
-                indicatesSelection: hasBenchmark,
-                accessibilityLabel: benchmarkAccessibilityLabel
-            ) {
-                toggleComparison()
-            }
-            // 기본 `.interpolate` 는 "S&P500"/"비교" 글리프를 보간해 뭉갠다 — 무관한 글자를
-            // 섞어 봐야 얻을 게 없으므로 크로스페이드로 갈아 끼운다.
-            .contentTransition(.opacity)
-            .accessibilityHint(benchmarkAccessibilityHint)
-        }
-    }
-
-    private var hasBenchmark: Bool {
-        viewModel.selectedBenchmark != nil
-    }
-
-    private var isComparing: Bool {
-        hasBenchmark && viewModel.isBenchmarkOverlayEnabled
-    }
-
-    private var benchmarkTitle: String {
-        viewModel.selectedBenchmark?.title ?? Constants.comparisonTitle
-    }
-
-    private var benchmarkAccessibilityLabel: String {
-        guard let index = viewModel.selectedBenchmark else {
-            return Constants.comparisonAccessibilityLabel
-        }
-
-        return "\(Constants.comparisonAccessibilityLabel), \(index.title)"
-    }
-
-    private var benchmarkAccessibilityHint: String {
-        guard hasBenchmark else { return Constants.pickAccessibilityHint }
-
-        return isComparing
-            ? Constants.hideOverlayAccessibilityHint
-            : Constants.showOverlayAccessibilityHint
-    }
-
-    /// 고른 지수가 없으면 겹칠 대상이 없으므로 시트를 열어 그 하나를 고르게 한다.
-    private func toggleComparison() {
-        guard hasBenchmark else {
-            viewModel.isBenchmarkPickerPresented = true
-            return
-        }
-
-        viewModel.toggleBenchmarkOverlay()
-    }
 }
 
 fileprivate enum Constants {
+    static let totalPrefix = "총 평가금액"
     static let yearToDatePrefix = "연초 대비"
     static let focusedPrefix = "기간 시작 대비"
     static let excessPrefixFormat = "%@ 대비"
-    static let comparisonTitle = "비교"
-    static let benchmarkSymbolName = "chart.line.uptrend.xyaxis"
-    static let comparisonAccessibilityLabel = "벤치마크 비교"
-    static let pickAccessibilityHint = "두 번 탭하면 비교할 지수를 고릅니다"
-    static let showOverlayAccessibilityHint = "두 번 탭하면 차트에 겹칩니다"
-    static let hideOverlayAccessibilityHint = "두 번 탭하면 차트에서 지웁니다"
-    static let pickerAccessibilityLabel = "기간"
-    static let pickerAccessibilityHint = "두 번 탭하면 기간을 고를 수 있어요"
+    static let unitLabelFormat = "지금 %@"
+    /// "평가금액으로"·"수익률로" 는 받침이 갈려 조사를 형식에 못 박는다 — "표시로" 를 붙여
+    /// 한 문장으로 맞춘다.
+    static let unitSwitchHintFormat = "두 번 탭하면 %@ 표시로 바꿉니다"
 }
 
 #if DEBUG
@@ -296,7 +209,12 @@ private struct PerformanceAccessoryGallery: View {
     var body: some View {
         ScrollView {
             VStack(spacing: .spacingL) {
-                PerformanceAccessoryPreview("히어로 보이는 동안 — 기간", viewModel: .preview)
+                PerformanceAccessoryPreview("히어로 보이는 동안 — 총 평가금액", viewModel: .preview)
+
+                PerformanceAccessoryPreview(
+                    "금액 모드 — 컨트롤이 ₩ 로 뒤집힌다",
+                    viewModel: .previewShowingAmount
+                )
 
                 PerformanceAccessoryPreview(
                     "비교 ON — 초과수익",
@@ -306,11 +224,6 @@ private struct PerformanceAccessoryGallery: View {
                 PerformanceAccessoryPreview(
                     "비교 OFF — 연초 대비",
                     viewModel: .previewWithOverlayOff.hidingHero()
-                )
-
-                PerformanceAccessoryPreview(
-                    "지수 미선택 — 누르면 시트가 열린다",
-                    viewModel: .previewWithoutBenchmark.hidingHero()
                 )
 
                 PerformanceAccessoryPreview(
@@ -339,8 +252,8 @@ private struct PerformanceAccessoryGallery: View {
         .dynamicTypeSize(.accessibility5)
 }
 
-/// 축약 배치에서는 오른쪽이 아이콘 하나로 줄어든다. 초과수익 한 줄과 함께 두어 좁은 캡슐에서
-/// 왼쪽이 먼저 양보하는지 본다.
+/// 축약 캡슐에서 캡션과 컨트롤이 한 줄에 함께 들어가는지 본다. 가장 긴 대역(초과수익)으로
+/// 좁은 캡슐에서도 컨트롤이 밀려나거나 문구가 잘리지 않는지 확인한다.
 #Preview("성과 액세서리 · 축약") {
     PerformanceAccessoryPreview("축약", viewModel: .preview.hidingHero())
         .accessoryLayout(.inline)

@@ -13,8 +13,7 @@ import SwiftUI
 /// 셀 상세를 시트로 하지 않은 이유와 같다 — 이 탭엔 이미 기간·벤치마크 시트가 둘이라
 /// 세 번째 모달을 얹으면 "어느 시트가 무엇을 고르는지" 를 기억해야 한다.
 ///
-/// 선택 칸 문법(`brandTint` 채움 + `brand` 라벨)은 `SegmentedPicker` 와 같다 — 둘 다
-/// "여러 값 중 지금 이것" 을 말하는 컨트롤이라 어휘를 나눠 쓴다.
+/// 격자를 그리는 일은 `PickerGrid` 가 한다 — 여기 남는 건 열두 달이라는 값과 그 라벨뿐이다.
 ///
 /// `year` 는 격자에 그리지 않는다(헤더가 이미 말한다). 대신 접근성 라벨이 이 값을 써
 /// `2026년 3월` 로 읽는다 — 년 이동으로 같은 `3월` 이 반복되므로 어느 해인지 없으면
@@ -43,57 +42,19 @@ public struct MonthPickerGrid: View {
     }
 
     public var body: some View {
-        LazyVGrid(columns: Constants.columns, spacing: .spacingXS) {
-            ForEach(Constants.months, id: \.self) { month in
-                monthButton(month)
-            }
-        }
-    }
-
-    // MARK: - Function
-
-    private func monthButton(_ month: Int) -> some View {
-        let isSelected = month == selectedMonth
-        let isDisabled = disabledMonths.contains(month)
-
-        return Button {
-            onSelect(month)
-        } label: {
-            Text(Constants.title(ofMonth: month))
-                .hannunFont(.pillLabel)
-                .foregroundStyle(labelColor(isSelected: isSelected, isDisabled: isDisabled))
-                .lineLimit(1)
-                .minimumScaleFactor(Constants.labelMinimumScaleFactor)
-                .frame(maxWidth: .infinity, minHeight: .minimumTouchTarget)
-                .background {
-                    if isSelected {
-                        Capsule().fill(HannunTint.brandTint)
-                    }
-                }
-                .contentShape(.capsule)
-        }
-        .buttonStyle(.plain)
-        .disabled(isDisabled)
-        .accessibilityLabel(Constants.accessibilityLabel(year: year, month: month))
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    /// 비활성만 `textSecondary` 로 눕힌다 — 고를 수 있는 달을 그 잉크로 적으면 둘이 같아진다.
-    private func labelColor(isSelected: Bool, isDisabled: Bool) -> Color {
-        if isSelected { return .brand }
-        return isDisabled ? .textSecondary : .textPrimary
+        PickerGrid(
+            Constants.months,
+            selection: selectedMonth,
+            disabled: disabledMonths,
+            label: { Constants.title(ofMonth: $0) },
+            accessibilityLabel: { Constants.accessibilityLabel(year: year, month: $0) },
+            onSelect: onSelect
+        )
     }
 }
 
 fileprivate enum Constants {
     static let months = Array(1...12)
-    static let columnCount = 3
-    static let columns = Array(
-        repeating: GridItem(.flexible(), spacing: .spacingXS),
-        count: columnCount
-    )
-    /// AX5 에서 `12월` 이 3등분한 열을 넘어서면 잘리는 대신 줄어든다.
-    static let labelMinimumScaleFactor: CGFloat = 0.7
 
     static func title(ofMonth month: Int) -> String {
         "\(month)월"

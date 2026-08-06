@@ -220,26 +220,14 @@ struct PerformanceViewModelTests {
         #expect(viewModel.trendState.value?.portfolio.count == 2)
     }
 
-    @Test("기간을 고르면 선택 시트가 닫힌다")
-    func selectingPeriodClosesPicker() async {
+    @Test("기간을 고르면 그 기간이 차트에 반영된다")
+    func selectingPeriodUpdatesChart() async {
         let viewModel = makeViewModel()
         await viewModel.loadIfNeeded()
-        viewModel.isPeriodPickerPresented = true
 
         await viewModel.selectPeriod(.oneMonth)
 
-        #expect(viewModel.isPeriodPickerPresented == false)
-    }
-
-    @Test("이미 보고 있던 기간을 다시 골라도 시트는 닫힌다")
-    func reselectingSamePeriodStillClosesPicker() async {
-        let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
-        viewModel.isPeriodPickerPresented = true
-
-        await viewModel.selectPeriod(.yearToDate)
-
-        #expect(viewModel.isPeriodPickerPresented == false)
+        #expect(viewModel.period == .oneMonth)
     }
 
     @Test("단위가 고른 시점만 차트에 남는다")
@@ -302,6 +290,110 @@ struct PerformanceViewModelTests {
         )
 
         #expect(range.start == .distantPast)
+    }
+
+    /// 직접 고른 구간만 종료 시각을 스스로 갖는다 — 프리셋처럼 `now` 로 끊기면 지난 구간을
+    /// 떼어 볼 수 없다.
+    @Test("직접 고른 구간은 두 끝점을 그대로 쓴다")
+    func customPeriodKeepsBothEndpoints() {
+        let start = Self.date(year: 2025, month: 3, day: 1)
+        let end = Self.date(year: 2025, month: 9, day: 30, hour: 23, minute: 59, second: 59)
+
+        let range = PerformanceViewModel.dateRange(
+            for: .custom(start: start, end: end),
+            now: PerformanceSampleData.now,
+            calendar: Self.calendar
+        )
+
+        #expect(range.start == start)
+        #expect(range.end == end)
+    }
+
+    /// 알약 하나에 들어가야 하는 라벨이라 년.월 로만 적는다. 두 끝점을 달 한가운데로 잡아
+    /// 실행 시간대가 달라도 같은 달을 가리키게 한다 — `title` 은 표시용이라 사용자 달력을 쓴다.
+    @Test("직접 고른 구간의 라벨은 년.월 두 개다")
+    func customPeriodTitleIsShort() {
+        let period = ChartPeriod.custom(
+            start: Self.date(year: 2026, month: 1, day: 15, hour: 12),
+            end: Self.date(year: 2026, month: 8, day: 20, hour: 12)
+        )
+
+        #expect(period.title == "2026.1 – 2026.8")
+    }
+
+    // MARK: - 표시 단위
+
+    /// 시점별 총자산은 이미 `trend.totals` 에 들어 있다. 축만 바꾸는 조작이 조회를 태우면
+    /// 왕복할 때마다 네트워크가 두 번 뛴다.
+    @Test("표시 단위를 바꿔도 다시 조회하지 않는다")
+    func togglingValueUnitSkipsRefetch() async {
+        let recorder = TrendRequestRecorder()
+        let viewModel = makeViewModel(trend: { start, end, granularity in
+            await recorder.record(
+                TrendRequest(start: start, end: end, granularity: granularity)
+            )
+            return PerformanceSampleData.trendPoints
+        })
+
+        await viewModel.loadIfNeeded()
+        viewModel.toggleValueUnit()
+        viewModel.toggleValueUnit()
+
+        #expect(await recorder.chartRequests.count == 1)
+        #expect(viewModel.valueUnit == .percent)
+    }
+
+    @Test("표시 단위는 누를 때마다 반대로 간다")
+    func togglingValueUnitFlipsBothWays() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+
+        viewModel.toggleValueUnit()
+
+        #expect(viewModel.valueUnit == .amount)
+
+        viewModel.toggleValueUnit()
+
+        #expect(viewModel.valueUnit == .percent)
+    }
+
+    /// 지수는 등락률이라 원화 축에 얹으면 두 선의 기울기가 서로 무관해진다. 고른 지수 자체는
+    /// 남아 있어야 % 로 되돌렸을 때 그대로 다시 겹친다.
+    @Test("금액 축에서는 비교가 켜져 있어도 겹치지 않는다")
+    func amountUnitDropsBenchmarkOverlay() async {
+        let viewModel = makeViewModel()
+        await viewModel.loadIfNeeded()
+        viewModel.selectBenchmark(.sp500)
+
+        viewModel.toggleValueUnit()
+
+        #expect(viewModel.overlaidBenchmark == nil)
+        #expect(viewModel.benchmarkExcessReturn == nil)
+        #expect(viewModel.selectedBenchmark == .sp500)
+        #expect(viewModel.isBenchmarkOverlayEnabled)
+
+        viewModel.toggleValueUnit()
+
+        #expect(viewModel.overlaidBenchmark?.index == .sp500)
+        #expect(viewModel.benchmarkExcessReturn != nil)
+    }
+
+    @Test("총 평가금액은 추이 마지막 시점의 총자산이다")
+    func latestTotalComesFromTheLastTrendPoint() async {
+        let viewModel = makeViewModel()
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.latestTotal == PerformanceSampleData.trendPoints.last?.total)
+    }
+
+    @Test("추이에 기록이 없으면 총 평가금액도 없다")
+    func latestTotalIsMissingWithoutTrend() async {
+        let viewModel = makeViewModel(trend: { _, _, _ in [] })
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.latestTotal == nil)
     }
 
     // MARK: - 벤치마크
@@ -1110,14 +1202,21 @@ private actor ComparisonRequestRecorder {
 
 /// 스텁 클로저 하나를 원하는 시점까지 붙잡아 두는 문. 두 조회가 겹칠 때 어느 쪽이
 /// 먼저 끝나는지를 테스트가 직접 정하기 위해 쓴다.
+///
+/// 열린 상태를 기억한다 — 붙잡을 조회가 아직 문 앞에 오지 않았을 때 `signal()` 이 들어와도
+/// 그 신호를 흘리지 않기 위해서다. 흘리면 뒤늦게 도착한 `wait()` 이 영영 깨지 않아
+/// 테스트가 실패가 아니라 **정지**한다.
 private actor RequestGate {
     private var continuation: CheckedContinuation<Void, Never>?
+    private var isOpen = false
 
     func wait() async {
+        if isOpen { return }
         await withCheckedContinuation { continuation = $0 }
     }
 
     func signal() {
+        isOpen = true
         continuation?.resume()
         continuation = nil
     }

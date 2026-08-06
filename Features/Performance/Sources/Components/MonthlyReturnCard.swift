@@ -28,23 +28,33 @@ struct MonthlyReturnCard: View {
     /// 카드와 컴포넌트가 서로 다른 시간대를 쓰면 상세 한 줄이 엉뚱한 날을 집는다.
     @Environment(\.calendar) private var calendar
 
-    /// 일 격자가 12개월 격자로 뒤집혀 있는지. 어느 달을 보는지는 재조회를 부르므로 ViewModel
-    /// 이 갖지만, 격자가 뒤집혔는지는 화면을 떠나면 잊어도 그만인 순수한 뷰 상태다.
-    @State private var isMonthPickerExpanded = false
+    /// 지금 카드가 무엇을 고르는 단계인지. 어느 달을 보는지는 재조회를 부르므로 ViewModel
+    /// 이 갖지만, 격자가 어디까지 펼쳐졌는지는 화면을 떠나면 잊어도 그만인 순수한 뷰 상태다.
+    @State private var stage: PickerStage = .days
+
+    /// 년 격자가 보고 있는 12년 페이지. 0 이 올해로 끝나는 가장 최신 페이지고, 과거로 갈수록
+    /// 늘어난다.
+    @State private var yearPageOffset = 0
 
     private let viewModel: PerformanceViewModel
 
+    /// 단계가 바뀔 때마다 부른다. 카드 높이가 단계마다 달라지는데 이 카드는 페이지 맨 아래에
+    /// 있어서, 스크롤을 따라 내리는 일은 스크롤을 쥔 부모만 할 수 있다.
+    private let onStageChange: () -> Void
+
     // MARK: - Body
 
-    init(viewModel: PerformanceViewModel) {
+    init(viewModel: PerformanceViewModel, onStageChange: @escaping () -> Void = {}) {
         self.viewModel = viewModel
+        self.onStageChange = onStageChange
     }
 
     #if DEBUG
-    /// 프리뷰 전용. 뒤집힌 격자는 탭으로만 도달하는 상태라 정적 프리뷰가 볼 방법이 없다.
-    init(viewModel: PerformanceViewModel, isMonthPickerExpanded: Bool) {
+    /// 프리뷰 전용. 펼쳐진 격자는 탭으로만 도달하는 상태라 정적 프리뷰가 볼 방법이 없다.
+    fileprivate init(viewModel: PerformanceViewModel, stage: PickerStage) {
         self.viewModel = viewModel
-        _isMonthPickerExpanded = State(initialValue: isMonthPickerExpanded)
+        onStageChange = {}
+        _stage = State(initialValue: stage)
     }
     #endif
 
@@ -62,25 +72,20 @@ struct MonthlyReturnCard: View {
         .padding(.spacingL)
         .hannunGlass(.contentSurface, in: .hannunContainer())
         .hannunAnimation(.selection, value: viewModel.selectedDate)
-        .hannunAnimation(.selection, value: isMonthPickerExpanded)
+        .hannunAnimation(.selection, value: stage)
+        .onChange(of: stage) { _, _ in onStageChange() }
     }
 
-    /// 화살표는 격자가 뒤집힌 동안 **년 이동**이 된다 — 12개월이 한눈에 있는데 그 위에서
-    /// 월 화살표를 남겨 두면 같은 일을 두 손잡이가 하게 된다.
+    /// 화살표가 무엇을 옮기는지는 단계가 정한다 — 열두 달이 한눈에 있는데 그 위에서 월
+    /// 화살표를 남겨 두면 같은 일을 두 손잡이가 하게 된다.
     private var header: some View {
         HStack(spacing: .spacingS) {
             arrowButton(
                 systemImageName: Constants.previousSymbolName,
-                accessibilityLabel: isMonthPickerExpanded
-                    ? Constants.previousYearAccessibilityLabel
-                    : Constants.previousMonthAccessibilityLabel,
+                accessibilityLabel: stage.previousAccessibilityLabel,
                 isEnabled: true
             ) {
-                if isMonthPickerExpanded {
-                    await viewModel.showPreviousYear()
-                } else {
-                    await viewModel.showPreviousMonth()
-                }
+                await showPrevious()
             }
 
             Spacer(minLength: 0)
@@ -91,36 +96,29 @@ struct MonthlyReturnCard: View {
 
             arrowButton(
                 systemImageName: Constants.nextSymbolName,
-                accessibilityLabel: isMonthPickerExpanded
-                    ? Constants.nextYearAccessibilityLabel
-                    : Constants.nextMonthAccessibilityLabel,
-                isEnabled: isMonthPickerExpanded
-                    ? viewModel.canShowNextYear
-                    : viewModel.canShowNextMonth
+                accessibilityLabel: stage.nextAccessibilityLabel,
+                isEnabled: canShowNext
             ) {
-                if isMonthPickerExpanded {
-                    await viewModel.showNextYear()
-                } else {
-                    await viewModel.showNextMonth()
-                }
+                await showNext()
             }
         }
     }
 
-    /// 월 라벨 자체가 격자를 뒤집는 손잡이다. 셰브런을 붙여 눌린다고 말한다 — 시트를 여는
-    /// 액세서리 캡션과 달리 여기서는 위아래로 뒤집히므로 방향이 그대로 의미가 된다.
+    /// 타이틀 자체가 격자를 한 단계 넓히는 손잡이다. 셰브런을 붙여 눌린다고 말한다 — 시트를
+    /// 여는 액세서리 캡션과 달리 여기서는 위아래로 뒤집히므로 방향이 그대로 의미가 된다.
+    /// 마지막 단계에서만 위를 향하는 이유는 거기서 한 번에 달력까지 접히기 때문이다.
     private var titleButton: some View {
         Button {
-            isMonthPickerExpanded.toggle()
+            stage = stage.next
         } label: {
             HStack(spacing: .spacingXS) {
                 Text(title)
                     .hannunFont(.subtext, tabularFigures: true)
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
-                    .minimumScaleFactor(Constants.monthTitleMinimumScaleFactor)
+                    .minimumScaleFactor(Constants.titleMinimumScaleFactor)
 
-                Image(systemName: isMonthPickerExpanded
+                Image(systemName: stage == .years
                     ? Constants.collapseSymbolName
                     : Constants.expandSymbolName)
                     .hannunFont(.caption)
@@ -131,21 +129,30 @@ struct MonthlyReturnCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(title)
-        .accessibilityHint(isMonthPickerExpanded
-            ? Constants.collapseAccessibilityHint
-            : Constants.expandAccessibilityHint)
+        .accessibilityHint(stage.titleAccessibilityHint)
     }
 
     @ViewBuilder
     private var content: some View {
-        if isMonthPickerExpanded {
+        switch stage {
+        case .days:
+            calendarContent
+        case .months:
             MonthPickerGrid(
                 year: viewModel.displayedYear,
                 selectedMonth: viewModel.displayedMonth,
                 disabledMonths: viewModel.disabledMonths
             ) { selectMonth($0) }
-        } else {
-            calendarContent
+        case .years:
+            // 비활성 칸을 주지 않는다 — 최신 페이지가 올해로 끝나 미래 연도가 격자에 아예
+            // 없다. `disabledMonths` 와 달리 막을 대상 자체가 생기지 않는다.
+            PickerGrid(
+                Array(yearPage),
+                selection: viewModel.displayedYear,
+                label: { String($0) },
+                accessibilityLabel: { Constants.accessibilityLabel(ofYear: $0) },
+                onSelect: { selectYear($0) }
+            )
         }
     }
 
@@ -208,12 +215,43 @@ struct MonthlyReturnCard: View {
         .accessibilityLabel(accessibilityLabel)
     }
 
+    private func showPrevious() async {
+        switch stage {
+        case .days:
+            await viewModel.showPreviousMonth()
+        case .months:
+            await viewModel.showPreviousYear()
+        case .years:
+            yearPageOffset += 1
+        }
+    }
+
+    private func showNext() async {
+        switch stage {
+        case .days:
+            await viewModel.showNextMonth()
+        case .months:
+            await viewModel.showNextYear()
+        case .years:
+            yearPageOffset -= 1
+        }
+    }
+
     /// 고른 달로 접으면서 옮긴다. 년은 **접기 전** 값을 잡아 둔다 — 재조회가 끝나기 전에
     /// 격자가 사라지므로 `viewModel` 을 다시 읽을 시점이 애매해진다.
     private func selectMonth(_ month: Int) {
         let year = viewModel.displayedYear
-        isMonthPickerExpanded = false
+        stage = .days
         Task { await viewModel.showMonth(year: year, month: month) }
+    }
+
+    /// 해를 고르면 접지 않고 월 격자로 한 칸만 돌아온다 — 그 해의 어느 달을 볼지가 다음
+    /// 걸음이기 때문이다. 페이지는 최신으로 되돌린다: 다시 펼쳤을 때 몇 페이지 전에 두고 온
+    /// 자리가 아니라 고른 해가 보이는 자리에서 시작해야 한다.
+    private func selectYear(_ year: Int) {
+        stage = .months
+        yearPageOffset = 0
+        Task { await viewModel.showYear(year) }
     }
 
     /// "8월 3일 · +1.2% · +₩142,000".
@@ -254,14 +292,32 @@ struct MonthlyReturnCard: View {
         return rate > 0 ? .gain : .loss
     }
 
+    /// 다음 걸음으로 넘어갈 수 있는지. 아직 오지 않은 시점에는 칠할 기록이 없고, 년 격자는
+    /// 최신 페이지가 올해로 끝나므로 그 페이지에서 ▶ 가 갈 곳이 없다.
+    private var canShowNext: Bool {
+        switch stage {
+        case .days: viewModel.canShowNextMonth
+        case .months: viewModel.canShowNextYear
+        case .years: yearPageOffset > 0
+        }
+    }
+
+    /// 년 격자 한 페이지. 월 격자와 같은 3열 4행이라 두 단계를 오가도 카드 높이가 널뛰지 않는다.
+    ///
+    /// 과거 하한은 두지 않는다 — 첫 기록이 언제인지 모르는 상태에서 끊으면 임의의 벽이 된다.
+    private var yearPage: ClosedRange<Int> {
+        let lastYear = viewModel.currentYear - Constants.yearsPerPage * yearPageOffset
+        return (lastYear - Constants.yearsPerPage + 1)...lastYear
+    }
+
     /// 고른 날의 파생값. 양쪽 모두 `startOfDay` 로 맞춘다 — 스냅샷 `recordedOn` 에는 시:분이
     /// 섞여 있어서 원시 `Date` 로 비교하면 늘 어긋난다.
     ///
-    /// 월 격자가 펼쳐진 동안에는 상세 줄을 접는다. 격자에 없는 날을 가리키는 한 줄이 12개월
-    /// 아래 남으면 그 달의 값처럼 읽힌다.
+    /// 격자가 펼쳐진 동안에는 상세 줄을 접는다. 격자에 없는 날을 가리키는 한 줄이 달·년 칸
+    /// 아래 남으면 그 칸의 값처럼 읽힌다.
     private var selectedReturn: DailyReturn? {
         guard
-            !isMonthPickerExpanded,
+            stage == .days,
             let selectedDate = viewModel.selectedDate,
             let dailyReturns = viewModel.calendarState.value
         else { return nil }
@@ -270,12 +326,54 @@ struct MonthlyReturnCard: View {
         return dailyReturns.first { calendar.startOfDay(for: $0.date) == selectedDay }
     }
 
-    /// 격자가 뒤집혀 있으면 년만 말한다 — 그 아래에서 고를 대상이 달이기 때문이다.
+    /// 단계가 고르는 대상만 말한다 — 달을 고르는 자리에서 달 이름까지 붙이면 그 값이 이미
+    /// 정해진 것처럼 읽힌다.
     private var title: String {
-        guard !isMonthPickerExpanded else {
-            return viewModel.calendarMonth.formatted(.dateTime.year())
+        switch stage {
+        case .days: viewModel.calendarMonth.formatted(.dateTime.year().month(.wide))
+        case .months: viewModel.calendarMonth.formatted(.dateTime.year())
+        case .years: Constants.title(ofYearPage: yearPage)
         }
-        return viewModel.calendarMonth.formatted(.dateTime.year().month(.wide))
+    }
+}
+
+/// 카드가 무엇을 고르는 단계인지. 일 → 월 → 년 순으로 한 칸씩 넓어지고, 년에서는 두 칸을
+/// 되짚지 않고 한 번에 달력으로 접힌다 — 해를 골랐다면 이미 월 격자를 지나온 뒤다.
+fileprivate enum PickerStage {
+    case days
+    case months
+    case years
+
+    var next: PickerStage {
+        switch self {
+        case .days: .months
+        case .months: .years
+        case .years: .days
+        }
+    }
+
+    var previousAccessibilityLabel: String {
+        switch self {
+        case .days: Constants.previousMonthAccessibilityLabel
+        case .months: Constants.previousYearAccessibilityLabel
+        case .years: Constants.previousYearPageAccessibilityLabel
+        }
+    }
+
+    var nextAccessibilityLabel: String {
+        switch self {
+        case .days: Constants.nextMonthAccessibilityLabel
+        case .months: Constants.nextYearAccessibilityLabel
+        case .years: Constants.nextYearPageAccessibilityLabel
+        }
+    }
+
+    var titleAccessibilityHint: String {
+        switch self {
+        case .days: Constants.monthPickerAccessibilityHint
+        case .months: Constants.yearPickerAccessibilityHint
+        case .years: Constants.collapseAccessibilityHint
+        }
     }
 }
 
@@ -288,15 +386,28 @@ fileprivate enum Constants {
     static let nextMonthAccessibilityLabel = "다음 달"
     static let previousYearAccessibilityLabel = "이전 해"
     static let nextYearAccessibilityLabel = "다음 해"
-    static let expandAccessibilityHint = "두 번 탭하면 다른 달을 고를 수 있어요"
+    static let previousYearPageAccessibilityLabel = "이전 연도 묶음"
+    static let nextYearPageAccessibilityLabel = "다음 연도 묶음"
+    static let monthPickerAccessibilityHint = "두 번 탭하면 다른 달을 고를 수 있어요"
+    static let yearPickerAccessibilityHint = "두 번 탭하면 다른 해를 고를 수 있어요"
     static let collapseAccessibilityHint = "두 번 탭하면 달력으로 돌아갑니다"
     static let emptyMessage = "이 달에는 기록이 없어요"
     static let failureSymbolName = "exclamationmark.triangle"
     static let failureTitle = "캘린더를 불러오지 못했어요"
     static let retryTitle = "다시 시도"
     static let detailSeparator = " · "
-    /// AX5 에서 "2026년 8월" 이 화살표 둘 사이 폭을 넘어서면 잘리는 대신 줄어든다.
-    static let monthTitleMinimumScaleFactor: CGFloat = 0.7
+    /// 월 격자와 같은 3열 4행.
+    static let yearsPerPage = 12
+    /// AX5 에서 "2026년 8월"·"2015 – 2026" 이 화살표 둘 사이 폭을 넘어서면 잘리는 대신 줄어든다.
+    static let titleMinimumScaleFactor: CGFloat = 0.7
+
+    static func accessibilityLabel(ofYear year: Int) -> String {
+        "\(year)년"
+    }
+
+    static func title(ofYearPage page: ClosedRange<Int>) -> String {
+        "\(page.lowerBound) – \(page.upperBound)"
+    }
 }
 
 #if DEBUG
@@ -306,18 +417,18 @@ private struct MonthlyReturnCardPreview: View {
 
     @State private var viewModel: PerformanceViewModel
 
-    private let isMonthPickerExpanded: Bool
+    private let stage: PickerStage
 
     // MARK: - Body
 
     @MainActor
-    init(viewModel: PerformanceViewModel, isMonthPickerExpanded: Bool = false) {
+    fileprivate init(viewModel: PerformanceViewModel, stage: PickerStage = .days) {
         _viewModel = State(initialValue: viewModel)
-        self.isMonthPickerExpanded = isMonthPickerExpanded
+        self.stage = stage
     }
 
     var body: some View {
-        MonthlyReturnCard(viewModel: viewModel, isMonthPickerExpanded: isMonthPickerExpanded)
+        MonthlyReturnCard(viewModel: viewModel, stage: stage)
             .padding(.spacingL)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.backgroundPrimary)
@@ -348,11 +459,22 @@ private struct MonthlyReturnCardPreview: View {
 
 /// 12개월 격자로 뒤집힌 상태. 카드 높이가 일 격자와 크게 어긋나지 않는지 함께 본다.
 #Preview("월간 수익률 캘린더 · 월 선택 격자") {
-    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, isMonthPickerExpanded: true)
+    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, stage: .months)
 }
 
 #Preview("월간 수익률 캘린더 · 월 선택 격자 AX5") {
-    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, isMonthPickerExpanded: true)
+    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, stage: .months)
+        .dynamicTypeSize(.accessibility5)
+}
+
+/// 12년 격자. 월 격자와 같은 3열 4행이라 두 단계 사이에서 높이가 튀지 않아야 한다.
+#Preview("월간 수익률 캘린더 · 년 선택 격자") {
+    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, stage: .years)
+        .preferredColorScheme(.light)
+}
+
+#Preview("월간 수익률 캘린더 · 년 선택 격자 AX5") {
+    MonthlyReturnCardPreview(viewModel: .previewWithCalendar, stage: .years)
         .dynamicTypeSize(.accessibility5)
 }
 

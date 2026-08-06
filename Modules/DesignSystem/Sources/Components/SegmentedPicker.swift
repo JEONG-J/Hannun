@@ -90,6 +90,9 @@ public struct SegmentedPicker<Value: Hashable & Sendable>: View {
         .padding(Constants.trackPadding)
     }
 
+    /// 등분 모드에도 좌우 패딩을 준다 — 호출부가 `fixedSize` 로 접으면 등분이 풀리고 ideal width 가
+    /// 남는데, 패딩이 0 이면 그게 곧 글자 폭이라 선택 캡슐이 라벨에 달라붙는다.
+    /// 자리가 남으면 `maxWidth: .infinity` 가 여전히 늘려 준다.
     nonisolated private func segment(
         _ value: Value,
         isSelected: Bool,
@@ -102,7 +105,7 @@ public struct SegmentedPicker<Value: Hashable & Sendable>: View {
                 .foregroundStyle(isSelected ? Color.brand : Color.textSecondary)
                 .lineLimit(1)
                 .fixedSize(horizontal: !isEvenlyDivided, vertical: false)
-                .padding(.horizontal, isEvenlyDivided ? 0 : .spacingM)
+                .padding(.horizontal, isEvenlyDivided ? .spacingS : .spacingM)
                 .frame(
                     maxWidth: isEvenlyDivided ? .infinity : nil,
                     minHeight: .minimumTouchTarget
@@ -148,7 +151,7 @@ private struct SegmentedPickerPreview: View {
                     .hannunFont(.subtext)
                     .foregroundStyle(Color.textSecondary)
 
-                SegmentedPicker(ChartPeriod.allCases, selection: $period) { $0.title }
+                SegmentedPicker(ChartPeriod.presets, selection: $period) { $0.title }
             }
         }
         .padding(.spacingL)

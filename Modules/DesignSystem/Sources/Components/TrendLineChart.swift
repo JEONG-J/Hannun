@@ -8,10 +8,11 @@
 import Charts
 import SwiftUI
 
-/// 추이 위의 한 점. `value` 는 기간 시작을 0 으로 둔 **% 정규화 값**이다.
+/// 추이 위의 한 점. `value` 가 무슨 축인지는 차트에 함께 넘기는 `TrendValueFormat` 이 정한다 —
+/// 기간 시작을 0 으로 둔 % 정규화 값이거나, 그 시점의 금액이다.
 ///
-/// 금액이 아니라 정규화 값을 받는 이유는 벤치마크 오버레이 때문이다. 금액 축과 지수 값을
-/// 같은 축에 겹치면 두 선의 기울기를 비교할 수 없다.
+/// 벤치마크 오버레이는 % 갈래에서만 성립한다. 지수는 등락률이라 금액 축에 겹치면 두 선의
+/// 기울기를 비교할 수 없으므로, 금액을 그리는 호출부는 오버레이를 비워서 넘긴다.
 public struct TrendPoint: Identifiable, Equatable, Sendable {
 
     // MARK: - Property
@@ -27,6 +28,16 @@ public struct TrendPoint: Identifiable, Equatable, Sendable {
         self.date = date
         self.value = value
     }
+}
+
+/// 추이 값이 무슨 축인지. 기준선을 그을지, 축 라벨을 무슨 어휘로 적을지가 여기서 갈린다.
+public enum TrendValueFormat: Sendable {
+
+    /// 기간 시작을 0 으로 둔 % 정규화 값.
+    case percent
+
+    /// 금액. 0 은 기준이 아니라 파산이므로 기준선도 0 을 포함한 y 도메인도 두지 않는다.
+    case currency
 }
 
 /// 오버레이할 벤치마크 계열.
@@ -65,6 +76,9 @@ public struct TrendSeries: Identifiable, Equatable, Sendable {
 /// 벤치마크와 벌어진 간격이 1%p 인지 10%p 인지 읽히지 않는다. 대신 눈금선(grid)은 긋지
 /// 않아 시안의 빈 플롯을 최대한 지킨다: X축 라벨 3개, Y축 라벨 2개와 기준선 하나가 전부다.
 ///
+/// 금액 축(`valueFormat: .currency`)에서는 기준선이 사라진다. 0 원은 정규화 기준이 아니라
+/// 파산이고, 그 선을 그으려면 y 도메인이 0 까지 내려가 수천만 원대 곡선이 납작해진다.
+///
 /// ## 맨 윗줄은 호출부에 열려 있다
 ///
 /// `header:` 슬롯에 넘긴 것이 범례 오른쪽에 앉는다. 차트 축을 바꾸는 컨트롤(단위 세그먼트)
@@ -78,6 +92,7 @@ public struct TrendLineChart<Header: View>: View {
 
     private let points: [TrendPoint]
     private let benchmarks: [TrendSeries]
+    private let valueFormat: TrendValueFormat
     private let insufficientDataMessage: String
     private let header: Header
     @Binding private var selection: Date?
@@ -89,12 +104,14 @@ public struct TrendLineChart<Header: View>: View {
     public init(
         points: [TrendPoint],
         benchmarks: [TrendSeries] = [],
+        valueFormat: TrendValueFormat = .percent,
         insufficientDataMessage: String,
         selection: Binding<Date?>,
         @ViewBuilder header: () -> Header
     ) {
         self.points = points
         self.benchmarks = benchmarks
+        self.valueFormat = valueFormat
         self.insufficientDataMessage = insufficientDataMessage
         self.header = header()
         _selection = selection
@@ -171,18 +188,23 @@ public struct TrendLineChart<Header: View>: View {
         Chart {
             // 정규화 기준(기간 시작 = 0%). 이 선이 없으면 내려간 구간이 손실인지 고점 대비
             // 조정인지 구분되지 않는다. 데이터가 아니라 눈금이므로 점선으로 그어 실선인
-            // 두 계열과 섞이지 않게 한다.
-            RuleMark(y: .value(Constants.valueLabel, Constants.baselineValue))
-                .foregroundStyle(Color.neutral)
-                .lineStyle(
-                    StrokeStyle(lineWidth: Constants.baselineWidth, dash: Constants.baselineDash)
-                )
+            // 두 계열과 섞이지 않게 한다. 금액 축에는 기준 삼을 값이 없어 긋지 않는다.
+            if valueFormat == .percent {
+                RuleMark(y: .value(valueLabel, Constants.baselineValue))
+                    .foregroundStyle(Color.neutral)
+                    .lineStyle(
+                        StrokeStyle(
+                            lineWidth: Constants.baselineWidth,
+                            dash: Constants.baselineDash
+                        )
+                    )
+            }
 
             ForEach(benchmarks) { series in
                 ForEach(series.points) { point in
                     LineMark(
                         x: .value(Constants.dateLabel, point.date),
-                        y: .value(Constants.valueLabel, point.value),
+                        y: .value(valueLabel, point.value),
                         series: .value(Constants.seriesLabel, series.name)
                     )
                     .foregroundStyle(series.color)
@@ -194,7 +216,7 @@ public struct TrendLineChart<Header: View>: View {
             ForEach(points) { point in
                 AreaMark(
                     x: .value(Constants.dateLabel, point.date),
-                    y: .value(Constants.valueLabel, point.value)
+                    y: .value(valueLabel, point.value)
                 )
                 .foregroundStyle(areaGradient)
             }
@@ -202,7 +224,7 @@ public struct TrendLineChart<Header: View>: View {
             ForEach(points) { point in
                 LineMark(
                     x: .value(Constants.dateLabel, point.date),
-                    y: .value(Constants.valueLabel, point.value),
+                    y: .value(valueLabel, point.value),
                     series: .value(Constants.seriesLabel, Constants.primarySeriesName)
                 )
                 .foregroundStyle(Color.brand)
@@ -221,12 +243,15 @@ public struct TrendLineChart<Header: View>: View {
 
                 PointMark(
                     x: .value(Constants.dateLabel, selectedPoint.date),
-                    y: .value(Constants.valueLabel, selectedPoint.value)
+                    y: .value(valueLabel, selectedPoint.value)
                 )
                 .foregroundStyle(Color.brand)
             }
         }
         .chartLegend(.hidden)
+        // 금액 축은 실제 값 범위에 맞춘다. 0 을 끌어들이면 기간 내 변동 폭이 총자산에 눌려
+        // 곡선이 직선처럼 납작해진다. % 축은 기준선이 이미 0 을 붙잡고 있어 그대로다.
+        .chartYScale(domain: .automatic(includesZero: valueFormat == .percent))
         .chartYAxis {
             AxisMarks(
                 position: .trailing,
@@ -234,7 +259,7 @@ public struct TrendLineChart<Header: View>: View {
             ) { value in
                 if let plotValue = value.as(Double.self) {
                     AxisValueLabel {
-                        Text(AmountFormatter.percentAxisLabel(plotValue: plotValue))
+                        Text(axisLabel(plotValue: plotValue))
                             .font(.hannun(.caption, tabularFigures: true))
                             .foregroundStyle(Color.textSecondary)
                     }
@@ -276,6 +301,23 @@ public struct TrendLineChart<Header: View>: View {
 
     // MARK: - Function
 
+    /// 축 라벨 어휘는 값 형식이 정한다 — 원화 값에 `percentAxisLabel` 을 쓰면 `+5,234만%` 가
+    /// 찍힌다.
+    private func axisLabel(plotValue: Double) -> String {
+        switch valueFormat {
+        case .percent: AmountFormatter.percentAxisLabel(plotValue: plotValue)
+        case .currency: AmountFormatter.currencyAxisLabel(plotValue: plotValue)
+        }
+    }
+
+    /// 각 마크의 y 값에 붙는 이름. VoiceOver 가 축 이름으로 읽으므로 형식과 함께 바뀐다.
+    private var valueLabel: String {
+        switch valueFormat {
+        case .percent: Constants.percentValueLabel
+        case .currency: Constants.currencyValueLabel
+        }
+    }
+
     private var showsLegend: Bool {
         points.count > 1 && !benchmarks.isEmpty
     }
@@ -305,12 +347,14 @@ public extension TrendLineChart where Header == EmptyView {
     init(
         points: [TrendPoint],
         benchmarks: [TrendSeries] = [],
+        valueFormat: TrendValueFormat = .percent,
         insufficientDataMessage: String,
         selection: Binding<Date?>
     ) {
         self.init(
             points: points,
             benchmarks: benchmarks,
+            valueFormat: valueFormat,
             insufficientDataMessage: insufficientDataMessage,
             selection: selection,
             header: { EmptyView() }
@@ -333,7 +377,8 @@ fileprivate enum Constants {
     static let xAxisLabelCount = 3
     static let yAxisLabelCount = 2
     static let dateLabel = "날짜"
-    static let valueLabel = "수익률"
+    static let percentValueLabel = "수익률"
+    static let currencyValueLabel = "평가금액"
     static let seriesLabel = "계열"
     static let primarySeriesName = "내 수익률"
 }
@@ -352,6 +397,14 @@ private struct TrendLineChartPreview: View {
     /// 기준선을 플롯 한가운데 두는 표본. 0% 선이 실제로 손익을 가르는지 이 케이스로 본다.
     private let losingReturns = TrendLineChartPreview.series(
         seed: [0, -1.8, 0.6, -2.4, -4.1, -1.2, -3.6, -5.2]
+    )
+    /// 금액 축 표본. 같은 추이를 원화로 그린다 — 기준선이 사라지고 축 라벨이 압축 금액으로
+    /// 바뀌는지, 총자산에 눌려 곡선이 납작해지지 않는지 본다.
+    private let totals = TrendLineChartPreview.series(
+        seed: [
+            120_000_000, 121_440_000, 120_480_000, 123_720_000,
+            125_760_000, 125_040_000, 129_120_000, 131_280_000,
+        ]
     )
 
     @State private var selection: Date?
@@ -391,6 +444,15 @@ private struct TrendLineChartPreview: View {
 
             TrendLineChart(
                 points: losingReturns,
+                insufficientDataMessage: "데이터가 쌓이면 추이가 표시됩니다",
+                selection: $selection
+            )
+            .padding(.spacingL)
+            .background(Color.surfacePrimary, in: .hannunContainer())
+
+            TrendLineChart(
+                points: totals,
+                valueFormat: .currency,
                 insufficientDataMessage: "데이터가 쌓이면 추이가 표시됩니다",
                 selection: $selection
             )

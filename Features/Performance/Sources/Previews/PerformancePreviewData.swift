@@ -235,6 +235,15 @@ extension PerformanceViewModel {
         return viewModel
     }
 
+    /// 금액 축으로 뒤집은 상태. 지수를 고른 채로 두어 오버레이·범례·초과수익 문구가 함께
+    /// 사라지는지 본다 — 원화 축에는 등락률인 지수를 얹을 수 없다.
+    @MainActor
+    static var previewShowingAmount: PerformanceViewModel {
+        let viewModel = PerformanceViewModel.preview
+        viewModel.toggleValueUnit()
+        return viewModel
+    }
+
     /// 아직 아무 지수도 고르지 않은 상태. 벤치마크 시트의 "차트에 겹치기" 스위치가
     /// `.disabled(true)` 로 내려가는지, 액세서리 오른쪽이 `비교` 로 바뀌는지 본다.
     @MainActor

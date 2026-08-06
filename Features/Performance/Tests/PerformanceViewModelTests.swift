@@ -220,26 +220,14 @@ struct PerformanceViewModelTests {
         #expect(viewModel.trendState.value?.portfolio.count == 2)
     }
 
-    @Test("기간을 고르면 선택 시트가 닫힌다")
-    func selectingPeriodClosesPicker() async {
+    @Test("기간을 고르면 그 기간이 차트에 반영된다")
+    func selectingPeriodUpdatesChart() async {
         let viewModel = makeViewModel()
         await viewModel.loadIfNeeded()
-        viewModel.isPeriodPickerPresented = true
 
         await viewModel.selectPeriod(.oneMonth)
 
-        #expect(viewModel.isPeriodPickerPresented == false)
-    }
-
-    @Test("이미 보고 있던 기간을 다시 골라도 시트는 닫힌다")
-    func reselectingSamePeriodStillClosesPicker() async {
-        let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
-        viewModel.isPeriodPickerPresented = true
-
-        await viewModel.selectPeriod(.yearToDate)
-
-        #expect(viewModel.isPeriodPickerPresented == false)
+        #expect(viewModel.period == .oneMonth)
     }
 
     @Test("단위가 고른 시점만 차트에 남는다")

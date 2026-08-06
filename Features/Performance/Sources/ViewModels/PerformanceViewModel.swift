@@ -57,9 +57,6 @@ final class PerformanceViewModel {
     /// 벤치마크 선택 시트가 떠 있는지. 툴바 아이콘을 눌러 연다 (디자인 문서 §7).
     var isBenchmarkPickerPresented = false
 
-    /// 기간 선택 시트가 떠 있는지. 액세서리 왼쪽 캡션을 눌러 연다.
-    var isPeriodPickerPresented = false
-
     /// 본문 헤드라인이 아직 화면에 있는지. 액세서리 왼쪽이 무엇을 말할지를 이 값이 정한다.
     var isHeroVisible = true
 
@@ -373,10 +370,8 @@ final class PerformanceViewModel {
         selectedDate = selectedDate.map { calendar.startOfDay(for: $0) } == day ? nil : day
     }
 
-    /// 기간 선택 시트가 부른다. 고른 값과 무관하게 시트를 닫는다 — 이미 보고 있던 기간을
-    /// 다시 눌러도 "골랐다"는 사용자 의도는 같다.
+    /// 차트 카드의 기간 세그먼트가 부른다.
     func selectPeriod(_ period: ChartPeriod) async {
-        isPeriodPickerPresented = false
         guard period != self.period else { return }
 
         self.period = period

@@ -12,9 +12,9 @@ import SwiftUI
 
 /// 성과 탭 본문 (PM-2 ~ PM-4). 위에서부터 YTD 큰 숫자 → 추이 차트 → 월간 수익률 캘린더.
 ///
-/// 기간은 액세서리로, 벤치마크 고르기는 툴바 + 시트로 내렸다. 일별/월별만 차트 카드 헤더에
-/// 둔다 — 차트 가로축을 정하는 컨트롤이라 바꾸는 대상 바로 위에 있어야 무엇이 달라지는지
-/// 보인다 (UI 스펙 §4.3).
+/// 차트를 바꾸는 컨트롤은 전부 차트 카드 안에 있다 — 단위(일별/월별)는 가로축 바로 위 헤더에,
+/// 기간은 플롯 바로 아래 세그먼트에. 둘 다 바꾸는 대상에 붙어 있어야 무엇이 달라졌는지 눈이
+/// 따라간다 (UI 스펙 §4.3). 벤치마크 고르기만 툴바 + 시트로 내렸다.
 struct PerformanceContentView: View {
 
     // MARK: - Property
@@ -98,9 +98,15 @@ struct PerformanceContentView: View {
     }
 
     /// 차트는 콘텐츠라 glass 를 깔지 않는다 — 불투명 surface 카드 위에 얹는다 (UI 스펙 §4.3).
+    ///
+    /// 기간 세그먼트는 플롯 **바로 아래**다. 헤더 줄에 얹으면 6칸이 범례와 단위 세그먼트를
+    /// 밀어내고, 스크럽 가이드 아래로 내리면 그 한 줄이 사라지는 순간 세그먼트가 따라 올라가
+    /// 손이 가던 자리가 움직인다.
     private var chartCard: some View {
         VStack(alignment: .leading, spacing: .spacingS) {
             chart
+
+            PeriodSegment(selection: periodBinding)
 
             if viewModel.isScrubHintVisible {
                 Text(Constants.scrubHintMessage)
@@ -166,6 +172,15 @@ struct PerformanceContentView: View {
             viewModel.chartCursorDate
         } set: { date in
             viewModel.scrubbedDate = date
+        }
+    }
+
+    /// 기간도 단위와 같은 이유로 계산 바인딩이다 — 아래 `granularityBinding` 주석 참조.
+    private var periodBinding: Binding<ChartPeriod> {
+        Binding {
+            viewModel.period
+        } set: { period in
+            Task { await viewModel.selectPeriod(period) }
         }
     }
 

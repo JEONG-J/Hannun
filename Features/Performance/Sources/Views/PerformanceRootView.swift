@@ -62,11 +62,8 @@ private struct PerformanceScreen: View {
         .tabAccessory(.performance) {
             PerformanceAccessory(viewModel: self.viewModel)
         }
-        // 시트도 탭 루트가 띄운다 — 여는 주체가 액세서리·툴바라 화면에 붙이면 화면이 바뀔 때
-        // 시트까지 함께 사라진다 (디자인 문서 §7).
-        .sheet(isPresented: $viewModel.isPeriodPickerPresented) {
-            PeriodPickerSheet(viewModel: self.viewModel)
-        }
+        // 시트도 탭 루트가 띄운다 — 액세서리와 같은 층에 두어야 화면이 바뀌어도 시트가
+        // 함께 사라지지 않는다 (디자인 문서 §7).
         .sheet(isPresented: $viewModel.isBenchmarkPickerPresented) {
             BenchmarkPickerSheet(viewModel: self.viewModel)
         }

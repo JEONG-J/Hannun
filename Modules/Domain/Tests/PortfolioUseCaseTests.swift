@@ -33,7 +33,7 @@ struct SaveHoldingUseCaseTests {
 
     @Test("현금이 아니면 티커와 평단가가 필요하다")
     func requiresTickerAndAveragePrice() {
-        #expect(throws: AppError.validation("티커를 입력해 주세요.")) {
+        #expect(throws: AppError.validation("티커·종목코드를 입력해 주세요.")) {
             try SaveHoldingUseCase.validated(
                 SampleRecords.holding(
                     category: .domesticStock,

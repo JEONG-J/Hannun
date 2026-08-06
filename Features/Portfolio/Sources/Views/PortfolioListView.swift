@@ -375,7 +375,7 @@ fileprivate enum Constants {
     static let screenTitle = "포트폴리오"
     static let addHoldingTitle = "종목 추가"
     static let addHoldingSymbolName = "plus"
-    static let searchPrompt = "종목명·티커 검색"
+    static let searchPrompt = "종목명·티커·종목코드 검색"
     static let listControlTitle = "정렬 및 필터"
     static let listControlSymbolName = "line.3.horizontal.decrease.circle"
     static let adjustedListControlSymbolName = "line.3.horizontal.decrease.circle.fill"
@@ -400,6 +400,6 @@ fileprivate enum Constants {
     static let clearCategoryFilterTitle = "필터 해제"
     static let searchEmptySymbolName = "magnifyingglass"
     static let searchEmptyTitle = "검색 결과가 없어요"
-    static let searchEmptyMessage = "종목명이나 티커의 일부만 넣어도 찾을 수 있어요."
+    static let searchEmptyMessage = "종목명이나 티커·종목코드의 일부만 넣어도 찾을 수 있어요."
     static let clearSearchTitle = "검색어 지우기"
 }

@@ -53,7 +53,7 @@ public struct SaveHoldingUseCase: SaveHoldingUseCaseProtocol {
         }
 
         guard !normalized.ticker.isEmpty else {
-            throw AppError.validation("티커를 입력해 주세요.")
+            throw AppError.validation("티커·종목코드를 입력해 주세요.")
         }
         guard let averagePrice = normalized.averagePrice, averagePrice > 0 else {
             throw AppError.validation("평단가를 입력해 주세요.")

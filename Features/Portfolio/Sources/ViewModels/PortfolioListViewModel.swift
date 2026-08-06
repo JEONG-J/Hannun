@@ -87,7 +87,7 @@ final class PortfolioListViewModel {
 
     /// 골라 둔 카테고리. 비어 있으면 전체를 보여 준다 — "아무것도 안 고름" 과 "전부 고름" 을
     /// 같은 화면으로 두어야 필터를 풀었을 때 종목이 하나도 없는 상태가 생기지 않는다.
-    /// 바꾸는 길을 아래 함수들로 좁혀 두면 칩 줄과 딥링크가 같은 규칙을 쓴다.
+    /// 바꾸는 길을 아래 함수들로 좁혀 두면 툴바 메뉴와 딥링크가 같은 규칙을 쓴다.
     private(set) var selectedCategories: Set<AssetCategory> = []
 
     var sortOrder: HoldingSortOrder = .initial
@@ -100,8 +100,9 @@ final class PortfolioListViewModel {
 
     var isCategoryFiltered: Bool { !selectedCategories.isEmpty }
 
-    /// 칩 줄이 그리는 순서. `Set` 은 순회 순서가 실행마다 달라 그대로 쓰면 칩이 제자리를
-    /// 지키지 못하므로, 카드·도넛과 같은 `allCases` 순서에 실어 고정한다.
+    /// 메뉴 라벨과 음성 안내가 이름을 늘어놓는 순서. `Set` 은 순회 순서가 실행마다 달라
+    /// 그대로 쓰면 같은 선택이 매번 다르게 읽히므로, 카드·도넛과 같은 `allCases` 순서에
+    /// 실어 고정한다.
     var selectedCategoryList: [AssetCategory] {
         AssetCategory.allCases.filter { selectedCategories.contains($0) }
     }
@@ -135,7 +136,7 @@ final class PortfolioListViewModel {
 
     /// 검색 중에는 "총" 이라고 말할 수 없다 — 요약 바가 더하는 건 걸러 낸 종목뿐이다.
     /// 카테고리를 여럿 고른 경우도 같은 이유로 "총" 을 못 쓰는데, 이름을 늘어놓으면 한 줄을
-    /// 넘겨 버리므로 골라 놓았다는 사실만 말하고 어떤 것들인지는 칩 줄에 맡긴다.
+    /// 넘겨 버리므로 골라 놓았다는 사실만 말하고 어떤 것들인지는 툴바 메뉴 라벨에 맡긴다.
     var summaryTitle: String {
         if isSearching { return Constants.searchSummaryTitle }
         guard isCategoryFiltered else { return Constants.totalSummaryTitle }

@@ -111,7 +111,8 @@ public struct BottomAccessory<Leading: View, Trailing: View>: View {
 
     /// 시스템 캡슐 안쪽 여백. 문구와 컨트롤이 둥근 테두리에 붙어 보이지 않을 만큼 들여쓴다 —
     /// 바깥 여백은 시스템이 이미 넣으므로 여기서 더 벌리면 내용이 가운데로 몰린다.
-    /// 축약 상태에서는 캡슐이 좁아져 1pt 도 아쉬우므로 더 붙인다.
+    /// 축약에서는 좁아진 만큼 덜 들여쓰지만, 테두리에 닿지 않을 여백은 거기서도 지킨다 —
+    /// 폭을 아끼자고 글자를 곡률까지 밀면 캡슐 밖으로 새어 나온 것처럼 읽힌다.
     private var horizontalPadding: CGFloat {
         layout == .inline ? Constants.inlineHorizontalPadding : Constants.horizontalPadding
     }
@@ -126,12 +127,14 @@ public extension BottomAccessory where Trailing == EmptyView {
 
 fileprivate enum Constants {
     static let horizontalPadding: CGFloat = .spacingM
-    static let inlineHorizontalPadding: CGFloat = .spacingXS
+    static let inlineHorizontalPadding: CGFloat = .spacingS
     /// 폭이 모자랄 때 왼쪽 문구가 먼저 줄어들게 한다. 오른쪽 컨트롤은 고유 폭을 지킨다.
     static let trailingLayoutPriority: Double = 1
-    /// 프리뷰 전용. 시스템 컨테이너 높이의 근사치다.
+    /// 프리뷰 전용. 시스템 컨테이너 크기의 근사치다. 축약은 탭바 알약에 자리를 내주느라
+    /// 확장보다 한참 좁으므로 폭까지 흉내 내야 한다 — 넓게 두면 잘림이 안 보인다.
     static let expandedHeight: CGFloat = 56
     static let inlineHeight: CGFloat = 44
+    static let inlineWidth: CGFloat = 290
 }
 
 #if DEBUG
@@ -171,6 +174,7 @@ private struct BottomAccessoryPreview: View {
     private func standIn(@ViewBuilder content: () -> some View) -> some View {
         content()
             .frame(height: layout == .inline ? Constants.inlineHeight : Constants.expandedHeight)
+            .frame(maxWidth: layout == .inline ? Constants.inlineWidth : .infinity)
             .glassEffect(.regular, in: .capsule)
     }
 

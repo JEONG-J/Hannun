@@ -7,16 +7,18 @@ Git Flow + **연속 브랜치 파생** 지원
 
 ## 브랜치 전략
 
+- **통합 브랜치는 `main`** — 이 저장소에는 `develop` 이 없다. feature 브랜치는 `main` 에서 분기해 `main` 으로 PR 한다.
 - **연속 브랜치**: feature에서 다음 feature 파생 가능 (티켓 단위 분리)
 - **PR 대기 중 작업**: 승인 대기 중 이전 브랜치에서 다음 브랜치 생성 가능
-- **동기화**: develop에서 merge 대신 `fetch + rebase` 사용
+- **동기화**: main에서 merge 대신 `fetch + rebase` 사용
 
 ## 배포 브랜치 전략
 
 - **TestFlight 배포**: `testFlight/{번호}` 브랜치 생성 → `testFlight`으로 PR 머지
 - **Release 배포**: `release/{번호}` 브랜치 생성 → `release`로 PR 머지
-- 배포 브랜치는 `develop`에서 분기하여 번호를 순차적으로 매김
+- 배포 브랜치는 `main`에서 분기하여 번호를 순차적으로 매김
 - 직접 푸시 금지, 반드시 PR을 통해 머지
+- `testFlight` / `release` 머지가 **Xcode Cloud 빌드를 트리거한다** (아래 참고)
 
 ## 커밋 형식
 
@@ -40,7 +42,7 @@ Git Flow + **연속 브랜치 파생** 지원
 ## PR 규칙
 
 - 최소 1인 Approve 필수
-- main/develop 직접 푸시 금지
+- main 직접 푸시 금지
 - Squash and Merge 사용
 - **배포 PR 예외**: `testFlight`, `release` 브랜치로의 PR은 **Merge Commit** 사용 (커밋 히스토리 동기화를 위해)
 - **PR 제목·본문에 AI 작성 흔적 금지** — `🤖 Generated with [Claude Code](...)` 푸터, `Co-Authored-By` 크레딧 등
@@ -59,3 +61,51 @@ Git Flow + **연속 브랜치 파생** 지원
 | 리팩토링 | `♻️ Refactor: ` | `:hammer: Refactor` | `Task` |
 | 문서 작업 | `📄 Docs: ` | `:page_facing_up: Docs` | `Task` |
 | 기타 작업 | `🍀 ETC: ` | `:wrench: chore` | `Task` |
+
+## 자동 배포 (Xcode Cloud)
+
+**역할 분담** — 검증은 GitHub Actions, 배포는 Xcode Cloud.
+
+| | GitHub Actions (`.github/workflows/ci.yml`) | Xcode Cloud |
+|---|---|---|
+| 트리거 | `main` 으로의 PR · `main` 푸시 | `testFlight` / `release` 브랜치 변경 |
+| 하는 일 | generate → inspect → build-all → test-all | Archive → 업로드 |
+
+Xcode Cloud 워크플로에는 **Test 액션을 넣지 않는다.** 같은 테스트를 두 번 돌리면
+무료 한도(월 25시간)만 태운다. 배포 브랜치로 올라가는 커밋은 이미 `main` 에서 Actions 검증을 거쳤다.
+
+### ci_scripts/ci_post_clone.sh
+
+이 저장소는 Tuist 프로젝트라 `.xcworkspace` / `.xcodeproj` 가 `.gitignore` 대상이다.
+**클론 직후에는 Xcode 가 열 수 있는 프로젝트가 없으므로** 이 스크립트가 반드시 필요하다.
+mise 설치 → `make bootstrap` → `make generate` 로 워크스페이스를 만든 뒤,
+`CURRENT_PROJECT_VERSION` 을 `CI_BUILD_NUMBER` 로 덮어쓴다
+(`Hannun.shared.xcconfig` 의 `1` 을 그대로 쓰면 두 번째 업로드부터 거부된다).
+
+### App Store Connect 워크플로 (UI 설정 — 저장소에 없다)
+
+| | TestFlight | Release |
+|---|---|---|
+| 시작 조건 | `testFlight` 브랜치 변경 | `release` 브랜치 변경 |
+| 액션 | Archive · 스킴 `Hannun` · Configuration `Release` | 동일 |
+| 배포 준비 | TestFlight (Internal Testing Only) | App Store Connect |
+| 후처리 | 내부 테스터 그룹 배포 | **없음** — 심사 제출은 사람이 누른다 |
+| 환경변수 | `KIS_APP_KEY` · `KIS_APP_SECRET` (Secret 체크) | 동일 |
+
+`KIS_*` 를 비워 두어도 빌드는 통과한다 — 사용자가 앱 안에서 직접 키를 넣는 경로가 있다.
+
+### 최초 1회 체크리스트
+
+- [ ] App Store Connect 에 앱 레코드 생성 (`com.hannun.app`)
+- [ ] 로컬에서 `make generate` → 워크스페이스를 Xcode 로 열고
+      Product ▸ Xcode Cloud ▸ Create Workflow 로 GitHub 연동
+      (온보딩 시점엔 로컬에 워크스페이스가 있어야 한다. Xcode Cloud 는 경로·스킴만 저장하고
+      실제 빌드 때는 `ci_post_clone.sh` 가 생성한다)
+- [ ] **CloudKit 스키마를 Production 으로 배포** — `HannunModelContainer.swift` 가
+      SwiftData + CloudKit 동기화를 쓰는데 **TestFlight 빌드는 CloudKit Production 환경을 사용한다.**
+      Development 에만 스키마가 있으면 앱은 뜨지만 데이터가 안 붙는다. 첫 배포의 최대 함정.
+- [ ] 워크플로 환경의 Xcode 가 **iOS 26.4 SDK** 를 포함하는지 확인 (배포 타깃이 26.4)
+- [ ] 첫 아카이브 후 `aps-environment` 확인 — `Hannun.entitlements` 는 `development` 로 두었다.
+      Xcode 가 App Store 배포용 export 시 `production` 으로 바꿔 주므로 건드리지 않는다
+      (여기서 `production` 으로 박으면 로컬 개발 빌드 서명이 깨진다). 업로드가 이 값으로 거부되면 그때 조정한다.
+- [ ] 이미 같은 빌드 번호를 올린 적이 있으면 워크플로 설정에서 시작 빌드 번호를 올린다

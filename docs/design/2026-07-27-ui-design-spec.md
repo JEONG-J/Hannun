@@ -408,8 +408,7 @@ iOS 26 `TabView`는 탭바 바로 위에 떠 있는 Liquid Glass 액세서리를
 #### API 주의사항
 
 - `tabViewBottomAccessory(content:)` — iOS 26.0+
-- `tabViewBottomAccessory(isEnabled:content:)` — **iOS 26.1+**. 배포 타깃이 26.0을
-  포함하면 `isEnabled:` 대신 조건 분기로 `EmptyView()`를 반환한다.
+- `tabViewBottomAccessory(isEnabled:content:)` — iOS 26.1+. 배포 타깃이 26.4라 그대로 쓴다.
 - `tabBarMinimizeBehavior(.onScrollDown)`은 **iPhone 전용**. iPad/Mac Catalyst에서는
   탭바가 최소화되지 않으므로 `.inline` 대응은 iPhone 기준으로만 검증한다.
 - 액세서리 높이만큼 콘텐츠 하단에 여백이 필요하다 — 리스트 마지막 행이 캡슐에 가리지

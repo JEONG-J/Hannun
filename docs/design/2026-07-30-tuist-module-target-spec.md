@@ -27,7 +27,7 @@
 | 툴체인 | **Tuist 4.202.6** — `mise.toml` 로 프로젝트 고정 (§7.1) | 머신 간 버전 편차 제거. `tuist@latest` 는 canary를 물어오므로 금지 |
 | 테스트 프레임워크 | **Swift Testing** (`import Testing`) — XCTest 신규 작성 금지 | toolchain 내장이라 의존성 0. 파라미터화(`@Test(arguments:)`)가 YTD·환산 케이스 표에 그대로 맞음. 단 **기본 병렬 실행**이라 공유 상태 주의 (§6.2) |
 | Swift 버전 | Swift 6 language mode + `SWIFT_STRICT_CONCURRENCY=complete` | 로컬 toolchain Swift 6.3.3 확인 |
-| 배포 타깃 | **iOS 26.0** | Liquid Glass / `tabViewBottomAccessory` / `ConcentricRectangle` 필수 (§11-①) |
+| 배포 타깃 | **iOS 26.4** | Liquid Glass / `tabViewBottomAccessory` / `ConcentricRectangle` 필수 (§11-①) |
 
 ## 2. 타깃 목록
 
@@ -239,7 +239,7 @@ import ProjectDescription
 public let bundleIdPrefix = "com.jeong.hannun"
 public let hannunOrganizationName = "Hannun"
 public let hannunDestinations: Destinations = [.iPhone, .iPad]
-public let hannunDeploymentTargets: DeploymentTargets = .iOS("26.0")
+public let hannunDeploymentTargets: DeploymentTargets = .iOS("26.4")
 
 public extension SettingsDictionary {
     static var hannunBase: SettingsDictionary {
@@ -1125,10 +1125,10 @@ Presentation 하나만 만들고 Domain/Data 는 `Modules/` 에서 공유한다 
 
 ## 11. 미결 사항 (착수 전 확인 필요)
 
-① **배포 타깃 — 해결됨.** **iOS 26.0** 으로 확정했다. 설계 문서 §1 타겟의 "iOS 17 이상"을
-"iOS 26.0 이상"으로 고치고 확정 근거(UI 스펙이 Liquid Glass·`tabViewBottomAccessory`·
+① **배포 타깃 — 해결됨.** **iOS 26.4** 로 확정했다. 설계 문서 §1 타겟의 "iOS 17 이상"을
+"iOS 26.4 이상"으로 고치고 확정 근거(UI 스펙이 Liquid Glass·`tabViewBottomAccessory`·
 `ConcentricRectangle` 을 전제한다)를 같은 자리에 남겼다. 매니페스트도 이미 같은 값이다 —
-`ProjectSettings.swift` 의 `hannunDeploymentTargets = .iOS("26.0")`(§5.1). 이로써 설계 문서·
+`ProjectSettings.swift` 의 `hannunDeploymentTargets = .iOS("26.4")`(§5.1). 이로써 설계 문서·
 UI 스펙·CLAUDE.md·매니페스트가 한 값으로 정렬됐고, iOS 17 유지 시 필요했던 UI 스펙
 §2.4·§3.1 재작성 논의는 닫힌다.
 

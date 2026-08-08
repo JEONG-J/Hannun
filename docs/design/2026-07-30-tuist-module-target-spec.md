@@ -1137,12 +1137,13 @@ UI 스펙·CLAUDE.md·매니페스트가 한 값으로 정렬됐고, iOS 17 유�
 |------|-----|
 | Team ID (`DEVELOPMENT_TEAM`) | `8B8B4462NV` |
 | Bundle ID (explicit) | `com.hannun.app` |
-| CloudKit 컨테이너 | `iCloud.com.jeong.hannun` |
+| CloudKit 컨테이너 | `iCloud.com.hannun.app` |
 
 `bundleIdPrefix` 가 곧 앱 번들 ID 이므로 모듈 타깃은 `com.hannun.app.core` ·
-`com.hannun.app.feature.portfolio` 형태가 된다(§5.1). 컨테이너 ID 는 포털에 먼저 만들어둔 값이라
-`iCloud.{bundleId}` 규칙과 어긋나지만, 컨테이너 ID 는 App ID 에 연결만 되면 되므로 문제되지 않는다.
-`HannunModelContainer` 와 `Hannun.entitlements` 두 곳이 이 값을 들고 있고, 둘은 항상 같아야 한다.
+`com.hannun.app.feature.portfolio` 형태가 된다(§5.1).
+`HannunModelContainer` 와 `Hannun.entitlements` 두 곳이 컨테이너 ID 를 들고 있고, 둘은 항상 같아야
+한다. 포털에 먼저 만들어둔 `iCloud.com.jeong.hannun` 은 `iCloud.{bundleId}` 규칙과 어긋나 폐기했다 —
+iCloud 컨테이너는 포털에서 삭제할 수 없으므로 목록에는 남지만 App ID 에 연결하지 않는다.
 
 ③ **Tuist 툴체인 — 해결됨.** `mise.toml` 에 `tuist = "4.202.6"` 으로 고정하고, §5 manifest를
 `tuist generate` + `tuist build` 로 컴파일 검증까지 마쳤다(§7.1). 이 과정에서 확인된 차이 2가지는

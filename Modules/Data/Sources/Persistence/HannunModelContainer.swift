@@ -17,7 +17,7 @@ public enum HannunModelContainer {
     // MARK: - Property
 
     /// Developer 포털에 등록된 CloudKit 컨테이너. `Hannun.entitlements` 의 값과 같아야 한다.
-    private static let cloudKitContainerID = "iCloud.com.jeong.hannun"
+    private static let cloudKitContainerID = "iCloud.com.hannun.app"
 
     // MARK: - Function
 

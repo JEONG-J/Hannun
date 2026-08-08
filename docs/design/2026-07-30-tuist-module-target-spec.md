@@ -235,8 +235,7 @@ Router/        Feature 내부 화면 전환
 ```swift
 import ProjectDescription
 
-/// TODO: 팀 organization identifier 확정 후 교체 (§11-②)
-public let bundleIdPrefix = "com.jeong.hannun"
+public let bundleIdPrefix = "com.hannun.app"
 public let hannunOrganizationName = "Hannun"
 public let hannunDestinations: Destinations = [.iPhone, .iPad]
 public let hannunDeploymentTargets: DeploymentTargets = .iOS("26.4")
@@ -1132,9 +1131,18 @@ Presentation 하나만 만들고 Domain/Data 는 `Modules/` 에서 공유한다 
 UI 스펙·CLAUDE.md·매니페스트가 한 값으로 정렬됐고, iOS 17 유지 시 필요했던 UI 스펙
 §2.4·§3.1 재작성 논의는 닫힌다.
 
-② **bundle identifier prefix.** `com.jeong.hannun` 은 임의 placeholder다. Apple Developer 팀의
-실제 organization identifier로 교체해야 하고, CloudKit 컨테이너 ID
-(`iCloud.{bundleId}`)도 함께 확정된다.
+② **bundle identifier prefix — 해결됨.** Developer 포털에 App ID 를 등록해 확정했다(이슈 #9).
+
+| 항목 | 값 |
+|------|-----|
+| Team ID (`DEVELOPMENT_TEAM`) | `8B8B4462NV` |
+| Bundle ID (explicit) | `com.hannun.app` |
+| CloudKit 컨테이너 | `iCloud.com.jeong.hannun` |
+
+`bundleIdPrefix` 가 곧 앱 번들 ID 이므로 모듈 타깃은 `com.hannun.app.core` ·
+`com.hannun.app.feature.portfolio` 형태가 된다(§5.1). 컨테이너 ID 는 포털에 먼저 만들어둔 값이라
+`iCloud.{bundleId}` 규칙과 어긋나지만, 컨테이너 ID 는 App ID 에 연결만 되면 되므로 문제되지 않는다.
+`HannunModelContainer` 와 `Hannun.entitlements` 두 곳이 이 값을 들고 있고, 둘은 항상 같아야 한다.
 
 ③ **Tuist 툴체인 — 해결됨.** `mise.toml` 에 `tuist = "4.202.6"` 으로 고정하고, §5 manifest를
 `tuist generate` + `tuist build` 로 컴파일 검증까지 마쳤다(§7.1). 이 과정에서 확인된 차이 2가지는

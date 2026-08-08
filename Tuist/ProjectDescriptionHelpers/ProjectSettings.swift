@@ -7,8 +7,7 @@
 
 import ProjectDescription
 
-/// TODO: 팀 organization identifier 확정 후 교체
-public let bundleIdPrefix = "com.jeong.hannun"
+public let bundleIdPrefix = "com.hannun.app"
 public let hannunOrganizationName = "Hannun"
 public let hannunDestinations: Destinations = [.iPhone, .iPad]
 public let hannunDeploymentTargets: DeploymentTargets = .iOS("26.4")
@@ -16,6 +15,7 @@ public let hannunDeploymentTargets: DeploymentTargets = .iOS("26.4")
 public extension SettingsDictionary {
     static var hannunBase: SettingsDictionary {
         [
+            "DEVELOPMENT_TEAM": "8B8B4462NV",
             "SWIFT_VERSION": "6.0",
             "SWIFT_STRICT_CONCURRENCY": "complete",
             "SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY": "YES",

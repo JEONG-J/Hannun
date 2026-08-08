@@ -30,6 +30,17 @@
 - 🤖 **온디바이스 일지 초안** — Apple Intelligence 가 매매일지 초안을 **기기 안에서** 씁니다 (내용이 밖으로 나가지 않습니다)
 - 🔑 **내 앱키로 동작** — 시세 앱키를 사용자가 직접 넣고, iCloud 키체인으로 기기 사이에 따라옵니다
 
+## 📸 미리보기
+
+| 순자산 | 포트폴리오 | 투자 성과 | 매매일지 |
+|:---:|:---:|:---:|:---:|
+| <img src="Screenshots/1-networth-light.png" width="200" alt="순자산 탭 (라이트)"> | <img src="Screenshots/2-portfolio-light.png" width="200" alt="포트폴리오 탭 (라이트)"> | <img src="Screenshots/3-performance-light.png" width="200" alt="투자 성과 탭 (라이트)"> | <img src="Screenshots/4-journal-light.png" width="200" alt="매매일지 탭 (라이트)"> |
+| <img src="Screenshots/1-networth-dark.png" width="200" alt="순자산 탭 (다크)"> | <img src="Screenshots/2-portfolio-dark.png" width="200" alt="포트폴리오 탭 (다크)"> | <img src="Screenshots/3-performance-dark.png" width="200" alt="투자 성과 탭 (다크)"> | <img src="Screenshots/4-journal-dark.png" width="200" alt="매매일지 탭 (다크)"> |
+| 총자산 · 자산군 도넛 | 보유 종목 · 비중 | YTD 수익률 · 캘린더 | 기록 · 종목 태그 |
+
+> 데모 데이터(`-seed-demo` 실행 인자)로 띄운 화면입니다. 실제 보유 종목이 아닙니다.
+> 하단 캡슐은 iOS 26 `tabViewBottomAccessory` 이고, 탭마다 다른 컨트롤이 올라갑니다.
+
 ## 🛠️ 기술 스택
 
 <div align="center">

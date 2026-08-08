@@ -43,17 +43,6 @@ struct KISClient: Sendable {
         pacer = KISRequestPacer(interval: requestInterval)
     }
 
-    /// Info.plist 에 앱키가 없으면 nil 을 돌려준다.
-    /// 키가 없어도 코인 시세와 수동 입력 폴백은 살아 있어야 하므로 실패가 아니라 미설정이다.
-    static func makeIfConfigured(session: URLSession = .shared) -> KISClient? {
-        guard let credentials = KISCredentials.fromInfoPlist() else { return nil }
-
-        return KISClient(
-            session: session,
-            authorizer: KISTokenProvider(credentials: credentials, session: session)
-        )
-    }
-
     func price(for target: KISQuoteTarget) async throws -> Money {
         await pacer.waitForTurn()
 

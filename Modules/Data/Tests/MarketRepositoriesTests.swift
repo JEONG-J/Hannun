@@ -46,6 +46,10 @@ private final class TokenIssueCounter: Sendable {
 struct MarketRepositoriesTests {
     private static let credentials = KISCredentials(appKey: "key", appSecret: "secret")
 
+    /// 이 스위트는 앱키 저장소를 건드리지 않지만, 실수로 건드리더라도 실제 Keychain 항목과
+    /// 겹치지 않도록 별도 서비스 이름을 쓴다.
+    private static let credentialsService = "com.jeong.hannun.kis.tests"
+
     private static let tokenJSON = """
     {
       "access_token": "issued",
@@ -85,16 +89,22 @@ struct MarketRepositoriesTests {
     }
 
     private func makeRepositories(session: URLSession) -> MarketRepositories {
-        MarketRepositories(
+        let tokenProvider = KISTokenProvider(
+            credentials: { Self.credentials },
+            store: InMemoryTokenStore(),
+            session: session
+        )
+
+        return MarketRepositories(
             session: session,
             koreaInvestment: KISClient(
                 session: session,
-                authorizer: KISTokenProvider(
-                    credentials: Self.credentials,
-                    store: InMemoryTokenStore(),
-                    session: session
-                ),
+                authorizer: tokenProvider,
                 requestInterval: 0
+            ),
+            credentials: MarketCredentialsRepository(
+                store: KISCredentialsStore(service: Self.credentialsService),
+                tokenProvider: tokenProvider
             ),
             quoteCache: QuoteCache(),
             exchangeRateCache: ExchangeRateCache(storage: EmptyExchangeRateStore())
@@ -129,6 +139,14 @@ struct MarketRepositoriesTests {
         let repositories = MarketRepositories(
             session: session,
             koreaInvestment: nil,
+            credentials: MarketCredentialsRepository(
+                store: KISCredentialsStore(service: Self.credentialsService),
+                tokenProvider: KISTokenProvider(
+                    credentials: { nil },
+                    store: InMemoryTokenStore(),
+                    session: session
+                )
+            ),
             quoteCache: QuoteCache(),
             exchangeRateCache: ExchangeRateCache(storage: EmptyExchangeRateStore())
         )

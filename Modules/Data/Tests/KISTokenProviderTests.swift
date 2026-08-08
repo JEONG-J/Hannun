@@ -85,7 +85,7 @@ struct KISTokenProviderTests {
         defer { StubURLProtocol.tearDown(session) }
 
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: InMemoryTokenStore(),
             session: session
         )
@@ -106,7 +106,7 @@ struct KISTokenProviderTests {
         defer { StubURLProtocol.tearDown(session) }
 
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: InMemoryTokenStore(),
             session: session
         )
@@ -125,7 +125,7 @@ struct KISTokenProviderTests {
         defer { StubURLProtocol.tearDown(session) }
 
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: InMemoryTokenStore(),
             session: session
         )
@@ -161,7 +161,7 @@ struct KISTokenProviderTests {
             expiresAt: Self.issuedAt.addingTimeInterval(3600)
         )
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: InMemoryTokenStore(token: stored),
             session: session,
             now: { Self.issuedAt }
@@ -185,7 +185,7 @@ struct KISTokenProviderTests {
             expiresAt: Self.issuedAt.addingTimeInterval(30)
         )
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: InMemoryTokenStore(token: nearlyExpired),
             session: session,
             refreshMargin: 60,
@@ -207,7 +207,7 @@ struct KISTokenProviderTests {
 
         let store = InMemoryTokenStore()
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: store,
             session: session
         )
@@ -225,7 +225,7 @@ struct KISTokenProviderTests {
 
         let store = InMemoryTokenStore()
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: store,
             session: session
         )
@@ -248,7 +248,7 @@ struct KISTokenProviderTests {
         defer { StubURLProtocol.tearDown(session) }
 
         let provider = KISTokenProvider(
-            credentials: Self.credentials,
+            credentials: { Self.credentials },
             store: InMemoryTokenStore(),
             session: session
         )

@@ -21,6 +21,7 @@ struct PerformanceContentView: View {
     // MARK: - Property
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appRouter) private var appRouter
 
     @Bindable private var viewModel: PerformanceViewModel
 
@@ -34,7 +35,13 @@ struct PerformanceContentView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: .spacingXL) {
-                    if viewModel.isStale {
+                    // 앱키 안내가 갱신 실패보다 앞선다. 둘 다 걸릴 수 있지만 배지를 두 개
+                    // 쌓으면 화면 맨 위가 경고줄로 시작한다 — 손댈 수 있는 쪽만 남긴다.
+                    if viewModel.isMarketKeyMissing {
+                        StaleBadge(message: Constants.missingKeyMessage) {
+                            appRouter?.presentSettings()
+                        }
+                    } else if viewModel.isStale {
                         StaleBadge(message: Constants.staleMessage)
                     }
 
@@ -275,6 +282,8 @@ fileprivate enum Constants {
         amount: .krw(0)
     )
     static let staleMessage = "갱신 실패 · 마지막으로 받아온 값입니다"
+    /// 수익률이 "안 나온다" 가 아니라 "덜 나온다" 는 걸 짚는다 — 현금·코인은 그대로 들어간다.
+    static let missingKeyMessage = "시세 앱키가 없어 주식·ETF를 뺀 수익률이에요. 설정에서 등록"
     static let calendarCardIdentifier = "monthlyReturnCard"
     static let insufficientDataMessage = "데이터가 쌓이면 추이가 표시됩니다"
     static let emptySymbolName = "chart.line.uptrend.xyaxis"

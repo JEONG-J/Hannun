@@ -85,8 +85,17 @@ final class PerformanceViewModel {
     private let fetchNetWorthTrendUseCase: any FetchNetWorthTrendUseCaseProtocol
     private let compareBenchmarkUseCase: any CompareBenchmarkUseCaseProtocol
     private let exchangeRateService: any ExchangeRateServiceProtocol
+    /// 시세 앱키가 들어와 있는지만 묻는다. 앱 밖에서는 `nil` 이라 프리뷰·테스트는 이 질문을
+    /// 아예 하지 않는다 — 물어도 답이 시뮬레이터 키체인 상태에 따라 흔들릴 뿐이다.
+    private let credentials: (any MarketCredentialsServiceProtocol)?
     private let calendar: Calendar
     private let now: () -> Date
+
+    /// 시세 앱키가 없어 주식·ETF 값이 빠진 채 계산됐는지 여부.
+    ///
+    /// `isStale` 과 겹치지 않는다. 앱키가 없어도 수동 입력가·마지막 캐시로 수익률은 나오므로
+    /// 조회가 "실패" 하지 않는다 — 조용히 틀린 값이 되는 쪽이라 따로 말해야 한다.
+    private(set) var isMarketKeyMissing = false
 
     /// 마지막 값을 지운 채 실패로 떨어졌는지 여부. 갱신 실패는 배지로만 알린다 (UI 스펙 §4).
     ///
@@ -248,6 +257,7 @@ final class PerformanceViewModel {
         fetchNetWorthTrendUseCase: any FetchNetWorthTrendUseCaseProtocol,
         compareBenchmarkUseCase: any CompareBenchmarkUseCaseProtocol,
         exchangeRateService: any ExchangeRateServiceProtocol,
+        credentials: (any MarketCredentialsServiceProtocol)? = nil,
         calendar: Calendar = .current,
         now: @escaping () -> Date = { Date() }
     ) {
@@ -255,6 +265,7 @@ final class PerformanceViewModel {
         self.fetchNetWorthTrendUseCase = fetchNetWorthTrendUseCase
         self.compareBenchmarkUseCase = compareBenchmarkUseCase
         self.exchangeRateService = exchangeRateService
+        self.credentials = credentials
         self.calendar = calendar
         self.now = now
         calendarMonth = Self.startOfMonth(now(), calendar: calendar) ?? now()
@@ -271,7 +282,8 @@ final class PerformanceViewModel {
             compareBenchmarkUseCase: container.resolve(
                 (any CompareBenchmarkUseCaseProtocol).self
             ),
-            exchangeRateService: container.resolve((any ExchangeRateServiceProtocol).self)
+            exchangeRateService: container.resolve((any ExchangeRateServiceProtocol).self),
+            credentials: container.resolve((any MarketCredentialsServiceProtocol).self)
         )
     }
 
@@ -282,6 +294,9 @@ final class PerformanceViewModel {
     }
 
     func refresh() async {
+        if let credentials {
+            isMarketKeyMissing = !(await credentials.isConfigured())
+        }
         await loadSummary()
         await loadTrend()
         await loadCalendar()

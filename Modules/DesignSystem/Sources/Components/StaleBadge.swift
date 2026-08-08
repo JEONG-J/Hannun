@@ -17,31 +17,54 @@ public struct StaleBadge: View {
     // MARK: - Property
 
     private let message: String
+    private let action: (() -> Void)?
 
     // MARK: - Body
 
     public init(minutesElapsed: Int) {
         message = "\(Constants.failurePrefix) \(minutesElapsed)분 전 기준"
+        action = nil
     }
 
     /// 갱신 시각을 분 단위로 환산할 수 없을 때(예: "어제 종가 기준") 문구를 직접 넣는다.
-    public init(message: String) {
+    ///
+    /// - Parameter action: 사용자가 지금 손댈 수 있는 원인일 때만 넣는다(앱키 미설정 등).
+    ///   갱신 실패 대부분은 사용자가 고칠 수 없어 기본은 알리기만 하는 배지다.
+    public init(message: String, action: (() -> Void)? = nil) {
         self.message = message
+        self.action = action
     }
 
     public var body: some View {
+        if let action {
+            Button(action: action) { badge }
+                .buttonStyle(.plain)
+        } else {
+            badge
+        }
+    }
+
+    private var badge: some View {
         HStack(spacing: .spacingXS) {
             Image(systemName: Constants.warningSymbolName)
                 .imageScale(.small)
 
             Text(message)
                 .hannunFont(.caption, tabularFigures: true)
+
+            if action != nil {
+                Image(systemName: Constants.disclosureSymbolName)
+                    .imageScale(.small)
+            }
         }
         .foregroundStyle(Color.textSecondary)
-        .lineLimit(1)
+        // 누를 수 있는 배지는 문구가 이유를 다 말해야 해서 한 줄에 가두지 않는다.
+        .lineLimit(action == nil ? 1 : nil)
+        .multilineTextAlignment(.leading)
         .padding(.vertical, .spacingXS)
         .padding(.horizontal, .spacingS)
         .background(HannunTint.neutralTint, in: .rect(cornerRadius: .radiusS))
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
 }
@@ -49,6 +72,7 @@ public struct StaleBadge: View {
 fileprivate enum Constants {
     static let failurePrefix = "갱신 실패 ·"
     static let warningSymbolName = "exclamationmark.triangle.fill"
+    static let disclosureSymbolName = "chevron.right"
 }
 
 #if DEBUG
@@ -61,6 +85,7 @@ private struct StaleBadgePreview: View {
             StaleBadge(minutesElapsed: 7)
             StaleBadge(minutesElapsed: 128)
             StaleBadge(message: "갱신 실패 · 어제 종가 기준")
+            StaleBadge(message: "시세 앱키가 없어 주식·ETF 시세가 비어 있어요") {}
         }
         .padding(.spacingL)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -66,6 +66,7 @@ enum DIRegistration {
         }
         container.register((any MarketDataServiceProtocol).self) { market.marketData }
         container.register((any ExchangeRateServiceProtocol).self) { market.exchangeRate }
+        container.register((any MarketCredentialsServiceProtocol).self) { market.credentials }
         // 기기 안에서 도는 모델이라 토큰도 세션도 공유할 게 없다 — 부를 때마다 새로 만든다.
         container.register((any JournalContentWriterProtocol).self) {
             OnDeviceJournalContentWriter()

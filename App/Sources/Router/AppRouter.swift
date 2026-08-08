@@ -21,6 +21,9 @@ final class AppRouter: AppRouting {
     var selectedTab: AppTab = .netWorth
     private(set) var pendingRoute: AppRoute?
 
+    /// 설정 시트 표시 여부. 시트를 닫는 쪽은 SwiftUI 라 바인딩으로 열어 둔다.
+    var isPresentingSettings = false
+
     // MARK: - Function
 
     func select(_ tab: AppTab) {
@@ -30,6 +33,10 @@ final class AppRouter: AppRouting {
     func navigate(to route: AppRoute) {
         pendingRoute = route
         selectedTab = route.tab
+    }
+
+    func presentSettings() {
+        isPresentingSettings = true
     }
 
     func consumeRoute(for tab: AppTab) -> AppRoute? {

@@ -46,6 +46,13 @@ public protocol AppRouting: AnyObject {
     func navigate(to route: AppRoute)
     /// 해당 탭으로 온 요청이 있으면 꺼내고 대기열을 비운다.
     func consumeRoute(for tab: AppTab) -> AppRoute?
+
+    /// 설정 화면을 띄운다.
+    ///
+    /// `AppRoute` 로 표현하지 않는 이유는 목적지 탭이 없기 때문이다 — 설정은 탭 위에 덮이는
+    /// 시트라 어느 탭에서 불러도 같은 자리에 뜬다. 시세 앱키가 필요한 자리가 세 탭에 흩어져
+    /// 있어 부르는 쪽이 여럿이다.
+    func presentSettings()
 }
 
 public extension EnvironmentValues {

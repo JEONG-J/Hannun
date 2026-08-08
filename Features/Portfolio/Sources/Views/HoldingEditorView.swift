@@ -52,7 +52,8 @@ struct HoldingEditorView: View {
             initialValue: HoldingEditorViewModel(
                 saveHolding: container.resolve((any SaveHoldingUseCaseProtocol).self),
                 errorHandler: errorHandler,
-                mode: mode
+                mode: mode,
+                credentials: container.resolve((any MarketCredentialsServiceProtocol).self)
             )
         )
     }
@@ -70,6 +71,7 @@ struct HoldingEditorView: View {
             .navigationTitle(viewModel.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
+            .task { await viewModel.loadMarketKeyState() }
         }
         // 어느 단계든 행이 다섯을 넘지 않는다. 전체 높이로 열면 아래 절반이 빈 채로 뒤 화면만
         // 가리므로 절반에서 시작하고, 끌어 올리거나 키보드가 올라오면 그때 커진다.
@@ -187,9 +189,16 @@ struct HoldingEditorView: View {
             validationFooter
 
             if !viewModel.isCash && !viewModel.usesManualPrice {
-                Text(Constants.manualPriceHint)
-                    .hannunFont(.caption)
-                    .foregroundStyle(Color.textSecondary)
+                // 앱키가 없으면 폴백이 "혹시" 가 아니라 늘 일어난다. 같은 자리에서 말을
+                // 바꿔 끼울 뿐 줄을 더 늘리지 않는다. 여기서 설정을 열면 시트 위에 시트라
+                // 갈 곳만 알린다 — 이 시트를 닫아야 순자산 탭의 톱니가 보인다.
+                Text(
+                    viewModel.isMarketKeyMissing
+                        ? Constants.missingKeyHint
+                        : Constants.manualPriceHint
+                )
+                .hannunFont(.caption)
+                .foregroundStyle(Color.textSecondary)
             }
         }
     }
@@ -334,6 +343,10 @@ fileprivate enum Constants {
     static let currentPriceTitle = "현재가"
     static let manualPriceTitle = "현재가 직접 입력"
     static let manualPriceHint = "시세를 가져오지 못하면 평단가를 현재가로 씁니다."
+    static let missingKeyHint = """
+        시세 앱키가 없어 지금은 평단가를 현재가로 씁니다. \
+        순자산 탭 오른쪽 위 설정에서 앱키를 넣으면 실시간 시세로 바뀝니다.
+        """
     static let namePlaceholder = "삼성전자"
     static let cashNamePlaceholder = "원화 예수금"
     static let tickerPlaceholder = "005930"
@@ -352,10 +365,22 @@ private struct StubSaveHoldingUseCase: SaveHoldingUseCaseProtocol {
     func execute(_ holding: HoldingRecord) async throws {}
 }
 
+/// 앱키가 들어와 있는 셈 친다 — 프리뷰가 시뮬레이터 키체인 상태에 따라 달라지면 안 된다.
+private struct StubCredentialsService: MarketCredentialsServiceProtocol {
+    let configured: Bool
+
+    func isConfigured() async -> Bool { configured }
+    func save(appKey: String, appSecret: String) async throws {}
+    func remove() async {}
+}
+
 @MainActor
-private func previewEditor() -> some View {
+private func previewEditor(isKeyConfigured: Bool = true) -> some View {
     let container = DIContainer()
     container.register((any SaveHoldingUseCaseProtocol).self) { StubSaveHoldingUseCase() }
+    container.register((any MarketCredentialsServiceProtocol).self) {
+        StubCredentialsService(configured: isKeyConfigured)
+    }
 
     return HoldingEditorView(
         container: container,
@@ -376,5 +401,10 @@ private func previewEditor() -> some View {
 #Preview("종목 추가 · AX5") {
     previewEditor()
         .dynamicTypeSize(.accessibility5)
+}
+
+/// 앱키가 없을 때. 하단 안내가 두 줄로 늘어나도 현재가 토글 행을 밀어내지 않아야 한다.
+#Preview("종목 추가 · 앱키 미설정") {
+    previewEditor(isKeyConfigured: false)
 }
 #endif

@@ -47,6 +47,7 @@ let project = Project(
                     path: .relativeToRoot("Features/Performance")
                 ),
                 .project(target: "JournalFeature", path: .relativeToRoot("Features/Journal")),
+                .project(target: "SettingsFeature", path: .relativeToRoot("Features/Settings")),
                 // 구현체를 아는 유일한 지점
                 .project(target: "HannunData", path: .relativeToRoot("Modules/Data")),
                 // 등록할 Protocol 메타타입 참조

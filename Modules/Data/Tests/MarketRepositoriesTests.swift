@@ -93,7 +93,8 @@ struct MarketRepositoriesTests {
                     credentials: Self.credentials,
                     store: InMemoryTokenStore(),
                     session: session
-                )
+                ),
+                requestInterval: 0
             ),
             quoteCache: QuoteCache(),
             exchangeRateCache: ExchangeRateCache(storage: EmptyExchangeRateStore())

@@ -22,22 +22,25 @@ struct KISClient: Sendable {
     // MARK: - Property
 
     private let client: NetworkClient
-    private let maxConcurrentRequests: Int
+    private let pacer: KISRequestPacer
 
     /// 환율 조회 하한. 연휴가 길어도 직전 고시가 구간 안에 들어오도록 일주일을 잡는다.
     private static let exchangeRateLookback: TimeInterval = 60 * 60 * 24 * 7
 
+    /// 실키로 재서 실패가 사라진 최소 간격. 근거는 `KISRequestPacer` 주석에 있다.
+    static let defaultRequestInterval: TimeInterval = 0.5
+
     // MARK: - Function
 
-    /// - Parameter maxConcurrentRequests: KIS 는 계정당 초당 호출 수 제한이 있어 보유 종목
-    ///   수만큼 요청을 한꺼번에 펼치면 전부 429 로 막힌다. 그래서 창을 좁혀 나눠 보낸다.
+    /// - Parameter requestInterval: KIS 유량 제한에 걸리지 않도록 요청 사이에 두는 최소 간격.
+    ///   테스트에서만 줄인다.
     init(
         session: URLSession = .shared,
         authorizer: any RequestAuthorizing,
-        maxConcurrentRequests: Int = 5
+        requestInterval: TimeInterval = KISClient.defaultRequestInterval
     ) {
         client = NetworkClient(session: session, authorizer: authorizer)
-        self.maxConcurrentRequests = max(1, maxConcurrentRequests)
+        pacer = KISRequestPacer(interval: requestInterval)
     }
 
     /// Info.plist 에 앱키가 없으면 nil 을 돌려준다.
@@ -52,6 +55,8 @@ struct KISClient: Sendable {
     }
 
     func price(for target: KISQuoteTarget) async throws -> Money {
+        await pacer.waitForTurn()
+
         switch target {
         case let .domesticEquity(code):
             let response = try await client.send(
@@ -73,31 +78,23 @@ struct KISClient: Sendable {
     ///
     /// KIS 현재가 API 는 단건이라 요청을 나눠 보낸다. **조회에 실패한 심볼은 결과에서 빠지고,
     /// 전부 실패했을 때만 첫 에러를 올린다** — 한 종목의 상장폐지가 나머지 시세를 막으면 안 된다.
+    ///
+    /// 전부 한꺼번에 띄워도 `KISRequestPacer` 가 출발 시각을 벌려 유량 제한에 걸리지 않는다.
     func prices(for targets: [String: KISQuoteTarget]) async throws -> [String: Money] {
         guard !targets.isEmpty else { return [:] }
 
-        let entries = targets.map { (symbol: $0.key, target: $0.value) }
-        var outcomes: [QuoteOutcome] = []
-        var start = entries.startIndex
-
-        while start < entries.endIndex {
-            let end = min(start + maxConcurrentRequests, entries.endIndex)
-            let window = Array(entries[start..<end])
-
-            outcomes += await withTaskGroup(of: QuoteOutcome.self) { group in
-                for entry in window {
-                    group.addTask { [self] in
-                        await outcome(symbol: entry.symbol, target: entry.target)
-                    }
+        let outcomes = await withTaskGroup(of: QuoteOutcome.self) { group in
+            for (symbol, target) in targets {
+                group.addTask { [self] in
+                    await outcome(symbol: symbol, target: target)
                 }
-
-                var collected: [QuoteOutcome] = []
-                for await result in group {
-                    collected.append(result)
-                }
-                return collected
             }
-            start = end
+
+            var collected: [QuoteOutcome] = []
+            for await result in group {
+                collected.append(result)
+            }
+            return collected
         }
 
         var prices: [String: Money] = [:]
@@ -123,6 +120,8 @@ struct KISClient: Sendable {
     /// - Parameter asOf: 조회 기준일. 기간별 시세 API 라 하한을 함께 보내야 하는데, 주말·연휴에는
     ///   당일 고시가 없어 며칠을 거슬러 잡는다.
     func exchangeRate(asOf date: Date = Date()) async throws -> ExchangeRate {
+        await pacer.waitForTurn()
+
         let response = try await client.send(
             KISEndpoint.exchangeRate(
                 from: date.addingTimeInterval(-Self.exchangeRateLookback),

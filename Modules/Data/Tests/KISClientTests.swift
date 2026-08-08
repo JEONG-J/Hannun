@@ -47,15 +47,17 @@ struct KISClientTests {
     }
     """
 
+    /// 실사용 간격(0.5초)을 그대로 쓰면 테스트가 요청 수만큼 느려져 0 으로 둔다.
+    /// 간격이 지켜지는지는 `spacesRequestsByInterval` 에서 따로 본다.
     private func makeClient(
-        maxConcurrentRequests: Int = 5,
+        requestInterval: TimeInterval = 0,
         handler: @escaping StubURLProtocol.Handler
     ) -> (KISClient, URLSession) {
         let session = StubURLProtocol.makeSession(handler: handler)
         let client = KISClient(
             session: session,
             authorizer: FixedAuthorizer(accessToken: "token"),
-            maxConcurrentRequests: maxConcurrentRequests
+            requestInterval: requestInterval
         )
         return (client, session)
     }
@@ -199,15 +201,12 @@ struct KISClientTests {
         }
     }
 
-    @Test("동시 요청 수를 창 크기 안으로 묶는다")
-    func limitsConcurrentRequests() async throws {
-        let inFlight = Mutex((current: 0, peak: 0))
-        let (client, session) = makeClient(maxConcurrentRequests: 2) { _ in
-            inFlight.withLock { counter in
-                counter.current += 1
-                counter.peak = max(counter.peak, counter.current)
-            }
-            defer { inFlight.withLock { $0.current -= 1 } }
+    @Test("동시에 요청해도 출발 시각을 간격만큼 벌린다")
+    func spacesRequestsByInterval() async throws {
+        let interval: TimeInterval = 0.05
+        let startTimes = Mutex<[Date]>([])
+        let (client, session) = makeClient(requestInterval: interval) { _ in
+            startTimes.withLock { $0.append(Date()) }
             return .json(Self.domesticJSON)
         }
         defer { StubURLProtocol.tearDown(session) }
@@ -220,7 +219,11 @@ struct KISClientTests {
         let prices = try await client.prices(for: targets)
 
         #expect(prices.count == 6)
-        #expect(inFlight.withLock { $0.peak } <= 2)
+
+        // 스케줄러 지연은 간격을 늘리기만 하므로 하한만 본다.
+        let sorted = startTimes.withLock { $0.sorted() }
+        let gaps = zip(sorted, sorted.dropFirst()).map { $1.timeIntervalSince($0) }
+        #expect(gaps.allSatisfy { $0 >= interval * 0.8 })
     }
 
     @Test("빈 목록은 네트워크를 타지 않는다")

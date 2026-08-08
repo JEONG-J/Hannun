@@ -49,7 +49,7 @@ enum KISEndpoint: Endpoint {
         case .issueToken: "/oauth2/tokenP"
         case .domesticQuote: "/uapi/domestic-stock/v1/quotations/inquire-price"
         case .overseasQuote: "/uapi/overseas-price/v1/quotations/price"
-        // 확인 필요: 환율 전용 엔드포인트가 따로 없어 해외지수 기간별 시세 API 를 쓴다.
+        // 환율 전용 엔드포인트가 따로 없어 해외지수 기간별 시세 API 를 쓴다.
         // 계좌번호를 요구하는 잔고 계열 환율(`CTRP6504R`)은 앱이 앱키만 갖고 있어 쓸 수 없다.
         case .exchangeRate: "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice"
         }
@@ -83,8 +83,8 @@ enum KISEndpoint: Endpoint {
             ]
 
         case let .exchangeRate(from, to):
-            // 확인 필요: `X` 는 환율 시장 분류 코드, `FX@KRW` 는 원/달러 종목 코드,
-            // `D` 는 일봉이다. 실키로 검증하지 않았다.
+            // `X` 는 환율 시장 분류 코드, `FX@KRW` 는 원/달러 종목 코드, `D` 는 일봉이다.
+            // 실키로 확인했다 — `output1.hts_kor_isnm` 이 "원/달러(KMB)" 로 온다.
             [
                 URLQueryItem(name: "FID_COND_MRKT_DIV_CODE", value: "X"),
                 URLQueryItem(name: "FID_INPUT_ISCD", value: "FX@KRW"),
@@ -147,8 +147,8 @@ enum KISEndpoint: Endpoint {
 
     /// KIS 는 경로가 같아도 `tr_id` 로 거래 종류를 가른다. 그래서 헤더 분기가 곧 엔드포인트 분기다.
     ///
-    /// 확인 필요: 아래 값은 실전투자 기준으로 가장 널리 쓰이는 코드이지만 실키로 검증하지 않았다.
-    /// KIS 문서가 수시로 갱신되므로(설계 문서 §11.2) 첫 실호출 때 응답의 `msg1` 을 함께 확인한다.
+    /// 아래 세 값은 실전투자 실키로 호출해 `rt_cd=0` 을 확인했다. KIS 문서가 수시로
+    /// 갱신되므로(설계 문서 §11.2) 응답이 이상하면 `msg1` 부터 본다.
     private var transactionID: String? {
         switch self {
         case .issueToken: nil

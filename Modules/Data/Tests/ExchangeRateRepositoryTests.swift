@@ -73,7 +73,11 @@ struct ExchangeRateRepositoryTests {
     ) -> (ExchangeRateRepository, URLSession) {
         let session = StubURLProtocol.makeSession(handler: handler)
         let koreaInvestment = isKoreaInvestmentConfigured
-            ? KISClient(session: session, authorizer: FixedAuthorizer())
+            ? KISClient(
+                session: session,
+                authorizer: FixedAuthorizer(),
+                requestInterval: 0
+            )
             : nil
 
         return (

@@ -43,6 +43,7 @@ struct NetWorthScreen: View {
             .refreshable { await viewModel.load() }
             .navigationTitle(Constants.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { settingsToolbarItem }
             // 액세서리 캡슐이 마지막 카드를 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).
             .safeAreaPadding(.bottom, .spacingXL)
         }
@@ -52,6 +53,20 @@ struct NetWorthScreen: View {
         }
         .task(id: viewModel.baseCurrency) {
             await viewModel.load()
+        }
+    }
+
+    /// 설정으로 가는 상설 입구.
+    ///
+    /// 네 탭 중 여기에 두는 이유는 이 툴바만 비어 있어서가 아니라, **보유가 0건일 때도 그대로
+    /// 있는 유일한 자리**라서다. 시세 앱키를 넣어야 하는 시점은 대개 아무것도 없는 첫 화면인데,
+    /// 포트폴리오 툴바의 컨트롤은 목록이 비면 함께 사라진다.
+    @ToolbarContentBuilder
+    private var settingsToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button(Constants.settingsTitle, systemImage: Constants.settingsSymbolName) {
+                appRouter?.presentSettings()
+            }
         }
     }
 
@@ -146,6 +161,9 @@ struct NetWorthScreen: View {
 
 fileprivate enum Constants {
     static let navigationTitle = "순자산"
+
+    static let settingsTitle = "설정"
+    static let settingsSymbolName = "gearshape"
 
     /// 히어로가 이만큼도 안 남으면 "사라졌다"로 본다. 절반으로 잡으면 총자산 숫자가 반쯤
     /// 잘려 보이는 구간에서 액세서리가 먼저 바뀌어 두 값이 겹쳐 읽힌다.

@@ -58,7 +58,11 @@ struct MarketDataRepositoryTests {
     ) -> (MarketDataRepository, URLSession) {
         let session = StubURLProtocol.makeSession(handler: handler)
         let koreaInvestment = isKoreaInvestmentConfigured
-            ? KISClient(session: session, authorizer: FixedAuthorizer())
+            ? KISClient(
+                session: session,
+                authorizer: FixedAuthorizer(),
+                requestInterval: 0
+            )
             : nil
 
         let repository = MarketDataRepository(

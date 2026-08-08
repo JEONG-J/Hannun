@@ -10,6 +10,7 @@ import JournalFeature
 import NetWorthFeature
 import PerformanceFeature
 import PortfolioFeature
+import SettingsFeature
 import SwiftUI
 
 /// 4개 탭 구성. 탭별 NavigationStack 은 각 Feature 루트 View 가 소유한다.
@@ -17,6 +18,7 @@ struct RootTabView: View {
     // MARK: - Property
 
     @Environment(AppRouter.self) private var router
+    @Environment(DIContainer.self) private var container
     @Environment(\.tabAccessoryHost) private var accessoryHost
 
     // MARK: - Body
@@ -45,5 +47,10 @@ struct RootTabView: View {
             accessoryHost?.content(for: router.selectedTab)
         }
         .tabBarMinimizeBehavior(.onScrollDown)
+        // 설정은 탭이 아니라 어느 탭에서든 덮이는 시트다 — 시세 앱키가 필요한 자리가
+        // 세 탭에 흩어져 있어 진입점이 여럿이고, 목적지 탭이 따로 없다.
+        .sheet(isPresented: $router.isPresentingSettings) {
+            SettingsView(container: container)
+        }
     }
 }

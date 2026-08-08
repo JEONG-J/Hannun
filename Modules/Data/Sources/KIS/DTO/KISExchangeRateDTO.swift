@@ -10,8 +10,8 @@ import HannunCore
 
 /// 원/달러 환율 조회 응답의 `output1`.
 ///
-/// 확인 필요: 해외지수 기간별 시세 응답의 현재가 필드 `ovrs_nmix_prpr` 기준이다. 환율을
-/// 지수처럼 취급하는 API 라 필드명이 "해외지수 현재가"다. 실키 검증 전이라 대조가 필요하다.
+/// 해외지수 기간별 시세 응답의 현재가 필드 `ovrs_nmix_prpr` 기준이다. 환율을 지수처럼
+/// 취급하는 API 라 필드명이 "해외지수 현재가"다. 실키 응답 원문과 대조했다.
 struct KISExchangeRateDTO: Decodable, Sendable, Equatable {
     let krwPerUSD: Decimal
 

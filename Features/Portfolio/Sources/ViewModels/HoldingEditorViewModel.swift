@@ -31,10 +31,18 @@ final class HoldingEditorViewModel {
 
     private let saveHolding: any SaveHoldingUseCaseProtocol
     private let errorHandler: ErrorHandler
+    /// 시세 앱키가 들어와 있는지만 묻는다. 프리뷰·테스트에서는 `nil` 이라 묻지 않는다.
+    private let credentials: (any MarketCredentialsServiceProtocol)?
     private let editingHolding: HoldingRecord?
 
     private(set) var step: HoldingEditorStep
     private(set) var submission: Loadable<HoldingRecord> = .idle
+
+    /// 시세 앱키가 없어 주식·ETF 현재가를 받아올 수 없는 상태.
+    ///
+    /// 등록 자체는 막지 않는다 — 평단가 폴백과 수동 입력가가 그대로 살아 있어서 지금 넣어도
+    /// 평가금액은 나온다. 폼 하단 안내 문구만 그 사정에 맞게 바뀐다.
+    private(set) var isMarketKeyMissing = false
 
     var category: AssetCategory
     var name: String
@@ -107,10 +115,12 @@ final class HoldingEditorViewModel {
     init(
         saveHolding: any SaveHoldingUseCaseProtocol,
         errorHandler: ErrorHandler,
-        mode: HoldingEditorMode
+        mode: HoldingEditorMode,
+        credentials: (any MarketCredentialsServiceProtocol)? = nil
     ) {
         self.saveHolding = saveHolding
         self.errorHandler = errorHandler
+        self.credentials = credentials
 
         let holding = mode.editingHolding
         editingHolding = holding
@@ -124,6 +134,12 @@ final class HoldingEditorViewModel {
         averagePriceText = DecimalInput.text(from: holding?.averagePrice)
         manualPriceText = DecimalInput.text(from: holding?.manualPrice)
         usesManualPrice = holding?.manualPrice != nil
+    }
+
+    /// 시트가 열릴 때 한 번 묻는다. 폼을 채우는 동안 설정을 다녀올 길이 없으므로 다시 볼 일도 없다.
+    func loadMarketKeyState() async {
+        guard let credentials else { return }
+        isMarketKeyMissing = !(await credentials.isConfigured())
     }
 
     func advance() {

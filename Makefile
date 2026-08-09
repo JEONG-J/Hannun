@@ -170,11 +170,14 @@ generate: check-manifest secrets ## 워크스페이스/프로젝트 생성
 # 아무도 열지 않는 Xcode Cloud 에서만 터진다. 생성 직후 박아서 두 환경을 맞춘다.
 .PHONY: fix-icon-filetype
 fix-icon-filetype:
-	@sed -i '' \
-		's|isa = PBXFileReference; path = AppIcon.icon;|isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon;|' \
+	@sed -i '' -E \
+		's@(/\* AppIcon\.icon \*/ = \{isa = PBXFileReference;)( (lastKnownFileType|explicitFileType) = [^;]*;)?@\1 lastKnownFileType = folder.iconcomposer.icon;@' \
 		Hannun.xcodeproj/project.pbxproj
-	@grep -q "lastKnownFileType = folder.iconcomposer.icon" Hannun.xcodeproj/project.pbxproj \
-		|| { echo "✗ AppIcon.icon 참조에 파일 타입을 박지 못했습니다 (Tuist 출력 형식 변경?)"; exit 1; }
+	@grep -q "lastKnownFileType = folder.iconcomposer.icon" Hannun.xcodeproj/project.pbxproj || { \
+		echo "✗ AppIcon.icon 참조에 파일 타입을 박지 못했습니다 — 실제 생성 결과는 아래와 같습니다:"; \
+		grep -n "AppIcon" Hannun.xcodeproj/project.pbxproj || echo "  (AppIcon 참조가 아예 없습니다)"; \
+		exit 1; \
+	}
 
 .PHONY: secrets
 secrets: ## xcconfig 시크릿 파일을 .example 에서 생성 (없을 때만)

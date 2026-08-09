@@ -35,7 +35,11 @@ let project = Project(
             sources: ["App/Sources/**"],
             resources: [
                 "App/Resources/Assets.xcassets",
-                "App/Resources/AppIcon.icon",
+                // glob 문자열로 두면 Tuist 가 `.icon` 이 패키지인지 macOS UTI 로 물어본다.
+                // 로컬은 Xcode 26 이 `com.apple.package` 로 등록해 둬서 단일 파일로 잡히지만,
+                // 그 등록이 없는 Xcode Cloud 러너에서는 평범한 디렉터리로 보여 통째로 버려진다
+                // (생성된 pbxproj 에 AppIcon.icon 참조가 아예 없다). 명시적 폴더 참조로 고정한다.
+                .folderReference(path: "App/Resources/AppIcon.icon"),
                 "App/Resources/PrivacyInfo.xcprivacy",
             ],
             entitlements: .file(path: "App/Config/Hannun.entitlements"),

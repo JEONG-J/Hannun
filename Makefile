@@ -161,6 +161,20 @@ install: check-manifest ## SPM 의존성 설치 (tuist install)
 .PHONY: generate
 generate: check-manifest secrets ## 워크스페이스/프로젝트 생성
 	@$(TUIST) generate --no-open
+	@$(MAKE) --no-print-directory fix-icon-filetype
+
+# Tuist 는 Icon Composer 의 `.icon` 확장자를 모른다 — 파일 타입 없이 참조만 적어 두면
+# Xcode 빌드 시스템이 그냥 폴더 리소스로 복사하고 actool 입력에서 빠진다:
+#   "None of the input catalogs contained a matching ... icon stack named "AppIcon""
+# 로컬에서는 Xcode 로 프로젝트를 한 번 여는 순간 Xcode 가 타입을 채워 넣어 가려지고,
+# 아무도 열지 않는 Xcode Cloud 에서만 터진다. 생성 직후 박아서 두 환경을 맞춘다.
+.PHONY: fix-icon-filetype
+fix-icon-filetype:
+	@sed -i '' \
+		's|isa = PBXFileReference; path = AppIcon.icon;|isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon;|' \
+		Hannun.xcodeproj/project.pbxproj
+	@grep -q "lastKnownFileType = folder.iconcomposer.icon" Hannun.xcodeproj/project.pbxproj \
+		|| { echo "✗ AppIcon.icon 참조에 파일 타입을 박지 못했습니다 (Tuist 출력 형식 변경?)"; exit 1; }
 
 .PHONY: secrets
 secrets: ## xcconfig 시크릿 파일을 .example 에서 생성 (없을 때만)
@@ -181,7 +195,9 @@ gen: generate ## generate 별칭
 
 .PHONY: generate-open
 generate-open: check-manifest ## 생성 후 Xcode로 열기
-	@$(TUIST) generate
+	@$(TUIST) generate --no-open
+	@$(MAKE) --no-print-directory fix-icon-filetype
+	@open $(WORKSPACE)
 
 .PHONY: edit
 edit: ## Tuist 매니페스트 편집 모드

@@ -13,15 +13,20 @@ import SwiftUI
 /// 성과 탭 하단 액세서리 — 지금 보고 있는 값 한 줄 + 표시 단위 전환 하나
 /// (PM-2, PM-3, UI 스펙 §3.1).
 ///
-/// 오른쪽 컨트롤은 차트 **세로축**과 왼쪽 문구를 `%` ↔ `₩` 로 뒤집는다. 캡슐에 남은 컨트롤은
-/// 이것 하나다 — 기간·단위(일별/월별)는 바꾸는 대상 옆이라 차트 카드 안이고, 벤치마크는
-/// 고르는 일도 겹치는 일도 툴바 시트가 맡는다.
+/// **캡슐 전체가 표시 단위 전환 버튼이다.** 이 탭의 액세서리에 남은 동작은 차트 **세로축**과
+/// 왼쪽 문구를 `%` ↔ `₩` 로 뒤집는 것 하나뿐이라, 오른쪽 글자만 눌리게 두면 44pt 남짓한
+/// 과녁 하나를 위해 나머지 캡슐이 죽는다 — 순자산·포트폴리오와 같은 문법이다. 기간·단위
+/// (일별/월별)는 바꾸는 대상 옆이라 차트 카드 안이고, 벤치마크는 고르는 일도 겹치는 일도
+/// 툴바 시트가 맡는다.
 ///
-/// 라벨에는 **지금 켜진 단위**를 적는다. 순자산 탭 통화 라벨과 같은 문법이고, 눌러서 무엇이
-/// 되는지는 `accessibilityHint` 가 말한다 — 그래서 켜짐 채움도 `.isSelected` 도 쓰지 않는다.
+/// 그래서 오른쪽은 컨트롤이 아니라 **지금 켜진 단위를 적은 라벨**이고 알약도 테두리도 없다 —
+/// 캡슐이 이미 과녁인데 그 안에 또 과녁을 그리면 "여기만 눌린다"는 거짓 신호가 된다.
+/// 순자산의 통화 라벨처럼 **현재**를 적는다(왼쪽 숫자가 무슨 단위인지 말하는 자리라서다).
+/// 눌러서 무엇이 되는지는 `accessibilityHint` 가 말한다 — 켜짐 채움도 `.isSelected` 도 쓰지
+/// 않는 이유가 그것이다.
 ///
-/// 왼쪽은 눌리지 않는다 — 열 대상이 없으므로 `expandable()` 셰브런도 붙이지 않는다.
-/// 글리프 유무가 곧 "눌린다/안 눌린다" 신호다 (UI 스펙 §3.1).
+/// 왼쪽에는 `expandable()` 셰브런을 붙이지 않는다. 열리는 화면 없이 값 하나가 뒤집힐 뿐이라
+/// 셰브런을 두면 "누르면 무언가 열린다"는 뜻이 되어 버린다 (UI 스펙 §3.1).
 ///
 /// 벤치마크 범례 dot 도 여기 없다. 범례는 차트 카드 안으로 옮겨 갔으므로 액세서리가 다시
 /// 말할 이유가 없다.
@@ -48,6 +53,8 @@ struct PerformanceAccessory: View {
 
     // MARK: - Property
 
+    @Environment(\.colorScheme) private var colorScheme
+
     private let viewModel: PerformanceViewModel
 
     // MARK: - Body
@@ -57,11 +64,27 @@ struct PerformanceAccessory: View {
     }
 
     var body: some View {
-        BottomAccessory {
-            alternatingCaption
-        } trailing: {
-            valueUnitControl
+        Button {
+            viewModel.toggleValueUnit()
+        } label: {
+            BottomAccessory {
+                alternatingCaption
+            } trailing: {
+                valueUnitLabel
+            }
+            // 캡슐 높이를 다 쓰고 그 사각형 전체를 과녁으로 선언한다. 이게 없으면 히트
+            // 영역이 **글자가 그려진 픽셀**로 좁아져, 캡션과 라벨 사이 빈 공간이 안 눌린다.
+            .frame(maxHeight: .infinity)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
+        .accessibilityValue(
+            String(format: Constants.unitLabelFormat, viewModel.valueUnit.displayName)
+        )
+        .accessibilityHint(
+            String(format: Constants.unitSwitchHintFormat, viewModel.valueUnit.toggled.displayName)
+        )
+        .hannunAnimation(.selection, value: viewModel.valueUnit)
     }
 
     // MARK: - Function
@@ -104,23 +127,25 @@ struct PerformanceAccessory: View {
         }
     }
 
-    /// 캡슐에 남은 단 하나의 컨트롤 (§3.1). 켜짐/꺼짐이 아니라 두 단위를 오가는 전환형이라
-    /// 채움도 `.isSelected` 도 쓰지 않는다 — 라벨이 지금 단위를 말하고 힌트가 다음을 말한다.
-    private var valueUnitControl: some View {
-        AccessoryControlButton(
-            viewModel.valueUnit.title,
-            isOn: false,
-            indicatesSelection: false,
-            accessibilityLabel: String(
-                format: Constants.unitLabelFormat,
-                viewModel.valueUnit.displayName
-            )
-        ) {
-            viewModel.toggleValueUnit()
-        }
-        .accessibilityHint(
-            String(format: Constants.unitSwitchHintFormat, viewModel.valueUnit.toggled.displayName)
-        )
+    /// 지금 켜진 단위 글리프. 면도 스트로크도 두지 않고 왼쪽 캡션과 같은 한 줄 글자로 두되,
+    /// 눌리는 캡슐이라는 신호는 색으로 남긴다. 다크에서 `brand` 는 4.07:1 로 AA 미달이라
+    /// 잉크로 내린다 — 그 대신 다크에서는 어포던스가 위치(캡슐 오른쪽 끝)에만 남는다.
+    ///
+    /// 높이를 44pt 로 잡는 건 이 글자의 과녁이 아니라 **캡슐 내용의 최소 높이**를 위해서다.
+    /// 누르는 자리는 캡슐 전부이고, 내용이 얇아지면 그 과녁도 같이 얇아진다.
+    ///
+    /// VoiceOver 에는 숨긴다. 캡슐이 하나의 버튼이고 그 값이 이미 "지금 수익률"이라
+    /// 여기서 또 읽으면 "퍼센트, 지금 수익률" 이 된다.
+    private var valueUnitLabel: some View {
+        Text(viewModel.valueUnit.title)
+            .hannunFont(.pillLabel)
+            .foregroundStyle(colorScheme == .dark ? Color.textPrimary : Color.brand)
+            .lineLimit(1)
+            // 기본값인 `.interpolate` 는 글리프를 보간해 `%` 와 `₩` 가 겹쳐 뭉개진다.
+            // 서로 무관한 글자를 섞어 봐야 얻을 게 없으므로 크로스페이드로 갈아끼운다.
+            .contentTransition(.opacity)
+            .frame(minHeight: .minimumTouchTarget)
+            .accessibilityHidden(true)
     }
 
     /// 2~4 대역을 한 번에 고른다.

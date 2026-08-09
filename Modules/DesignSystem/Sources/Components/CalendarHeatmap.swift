@@ -33,8 +33,8 @@ public struct HeatmapCell: Identifiable, Equatable, Sendable {
 /// 월간 7×N 그리드로 일별 수익률을 채우는 히트맵.
 ///
 /// **색맹 대응**: 손익 부호를 색만으로 말하지 않는다. 손실 셀에만 `loss` 1pt 스트로크를
-/// 둘러 "채움 vs 채움+테두리" 라는 형태 차이로 부호를 병행 표기한다 — `AccessoryControlButton`
-/// 의 "켜짐 채움 / 꺼짐 스트로크" 어휘와 같은 결이다. 명도는 opacity 단계가 맡는다.
+/// 둘러 "채움 vs 채움+테두리" 라는 형태 차이로 부호를 병행 표기한다 — `AccessoryActionButton`
+/// 의 "primary 채움 / secondary 스트로크" 어휘와 같은 결이다. 명도는 opacity 단계가 맡는다.
 ///
 /// 채움 opacity 상한을 0.60 으로 잡는 이유는 `textPrimary` 로 적은 일 숫자가 라이트·다크
 /// 양쪽에서 계속 읽히게 하기 위해서다 — 그래서 `onGain`/`onLoss` 같은 신규 토큰이 필요 없다.
@@ -235,7 +235,7 @@ private struct CalendarHeatmapDayCell: View {
 
     /// `.frame`/`.background`/`.contentShape` 를 전부 `label:` **안**에서 적용한다 —
     /// `Button` 바깥에 붙이면 레이아웃 프레임만 44pt 로 키울 뿐, 탭 인식 영역은 여전히
-    /// 라벨(숫자 글리프) 크기에 머문다. `AccessoryControlButton.swift:85-101` 과 같은
+    /// 라벨(숫자 글리프) 크기에 머문다. `AccessoryActionButton.swift:85-91` 과 같은
     /// 위치(label 안)에 적용하되 순서는 그것과 반대로 **프레임을 배경보다 먼저** 둔다 —
     /// 배경이 라벨(숫자) 크기가 아니라 프레임이 넓힌 44pt 정사각형 전체를 채워야 셀이
     /// 색칠된 사각형으로 보인다(캡슐 버튼처럼 텍스트만 한 작은 배경 + 여백이 아니다).
@@ -305,7 +305,7 @@ private struct CalendarHeatmapDayCell: View {
 
     /// 인셋 스트로크. `stroke` 대신 `strokeBorder` 를 쓴다 — `stroke` 는 선을 경로 위에
     /// 걸쳐 그려 절반이 셀 바깥으로 번지고 모서리 반경이 `radiusS` 보다 커 보인다.
-    /// 다른 컴포넌트의 테두리도 전부 인셋이다(`AccessoryControlButton.swift:96`,
+    /// 다른 컴포넌트의 테두리도 전부 인셋이다(`AccessoryActionButton.swift:135`,
     /// `FilterChip.swift:186`).
     private var lossStroke: some View {
         cellShape.strokeBorder(Color.loss, lineWidth: Constants.lossStrokeWidth)

@@ -16,9 +16,14 @@ import SwiftUI
 /// 유리 렌더링이 달라 판정 근거로 쓰지 않는다.
 ///
 /// 선행 매트릭스의 G5(overflow 발견성)·G7(칩 4개 폭)은 대상이 사라져 셀도 함께 걷어냈다.
+/// G1·G8 도 같은 이유로 빠졌다 — 네 탭이 전부 캡슐째 버튼 또는 액션 버튼으로 옮겨 가면서
+/// "켜짐 채움 / 꺼짐 스트로크" 상태 컨트롤이 앱에서 사라졌고, 그 대비를 판정할 대상도
+/// 함께 없어졌다. 남은 판정은 **글자 라벨 하나로 캡슐이 눌린다고 읽히는가** 쪽이다.
 struct AccessoryGatePreview: View {
 
     // MARK: - Property
+
+    @Environment(\.colorScheme) private var colorScheme
 
     private let layout: AccessoryLayout
 
@@ -31,30 +36,15 @@ struct AccessoryGatePreview: View {
     var body: some View {
         ScrollView {
             VStack(spacing: .spacingL) {
-                gate("G1 — 성과: 비교 컨트롤 켜짐 vs 꺼짐 (채움 vs 스트로크)") {
+                gate("G2·G3 — 오른쪽 글자 라벨과 leading 문구의 구분 (RT/IC 조합에서 촬영)") {
                     standIn {
-                        BottomAccessory {
-                            comparisonStrip
-                        } trailing: {
-                            AccessoryControlButton("비교", isOn: true) {}
-                        }
-                    }
-                    standIn {
-                        BottomAccessory {
-                            comparisonStrip
-                        } trailing: {
-                            AccessoryControlButton("비교", isOn: false) {}
-                        }
-                    }
-                }
-
-                gate("G2·G3 — 스트로크 컨트롤과 leading 문구의 구분 (RT/IC 조합에서 촬영)") {
-                    standIn {
-                        BottomAccessory {
+                        capsuleButtonStrip(label: "KRW") {
                             AccessoryCaption(value: "12:04", suffix: "시세 기준")
-                        } trailing: {
-                            AccessoryControlButton("USD", isOn: false,
-                                                   indicatesSelection: false) {}
+                        }
+                    }
+                    standIn {
+                        capsuleButtonStrip(label: "%") {
+                            AccessoryCaption(.plain("연초 대비"), .accent("+8.2%", .gain))
                         }
                     }
                 }
@@ -63,13 +53,7 @@ struct AccessoryGatePreview: View {
                 // 버튼은 셰브런 없이도 눌린다는 게 이 매트릭스가 판정할 대비다. 가운데 줄이
                 // "안 눌린다"로 읽히면 오른쪽 라벨의 brand 색만으로는 과녁 신호가 모자란 것이다.
                 gate("G4 — chevron.up 이 \"화면이 열린다\"로 읽히는가 (여는 줄 vs 캡슐째 버튼 vs 안 눌리는 줄)") {
-                    standIn {
-                        BottomAccessory {
-                            comparisonStrip
-                        } trailing: {
-                            AccessoryControlButton("비교", isOn: true) {}
-                        }
-                    }
+                    standIn { BottomAccessory { comparisonStrip } }
                     standIn { portfolioSwitchStrip }
                     standIn {
                         BottomAccessory {
@@ -87,50 +71,28 @@ struct AccessoryGatePreview: View {
                               isAvailable: false)
                 }
 
-                gate("G8 — brand 스트로크·라벨 실측 대비 (선행 문서 §3.1 표 대조)") {
-                    standIn {
-                        BottomAccessory {
-                            AccessoryCaption("아직 종목이 없어요")
-                        } trailing: {
-                            AccessoryControlButton("비교", isOn: false) {}
-                        }
-                    }
-                }
-
                 gate("G-스크롤 — §6 교대의 두 끝점 (전환 중 깜빡임은 실기기 스크롤로 판정)") {
                     standIn {
-                        BottomAccessory {
+                        capsuleButtonStrip(label: "KRW") {
                             AccessoryCaption(value: "12:04", suffix: "시세 기준")
-                        } trailing: {
-                            AccessoryControlButton("USD", isOn: false,
-                                                   indicatesSelection: false) {}
                         }
                     }
                     standIn {
-                        BottomAccessory {
+                        capsuleButtonStrip(label: "KRW") {
                             AccessoryCaption(.value("₩1억 2,340만"))
-                        } trailing: {
-                            AccessoryControlButton("USD", isOn: false,
-                                                   indicatesSelection: false) {}
                         }
                     }
                 }
 
                 gate("순자산: 로딩 / 갱신 실패 — 경고가 값보다 먼저다") {
                     standIn {
-                        BottomAccessory {
+                        capsuleButtonStrip(label: "KRW") {
                             AccessoryCaption("시세 불러오는 중")
-                        } trailing: {
-                            AccessoryControlButton("USD", isOn: false,
-                                                   indicatesSelection: false) {}
                         }
                     }
                     standIn {
-                        BottomAccessory {
+                        capsuleButtonStrip(label: "KRW") {
                             StaleBadge(minutesElapsed: 7)
-                        } trailing: {
-                            AccessoryControlButton("USD", isOn: false,
-                                                   indicatesSelection: false) {}
                         }
                     }
                 }
@@ -160,7 +122,36 @@ struct AccessoryGatePreview: View {
 
     // MARK: - Function
 
-    /// 성과 탭의 leading — 눌리는 한 줄이라 `chevron.up` 이 붙는다.
+    /// 캡슐째 버튼 — 오른쪽은 컨트롤이 아니라 **글자 라벨**이라 알약도 테두리도 없다.
+    /// 순자산의 통화 코드와 성과의 표시 단위 글리프가 같은 형태다.
+    ///
+    /// 다크에서 `brand` 라벨은 4.07:1 로 AA 미달이라 잉크로 내린다 — 실기기 촬영에서
+    /// 판정할 대비가 바로 이 갈림이므로 프리뷰도 앱과 같은 규칙을 쓴다.
+    private func capsuleButtonStrip(
+        label: String,
+        @ViewBuilder caption: () -> some View
+    ) -> some View {
+        Button {} label: {
+            BottomAccessory {
+                caption()
+            } trailing: {
+                Text(label)
+                    .hannunFont(.pillLabel)
+                    .foregroundStyle(labelColor)
+                    .frame(minHeight: .minimumTouchTarget)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var labelColor: Color {
+        colorScheme == .dark ? .textPrimary : .brand
+    }
+
+    /// 확장 셰브런이 붙는 leading — 지금 이 문법을 쓰는 탭은 없고(§3.1), 여기서는 캡슐째
+    /// 버튼·안 눌리는 줄과 나란히 두어 셰브런 유무가 신호로 읽히는지만 본다.
     private var comparisonStrip: some View {
         Button {} label: {
             AccessoryCaption(.plain("S&P500 대비"), .accent("+4.3%p", .gain))
@@ -179,7 +170,7 @@ struct AccessoryGatePreview: View {
             } trailing: {
                 Label("입출금 기록", systemImage: "arrow.left.arrow.right")
                     .hannunFont(.pillLabel)
-                    .foregroundStyle(Color.brand)
+                    .foregroundStyle(labelColor)
                     .frame(minHeight: .minimumTouchTarget)
             }
             .frame(maxHeight: .infinity)

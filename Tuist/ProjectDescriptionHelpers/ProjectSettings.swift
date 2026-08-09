@@ -9,7 +9,7 @@ import ProjectDescription
 
 public let bundleIdPrefix = "com.hannun.app"
 public let hannunOrganizationName = "Hannun"
-public let hannunDestinations: Destinations = [.iPhone, .iPad]
+public let hannunDestinations: Destinations = [.iPhone]
 public let hannunDeploymentTargets: DeploymentTargets = .iOS("26.4")
 
 public extension SettingsDictionary {

@@ -14,11 +14,15 @@ Git Flow + **연속 브랜치 파생** 지원
 
 ## 배포 브랜치 전략
 
-- **TestFlight 배포**: `testFlight/{번호}` 브랜치 생성 → `testFlight`으로 PR 머지
-- **Release 배포**: `release/{번호}` 브랜치 생성 → `release`로 PR 머지
-- 배포 브랜치는 `main`에서 분기하여 번호를 순차적으로 매김
-- 직접 푸시 금지, 반드시 PR을 통해 머지
-- `testFlight` / `release` 머지가 **Xcode Cloud 빌드를 트리거한다** (아래 참고)
+- **TestFlight 배포**: `main` 에서 `testFlight/{버전}` 브랜치를 따서 그대로 푸시
+- **Release 배포**: `main` 에서 `release/{버전}` 브랜치를 따서 그대로 푸시
+- 버전은 `MARKETING_VERSION` 을 그대로 쓴다 (`release/1.0.0`)
+- **푸시 자체가 Xcode Cloud 빌드를 트리거한다** — PR·머지 대상 브랜치가 따로 없다 (아래 참고)
+- 배포 브랜치에 직접 커밋하지 않는다. 고칠 게 있으면 `main` 에서 고치고 브랜치를 다시 딴다
+
+> `testFlight` / `release` 라는 **장수 브랜치를 두지 않는다.** git 은 `refs/heads/release` 와
+> `refs/heads/release/1.0.0` 을 동시에 가질 수 없어서(파일 vs 디렉터리 충돌) 둘은 공존이 불가능하다.
+> 버전별 브랜치가 남는 쪽이 어느 커밋이 나갔는지 추적하기도 낫다.
 
 ## 커밋 형식
 
@@ -44,7 +48,7 @@ Git Flow + **연속 브랜치 파생** 지원
 - 최소 1인 Approve 필수
 - main 직접 푸시 금지
 - Squash and Merge 사용
-- **배포 PR 예외**: `testFlight`, `release` 브랜치로의 PR은 **Merge Commit** 사용 (커밋 히스토리 동기화를 위해)
+- 배포 브랜치(`release/*` · `testFlight/*`)는 PR 대상이 아니다 — `main` 에서 따서 바로 푸시한다
 - **PR 제목·본문에 AI 작성 흔적 금지** — `🤖 Generated with [Claude Code](...)` 푸터, `Co-Authored-By` 크레딧 등
   attribution 문구를 절대 넣지 않는다
 
@@ -68,7 +72,7 @@ Git Flow + **연속 브랜치 파생** 지원
 
 | | GitHub Actions (`.github/workflows/ci.yml`) | Xcode Cloud |
 |---|---|---|
-| 트리거 | `main` 으로의 PR · `main` 푸시 | `testFlight` / `release` 브랜치 변경 |
+| 트리거 | `main` 으로의 PR · `main` 푸시 | `testFlight/*` / `release/*` 브랜치 푸시 |
 | 하는 일 | generate → inspect → build-all → test-all | Archive → 업로드 |
 
 Xcode Cloud 워크플로에는 **Test 액션을 넣지 않는다.** 같은 테스트를 두 번 돌리면
@@ -86,7 +90,7 @@ mise 설치 → `make bootstrap` → `make generate` 로 워크스페이스를 �
 
 | | TestFlight | Release |
 |---|---|---|
-| 시작 조건 | `testFlight` 브랜치 변경 | `release` 브랜치 변경 |
+| 시작 조건 | 브랜치 `testFlight/*` 변경 | 브랜치 `release/*` 변경 |
 | 액션 | Archive · 스킴 `Hannun` · Configuration `Release` | 동일 |
 | 배포 준비 | TestFlight (Internal Testing Only) | App Store Connect |
 | 후처리 | 내부 테스터 그룹 배포 | **없음** — 심사 제출은 사람이 누른다 |

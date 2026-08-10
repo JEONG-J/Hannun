@@ -81,6 +81,7 @@ final class PerformanceViewModel {
     /// 요청을 무효로 만들면 안 되므로 토큰을 공유하지 않는다).
     private var calendarRequestID = 0
 
+    private let recordSnapshotUseCase: any RecordSnapshotUseCaseProtocol
     private let calculateYTDReturnUseCase: any CalculateYTDReturnUseCaseProtocol
     private let fetchNetWorthTrendUseCase: any FetchNetWorthTrendUseCaseProtocol
     private let compareBenchmarkUseCase: any CompareBenchmarkUseCaseProtocol
@@ -263,6 +264,7 @@ final class PerformanceViewModel {
     // MARK: - Function
 
     init(
+        recordSnapshotUseCase: any RecordSnapshotUseCaseProtocol,
         calculateYTDReturnUseCase: any CalculateYTDReturnUseCaseProtocol,
         fetchNetWorthTrendUseCase: any FetchNetWorthTrendUseCaseProtocol,
         compareBenchmarkUseCase: any CompareBenchmarkUseCaseProtocol,
@@ -270,6 +272,7 @@ final class PerformanceViewModel {
         calendar: Calendar = .current,
         now: @escaping () -> Date = { Date() }
     ) {
+        self.recordSnapshotUseCase = recordSnapshotUseCase
         self.calculateYTDReturnUseCase = calculateYTDReturnUseCase
         self.fetchNetWorthTrendUseCase = fetchNetWorthTrendUseCase
         self.compareBenchmarkUseCase = compareBenchmarkUseCase
@@ -281,6 +284,9 @@ final class PerformanceViewModel {
 
     convenience init(container: DIContainer) {
         self.init(
+            recordSnapshotUseCase: container.resolve(
+                (any RecordSnapshotUseCaseProtocol).self
+            ),
             calculateYTDReturnUseCase: container.resolve(
                 (any CalculateYTDReturnUseCaseProtocol).self
             ),
@@ -300,7 +306,24 @@ final class PerformanceViewModel {
         await refresh()
     }
 
+    /// 오늘자 스냅샷을 **남긴 뒤** 읽는다 (PM-1).
+    ///
+    /// 성과는 전부 스냅샷 이력에서 나오고 그 이력을 쓰는 화면이 여기뿐이라, 남기는 곳도 여기
+    /// 하나로 둔다. 저장은 하루 한 건 덮어쓰기라(`SnapshotRepositoryProtocol.save`) 몇 번을
+    /// 들어와도 오늘 값이 최신으로 갱신될 뿐이고, 앱을 며칠 안 켠 구간은 UseCase 가 직전 값으로
+    /// 메운다. 포트폴리오에서 방금 등록한 종목이 성과에 나타나는 경로가 이것이다.
+    ///
+    /// 읽기 전에 써야 하는 이유: 요약의 기준값(연초 자산)은 **저장된** 스냅샷에서 오므로,
+    /// 순서가 뒤집히면 첫 종목을 등록한 날 화면이 "계산할 성과가 없어요" 로 남는다.
+    ///
+    /// 실패는 삼킨다. 오늘치를 못 남겨도 어제까지의 이력으로 그릴 수 있고, 저장소가 정말
+    /// 죽었다면 뒤따르는 요약·추이가 자기 자리에서 실패를 말한다.
     func refresh() async {
+        _ = try? await recordSnapshotUseCase.execute(
+            asOf: now(),
+            exchangeRate: await exchangeRateService.currentRate()
+        )
+
         await loadSummary()
         await loadTrend()
         await loadCalendar()

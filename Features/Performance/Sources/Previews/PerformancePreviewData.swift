@@ -86,6 +86,25 @@ struct StubCompareBenchmarkUseCase: CompareBenchmarkUseCaseProtocol {
     }
 }
 
+/// 프리뷰·테스트에는 스냅샷을 남길 곳이 없다 — 언제 불렸는지만 클로저로 흘려보낸다.
+struct StubRecordSnapshotUseCase: RecordSnapshotUseCaseProtocol {
+
+    // MARK: - Property
+
+    let onExecute: @Sendable (Date) async -> Void
+
+    // MARK: - Function
+
+    init(onExecute: @escaping @Sendable (Date) async -> Void = { _ in }) {
+        self.onExecute = onExecute
+    }
+
+    func execute(asOf date: Date, exchangeRate: ExchangeRate) async throws -> NetWorthRecord {
+        await onExecute(date)
+        return NetWorthRecord(recordedOn: date, totalInKRW: .krw(0), totalInUSD: .usd(0))
+    }
+}
+
 /// 환율을 고정해 프리뷰·테스트의 원화 환산 결과를 결정적으로 만든다.
 struct StubExchangeRateService: ExchangeRateServiceProtocol {
 
@@ -210,6 +229,7 @@ extension PerformanceViewModel {
     @MainActor
     static var preview: PerformanceViewModel {
         let viewModel = PerformanceViewModel(
+            recordSnapshotUseCase: StubRecordSnapshotUseCase(),
             calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase { _ in
                 PerformanceSampleData.ytdReturn
             },
@@ -285,6 +305,7 @@ extension PerformanceViewModel {
     @MainActor
     static var previewWithCalendar: PerformanceViewModel {
         PerformanceViewModel(
+            recordSnapshotUseCase: StubRecordSnapshotUseCase(),
             calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase { _ in
                 PerformanceSampleData.ytdReturn
             },
@@ -303,6 +324,7 @@ extension PerformanceViewModel {
     @MainActor
     static var previewWithCalendarFailure: PerformanceViewModel {
         PerformanceViewModel(
+            recordSnapshotUseCase: StubRecordSnapshotUseCase(),
             calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase { _ in
                 PerformanceSampleData.ytdReturn
             },
@@ -321,6 +343,7 @@ extension PerformanceViewModel {
     @MainActor
     static var previewWithoutRecords: PerformanceViewModel {
         PerformanceViewModel(
+            recordSnapshotUseCase: StubRecordSnapshotUseCase(),
             calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase { _ in nil },
             fetchNetWorthTrendUseCase: StubFetchNetWorthTrendUseCase { _, _, _ in [] },
             compareBenchmarkUseCase: StubCompareBenchmarkUseCase { _, _, _ in

@@ -46,6 +46,23 @@ struct PerformanceViewModelTests {
         #expect(viewModel.isStale == false)
     }
 
+    @Test("성과를 읽기 전에 오늘자 스냅샷을 먼저 남긴다")
+    func loadRecordsTodaySnapshotBeforeReading() async {
+        let log = SnapshotCallLog()
+        let viewModel = makeViewModel(
+            record: { await log.recordSnapshot(asOf: $0) },
+            ytd: { _ in
+                await log.readSummary()
+                return PerformanceSampleData.ytdReturn
+            }
+        )
+
+        await viewModel.loadIfNeeded()
+
+        #expect(await log.recordedDates == [PerformanceSampleData.now])
+        #expect(await log.events.first == .snapshot)
+    }
+
     @Test("이미 불러왔으면 다시 조회하지 않는다")
     func repeatedLoadKeepsFirstResult() async {
         let counter = CallCounter()
@@ -1220,6 +1237,7 @@ struct PerformanceViewModelTests {
     }
 
     private func makeViewModel(
+        record: @escaping @Sendable (Date) async -> Void = { _ in },
         ytd: @escaping @Sendable (Date) async throws -> YTDReturn? = { _ in
             PerformanceSampleData.ytdReturn
         },
@@ -1229,6 +1247,7 @@ struct PerformanceViewModelTests {
             -> BenchmarkComparison = { _, _, _ in PerformanceSampleData.comparison }
     ) -> PerformanceViewModel {
         PerformanceViewModel(
+            recordSnapshotUseCase: StubRecordSnapshotUseCase(onExecute: record),
             calculateYTDReturnUseCase: StubCalculateYTDReturnUseCase(result: ytd),
             fetchNetWorthTrendUseCase: StubFetchNetWorthTrendUseCase(result: trend),
             compareBenchmarkUseCase: StubCompareBenchmarkUseCase(result: comparison),
@@ -1236,6 +1255,27 @@ struct PerformanceViewModelTests {
             calendar: Self.calendar,
             now: { PerformanceSampleData.now }
         )
+    }
+}
+
+/// 스냅샷 기록과 요약 조회가 **어떤 순서로** 일어났는지 남긴다. 순서가 뒤집히면 첫 종목을
+/// 등록한 날 요약이 아직 없는 이력을 읽어 "계산할 성과가 없어요" 로 남는다.
+private actor SnapshotCallLog {
+    enum Event: Equatable {
+        case snapshot
+        case summary
+    }
+
+    private(set) var events: [Event] = []
+    private(set) var recordedDates: [Date] = []
+
+    func recordSnapshot(asOf date: Date) {
+        events.append(.snapshot)
+        recordedDates.append(date)
+    }
+
+    func readSummary() {
+        events.append(.summary)
     }
 }
 

@@ -151,21 +151,31 @@ final class PerformanceViewModel {
         return PerformanceHeadline(focusedDate: nil, rate: rate, amount: gain)
     }
 
-    /// 요약도 추이도 그릴 값이 하나도 없는 상태.
+    /// 요약도 추이도 그릴 값이 하나도 없는 상태. **아직 모르면 `nil`** 이다.
     ///
-    /// 둘 다 확인하는 이유: 연초 기록만 없고 그 이전 기록은 있을 수 있다(기간을 1Y 로 두면
-    /// 작년 구간이 그려진다). 그 경우 YTD 만 못 낼 뿐 차트는 멀쩡하므로 감추면 안 된다.
+    /// 세 갈래인 이유가 이 프로퍼티의 존재 이유다. 요약이 오기 전에는 답을 낼 수 없는데
+    /// `false`(기록이 있다)로 단정하면 탭에 들어서는 첫 프레임부터 차트·캘린더 카드가 그려지고,
+    /// 로컬 조회라 곧바로 도착하는 요약이 `.insufficientData` 면 그 두 장이 스피너만 돌리다
+    /// 사라진다. 되물릴 수 있는 답으로 화면을 그리지 않는다 — 카드는 `false` 일 때만 그린다.
     ///
-    /// **추이를 기다리는 동안에도 감춘다.** 요약은 로컬 조회라 즉시 끝나고 추이는 지수
-    /// 네트워크 왕복을 태워 몇 초 늦게 온다 — 그 사이를 `false` 로 두면 "계산할 성과가 없어요"
-    /// 아래에 차트·캘린더 카드가 스피너만 돌리다 사라진다. 있던 카드가 사라지는 깜빡임은
-    /// 생기지 않는다: 갱신은 마지막 값을 남기므로(`retaining(_:after:markingStale:)`)
-    /// `.loading` 은 첫 조회에만 들어온다.
+    /// 요약과 추이를 둘 다 확인하는 이유: 연초 기록만 없고 그 이전 기록은 있을 수 있다(기간을
+    /// 1Y 로 두면 작년 구간이 그려진다). 그 경우 YTD 만 못 낼 뿐 차트는 멀쩡하므로 감추면 안 된다.
     ///
-    /// 실패만 예외로 남긴다 — 감추면 차트 카드 안의 "추이를 불러오지 못했어요" 와 다시 시도
-    /// 버튼까지 함께 사라진다.
-    var hasNoRecords: Bool {
-        guard case .loaded(.insufficientData) = summaryState else { return false }
+    /// **추이를 기다리는 동안에는 감춘다**(`nil` 이 아니라 `true`). 요약이 이미 "기록 없음"
+    /// 이라고 답한 뒤라 결론이 뒤집힐 여지가 거의 없고, 여기서 카드를 그리면 "계산할 성과가
+    /// 없어요" 아래에 스피너 두 장이 붙었다 사라진다. 있던 카드가 사라지는 깜빡임은 생기지
+    /// 않는다: 갱신은 마지막 값을 남기므로(`retaining(_:after:markingStale:)`) `.loading` 은
+    /// 첫 조회에만 들어온다.
+    ///
+    /// 실패만 예외로 `false` 다 — 감추면 차트 카드 안의 "추이를 불러오지 못했어요" 와
+    /// 다시 시도 버튼까지 함께 사라진다.
+    var hasNoRecords: Bool? {
+        switch summaryState {
+        case .idle, .loading: return nil
+        case .failed: return false
+        case .loaded(.calculated): return false
+        case .loaded(.insufficientData): break
+        }
 
         switch trendState {
         case .idle, .loading: return true

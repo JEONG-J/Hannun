@@ -105,6 +105,34 @@ struct PerformanceViewModelTests {
 
     // MARK: - 기록 없음
 
+    /// 요약이 오기 전에는 카드를 그릴지 **정할 수 없다**. 그 구간을 "기록이 있다"로 단정하면
+    /// 탭에 들어서는 첫 프레임에 스피너 두 장이 떴다가, 로컬 조회라 곧바로 도착하는 요약이
+    /// `.insufficientData` 인 순간 그대로 사라진다 — 눈에 남는 건 뭔가 반짝했다는 인상뿐이다.
+    @Test("요약을 기다리는 동안에는 카드를 그리지 않는다")
+    func cardsStayHiddenUntilSummaryArrives() async {
+        let hasEnteredSummaryRequest = RequestGate()
+        let summaryGate = RequestGate()
+        let viewModel = makeViewModel(
+            ytd: { _ in
+                await hasEnteredSummaryRequest.signal()
+                await summaryGate.wait()
+                return nil
+            }
+        )
+
+        // 탭에 들어서기 전. 아직 아무것도 조회하지 않았다.
+        #expect(viewModel.hasNoRecords != false)
+
+        async let refresh: Void = viewModel.refresh()
+        await hasEnteredSummaryRequest.wait()
+
+        #expect(viewModel.summaryState.isLoading)
+        #expect(viewModel.hasNoRecords != false)
+
+        await summaryGate.signal()
+        await refresh
+    }
+
     /// 요약은 로컬이라 즉시 끝나고 추이는 지수 네트워크 왕복을 태워 늦게 온다. 그 사이를
     /// 감추지 않으면 빈 상태 아래에서 차트·캘린더 카드가 스피너만 돌리다 사라진다.
     @Test("기록이 없으면 추이를 기다리는 동안에도 카드를 감춘다")
@@ -125,12 +153,12 @@ struct PerformanceViewModelTests {
 
         #expect(viewModel.summaryState.value == .insufficientData)
         #expect(viewModel.trendState.isLoading)
-        #expect(viewModel.hasNoRecords)
+        #expect(viewModel.hasNoRecords == true)
 
         await trendGate.signal()
         await refresh
 
-        #expect(viewModel.hasNoRecords)
+        #expect(viewModel.hasNoRecords == true)
     }
 
     /// 연초 기록만 없고 그 이전 기록은 있을 수 있다 — YTD 만 못 낼 뿐 차트는 멀쩡하다.

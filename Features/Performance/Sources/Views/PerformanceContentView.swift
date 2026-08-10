@@ -47,7 +47,10 @@ struct PerformanceContentView: View {
                     // 기록이 하나도 없으면 빈 상태 하나로 끝낸다. 차트 카드까지 두면 "데이터가
                     // 쌓이면…" 안내가 같은 화면에 두 번 나온다. 캘린더도 같이 감춘다 — 기록이
                     // 없으면 어느 달로 넘겨도 빈 격자라 넘길 이유 자체가 없다.
-                    if !viewModel.hasNoRecords {
+                    //
+                    // 아직 모르는 동안(`nil`)에도 그리지 않는다. 여기서 그려 두면 곧바로
+                    // 도착하는 요약이 "기록 없음" 일 때 스피너 두 장이 반짝했다 사라진다.
+                    if viewModel.hasNoRecords == false {
                         chartCard
 
                         MonthlyReturnCard(viewModel: viewModel) {
@@ -60,8 +63,9 @@ struct PerformanceContentView: View {
                 .padding(.top, .spacingS)
             }
             // 기록이 없어 빈 상태 하나만 남는 화면에서는 가운데로 세운다. 차트·캘린더가 붙어
-            // 뷰포트를 채우면 `.alignment` 는 쓰이지 않는다.
-            .defaultScrollAnchor(viewModel.hasNoRecords ? .center : .top, for: .alignment)
+            // 뷰포트를 채우면 `.alignment` 는 쓰이지 않는다. 아직 모르는 동안(`nil`)에는 위에
+            // 둔다 — 자리 잡은 헤드라인이 카드가 붙는 순간 가운데에서 위로 튀지 않는다.
+            .defaultScrollAnchor(viewModel.hasNoRecords == true ? .center : .top, for: .alignment)
             .background(Color.backgroundPrimary)
             .refreshable { await viewModel.refresh() }
             // 액세서리 캡슐이 마지막 컨트롤을 가리지 않도록 하단을 띄운다 (UI 스펙 §3.1).

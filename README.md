@@ -44,38 +44,7 @@
 
 ## 🛠️ 기술 스택
 
-<div align="center">
-
-**언어 · UI**
-
-<img src="https://img.shields.io/badge/Swift%206.3-F05138?style=for-the-badge&logo=swift&logoColor=white" alt="Swift 6.3">
-<img src="https://img.shields.io/badge/SwiftUI-0071E3?style=for-the-badge&logo=swift&logoColor=white" alt="SwiftUI">
-<img src="https://img.shields.io/badge/Liquid%20Glass-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Liquid Glass">
-<img src="https://img.shields.io/badge/Swift%20Charts-FF9500?style=for-the-badge&logo=swift&logoColor=white" alt="Swift Charts">
-<img src="https://img.shields.io/badge/Observation-8E8E93?style=for-the-badge&logo=swift&logoColor=white" alt="Observation">
-
-**데이터 · 보안**
-
-<img src="https://img.shields.io/badge/SwiftData-0A84FF?style=for-the-badge&logo=swift&logoColor=white" alt="SwiftData">
-<img src="https://img.shields.io/badge/CloudKit-3693F3?style=for-the-badge&logo=icloud&logoColor=white" alt="CloudKit">
-<img src="https://img.shields.io/badge/Keychain-4A4A4A?style=for-the-badge&logo=apple&logoColor=white" alt="Keychain">
-<img src="https://img.shields.io/badge/URLSession-1D6EF3?style=for-the-badge&logo=swift&logoColor=white" alt="URLSession">
-<img src="https://img.shields.io/badge/Foundation%20Models-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Foundation Models">
-
-**빌드 · 품질**
-
-<img src="https://img.shields.io/badge/Tuist-6236FF?style=for-the-badge&logoColor=white" alt="Tuist">
-<img src="https://img.shields.io/badge/mise-4B32C3?style=for-the-badge&logoColor=white" alt="mise">
-<img src="https://img.shields.io/badge/Xcode%2026-1575F9?style=for-the-badge&logo=xcode&logoColor=white" alt="Xcode 26">
-<img src="https://img.shields.io/badge/Swift%20Testing-30B0C7?style=for-the-badge&logo=swift&logoColor=white" alt="Swift Testing">
-<img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="GitHub Actions">
-
-**외부 시세 API**
-
-<img src="https://img.shields.io/badge/한국투자증권%20Open%20API-0046FF?style=for-the-badge&logoColor=white" alt="KIS Open API">
-<img src="https://img.shields.io/badge/Upbit%20Open%20API-093687?style=for-the-badge&logo=bitcoin&logoColor=white" alt="Upbit Open API">
-
-</div>
+<img src="Screenshots/tech-stack.png" alt="기술 스택 — 언어·UI / 데이터·보안 / 빌드·품질 / 외부 시세 API">
 
 | 구분 | 선택 | 이유 |
 |------|------|------|

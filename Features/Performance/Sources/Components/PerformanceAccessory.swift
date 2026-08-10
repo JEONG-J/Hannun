@@ -109,11 +109,14 @@ struct PerformanceAccessory: View {
     /// 겹치지 않는다. 전체 자릿수는 캡슐 폭에 안 들어가므로 억·만으로 접는다.
     ///
     /// 낼 수 없으면 아래 대역이 그대로 올라온다 — 축약 배치에서도 한 줄이라 더 줄일 것이 없다.
+    /// 단 **못 내는 것과 아직 모르는 것을 가른다**: 첫 로딩은 요약이 추이보다 먼저 끝나므로,
+    /// 모르는 동안 아래 대역을 올리면 연초 대비가 한 번 적혔다가 총 평가금액으로 갈아엎힌다.
+    /// 아직 모르는 동안은 한 줄을 비워 둔다.
     @ViewBuilder
     private var totalCaption: some View {
         if let total = viewModel.latestTotal {
             AccessoryCaption(.plain(Constants.totalPrefix), .value(AmountFormatter.compact(total)))
-        } else {
+        } else if !viewModel.isTrendPending {
             valueCaptionView
         }
     }

@@ -216,6 +216,16 @@ final class PerformanceViewModel {
         trendState.value?.totals.max { $0.key < $1.key }?.value
     }
 
+    /// 추이가 아직 도착하지 않아 `latestTotal` 이 없는 게 "없다"인지 "모른다"인지 못 가리는
+    /// 구간. `hasNoRecords` 와 같은 이유로 둔다 — 첫 로딩은 요약이 추이보다 **먼저** 끝나서,
+    /// 이걸 안 보면 액세서리가 연초 대비를 한 번 적었다가 총 평가금액으로 갈아엎는다.
+    var isTrendPending: Bool {
+        switch trendState {
+        case .idle, .loading: true
+        case .loaded, .failed: false
+        }
+    }
+
     /// 액세서리 한 줄이 말하는 초과수익 — "S&P500 대비 +1.4%p".
     ///
     /// 내 수익률과 지수 등락률 둘 다 **기간 시작을 0 으로** 정규화한 값이라 그대로 빼면

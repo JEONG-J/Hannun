@@ -496,6 +496,31 @@ struct PerformanceViewModelTests {
         #expect(viewModel.latestTotal == nil)
     }
 
+    /// 액세서리 첫 줄이 "연초 대비 → 총 평가금액" 으로 갈아엎히지 않으려면, 추이가 오기 전의
+    /// `latestTotal == nil` 을 "없다"로 읽으면 안 된다.
+    @Test("추이가 오기 전에는 총 평가금액을 못 낸 게 아니라 아직 모르는 것이다")
+    func trendStaysPendingUntilItArrives() async {
+        let viewModel = makeViewModel()
+
+        #expect(viewModel.isTrendPending)
+
+        await viewModel.refresh()
+
+        #expect(viewModel.isTrendPending == false)
+    }
+
+    @Test("추이 조회가 실패하면 더 기다릴 것이 없다")
+    func failedTrendIsNoLongerPending() async {
+        let viewModel = makeViewModel(
+            trend: { _, _, _ in throw AppError.network("시세 서버 응답 없음") }
+        )
+
+        await viewModel.refresh()
+
+        #expect(viewModel.isTrendPending == false)
+        #expect(viewModel.latestTotal == nil)
+    }
+
     // MARK: - 벤치마크
 
     @Test("선택한 지수만 차트에 겹친다")

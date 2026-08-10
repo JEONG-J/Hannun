@@ -297,7 +297,7 @@ private struct PeriodRangeSheetPreview: View {
 
     var body: some View {
         PeriodRangeSheet(viewModel: viewModel)
-            .task { await viewModel.loadIfNeeded() }
+            .task { await viewModel.refresh() }
     }
 }
 

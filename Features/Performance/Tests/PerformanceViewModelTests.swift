@@ -23,7 +23,7 @@ struct PerformanceViewModelTests {
     func firstLoadFillsBothStates() async {
         let viewModel = makeViewModel()
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         let sampledCount = PerformanceSampleData.trendPoints.count
         #expect(
@@ -38,7 +38,7 @@ struct PerformanceViewModelTests {
     func missingRecordsBecomeEmptySummary() async {
         let viewModel = makeViewModel(ytd: { _ in nil })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.summaryState.value == .insufficientData)
         #expect(viewModel.summaryState.error == nil)
@@ -57,14 +57,14 @@ struct PerformanceViewModelTests {
             }
         )
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(await log.recordedDates == [PerformanceSampleData.now])
         #expect(await log.events.first == .snapshot)
     }
 
-    @Test("이미 불러왔으면 다시 조회하지 않는다")
-    func repeatedLoadKeepsFirstResult() async {
+    @Test("탭에 다시 들어오면 다시 조회한다")
+    func repeatedLoadRereads() async {
         let counter = CallCounter()
         let viewModel = makeViewModel(
             ytd: { _ in
@@ -73,17 +73,17 @@ struct PerformanceViewModelTests {
             }
         )
 
-        await viewModel.loadIfNeeded()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
+        await viewModel.refresh()
 
-        #expect(await counter.count == 1)
+        #expect(await counter.count == 2)
     }
 
     @Test("첫 조회 실패는 화면 상태로 알린다")
     func firstFailureSurfacesAsState() async {
         let viewModel = makeViewModel(ytd: { _ in throw AppError.persistence("저장소 오류") })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.summaryState == .failed(.persistence("저장소 오류")))
         #expect(viewModel.isStale == false)
@@ -93,7 +93,7 @@ struct PerformanceViewModelTests {
     func unknownFailureBecomesAppError() async {
         let viewModel = makeViewModel(ytd: { _ in throw SampleFailure() })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.summaryState.error != nil)
         #expect(viewModel.summaryState.value == nil)
@@ -110,7 +110,7 @@ struct PerformanceViewModelTests {
             }
         )
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.refresh()
 
         #expect(
@@ -183,7 +183,7 @@ struct PerformanceViewModelTests {
     func trendWithPointsKeepsCardsVisible() async {
         let viewModel = makeViewModel(ytd: { _ in nil })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.summaryState.value == .insufficientData)
         #expect(viewModel.hasNoRecords == false)
@@ -197,7 +197,7 @@ struct PerformanceViewModelTests {
             trend: { _, _, _ in throw AppError.network("시세 서버 응답 없음") }
         )
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.trendState.error != nil)
         #expect(viewModel.hasNoRecords == false)
@@ -215,7 +215,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.trendPoints
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.selectPeriod(.oneMonth)
 
         let expected = PerformanceViewModel.dateRange(
@@ -238,7 +238,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.trendPoints
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.selectPeriod(.yearToDate)
 
         #expect(await recorder.chartRequests.count == 1)
@@ -254,7 +254,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.trendPoints
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.selectGranularity(.monthly)
 
         #expect(await recorder.requests.last?.granularity == .monthly)
@@ -271,7 +271,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.trendPoints
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.selectGranularity(.monthly)
         await viewModel.selectGranularity(.daily)
 
@@ -282,7 +282,7 @@ struct PerformanceViewModelTests {
     @Test("단위를 바꾸면 스크럽 상태가 풀린다")
     func selectingGranularityClearsScrub() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
 
         await viewModel.selectGranularity(.monthly)
@@ -304,7 +304,7 @@ struct PerformanceViewModelTests {
             return Array(PerformanceSampleData.trendPoints.prefix(2))
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         async let first: Void = viewModel.selectGranularity(.monthly)
         async let second: Void = viewModel.selectGranularity(.daily)
@@ -323,7 +323,7 @@ struct PerformanceViewModelTests {
     @Test("기간을 고르면 그 기간이 차트에 반영된다")
     func selectingPeriodUpdatesChart() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         await viewModel.selectPeriod(.oneMonth)
 
@@ -335,7 +335,7 @@ struct PerformanceViewModelTests {
         let sampled = [PerformanceSampleData.trendPoints[0], PerformanceSampleData.trendPoints[4]]
         let viewModel = makeViewModel(trend: { _, _, _ in sampled })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.trendState.value?.portfolio.map(\.date) == sampled.map(\.date))
     }
@@ -343,7 +343,7 @@ struct PerformanceViewModelTests {
     @Test("기간 전환은 스크럽 상태를 해제한다")
     func selectingPeriodClearsScrub() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
 
         await viewModel.selectPeriod(.threeMonths)
@@ -435,7 +435,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.trendPoints
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.toggleValueUnit()
         viewModel.toggleValueUnit()
 
@@ -446,7 +446,7 @@ struct PerformanceViewModelTests {
     @Test("표시 단위는 누를 때마다 반대로 간다")
     func togglingValueUnitFlipsBothWays() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.toggleValueUnit()
 
@@ -462,7 +462,7 @@ struct PerformanceViewModelTests {
     @Test("금액 축에서는 비교가 켜져 있어도 겹치지 않는다")
     func amountUnitDropsBenchmarkOverlay() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.selectBenchmark(.sp500)
 
         viewModel.toggleValueUnit()
@@ -482,7 +482,7 @@ struct PerformanceViewModelTests {
     func latestTotalComesFromTheLastTrendPoint() async {
         let viewModel = makeViewModel()
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.latestTotal == PerformanceSampleData.trendPoints.last?.total)
     }
@@ -491,7 +491,7 @@ struct PerformanceViewModelTests {
     func latestTotalIsMissingWithoutTrend() async {
         let viewModel = makeViewModel(trend: { _, _, _ in [] })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.latestTotal == nil)
     }
@@ -501,7 +501,7 @@ struct PerformanceViewModelTests {
     @Test("선택한 지수만 차트에 겹친다")
     func selectedBenchmarkIsOverlaid() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.toggleBenchmark(.sp500)
 
@@ -511,7 +511,7 @@ struct PerformanceViewModelTests {
     @Test("같은 지수를 다시 고르면 선택이 풀린다")
     func togglingSameBenchmarkClearsSelection() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.toggleBenchmark(.sp500)
         viewModel.toggleBenchmark(.sp500)
@@ -524,7 +524,7 @@ struct PerformanceViewModelTests {
     @Test("비교를 껐다 켜도 고른 지수는 남는다")
     func togglingOverlayKeepsSelection() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.selectBenchmark(.sp500)
 
         viewModel.toggleBenchmarkOverlay()
@@ -540,7 +540,7 @@ struct PerformanceViewModelTests {
     @Test("고른 지수가 없으면 비교를 켤 수 없다")
     func overlayCannotEnableWithoutSelection() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.toggleBenchmarkOverlay()
 
@@ -550,7 +550,7 @@ struct PerformanceViewModelTests {
     @Test("초과수익은 마지막 시점의 수익률 차다")
     func excessReturnIsTheLastPointDifference() async throws {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.selectBenchmark(.sp500)
 
@@ -563,7 +563,7 @@ struct PerformanceViewModelTests {
     @Test("비교가 꺼져 있으면 초과수익도 말하지 않는다")
     func excessReturnNeedsOverlay() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.selectBenchmark(.sp500)
 
         viewModel.toggleBenchmarkOverlay()
@@ -579,7 +579,7 @@ struct PerformanceViewModelTests {
         )
         let viewModel = makeViewModel(comparison: { _, _, _ in comparison })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.isBenchmarkAvailable(.sp500))
         #expect(viewModel.isBenchmarkAvailable(.nasdaq) == false)
@@ -593,7 +593,7 @@ struct PerformanceViewModelTests {
             benchmarks: []
         )
         let viewModel = makeViewModel(comparison: { _, _, _ in comparison })
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.selectBenchmark(.nasdaq)
 
@@ -612,7 +612,7 @@ struct PerformanceViewModelTests {
     @Test("스크럽하면 그 시점 값이 헤드라인을 대신한다")
     func scrubbingReplacesHeadline() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         let scrubbedDate = PerformanceSampleData.date(at: 3)
         viewModel.scrubbedDate = scrubbedDate
@@ -626,7 +626,7 @@ struct PerformanceViewModelTests {
     @Test("손을 떼면 연초 대비로 돌아온다")
     func releasingScrubRestoresYearToDate() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
 
         viewModel.scrubbedDate = nil
@@ -639,7 +639,7 @@ struct PerformanceViewModelTests {
     @Test("차트에 없는 시점은 헤드라인을 바꾸지 않는다")
     func unknownScrubDateIsIgnored() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.scrubbedDate = .distantFuture
 
@@ -651,7 +651,7 @@ struct PerformanceViewModelTests {
     func hintIsVisibleAfterFirstLoad() async {
         let viewModel = makeViewModel()
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.isScrubHintVisible)
     }
@@ -659,7 +659,7 @@ struct PerformanceViewModelTests {
     @Test("스크럽하면 배웠다고 기록하고 힌트를 감춘다")
     func scrubbingMarksAsLearnedAndHidesHint() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
 
@@ -670,7 +670,7 @@ struct PerformanceViewModelTests {
     @Test("손을 떼도 한 번 배운 힌트는 되살아나지 않는다")
     func releasingScrubKeepsHintHidden() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
 
         viewModel.scrubbedDate = nil
@@ -681,7 +681,7 @@ struct PerformanceViewModelTests {
     @Test("스크럽 후 기간을 바꿔도 힌트는 되살아나지 않는다")
     func changingPeriodAfterScrubKeepsHintHidden() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.scrubbedDate = PerformanceSampleData.date(at: 3)
 
         await viewModel.selectPeriod(.oneMonth)
@@ -702,7 +702,7 @@ struct PerformanceViewModelTests {
             trend: { _, _, _ in throw AppError.network("시세 서버 응답 없음") }
         )
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.isScrubHintVisible == false)
     }
@@ -711,7 +711,7 @@ struct PerformanceViewModelTests {
     func hintStaysHiddenWithSinglePoint() async {
         let viewModel = makeViewModel(trend: { _, _, _ in [PerformanceSampleData.trendPoints[0]] })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.isScrubHintVisible == false)
     }
@@ -721,7 +721,7 @@ struct PerformanceViewModelTests {
     @Test("캘린더에서 고른 날이 헤드라인과 차트 커서를 옮긴다")
     func selectingDateMovesHeadlineAndCursor() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         let selected = PerformanceSampleData.date(at: 3)
 
         viewModel.selectDate(selected)
@@ -737,7 +737,7 @@ struct PerformanceViewModelTests {
     @Test("고른 날을 다시 누르면 선택이 풀린다")
     func reselectingTheSameDateClearsSelection() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         let selected = PerformanceSampleData.date(at: 3)
         viewModel.selectDate(selected)
 
@@ -751,7 +751,7 @@ struct PerformanceViewModelTests {
     @Test("스크럽이 고른 날을 덮고, 손을 떼면 다시 그 날로 돌아온다")
     func scrubbingOverridesSelectionAndReleasingRestoresIt() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         let selected = PerformanceSampleData.date(at: 3)
         let scrubbed = PerformanceSampleData.date(at: 5)
         viewModel.selectDate(selected)
@@ -771,7 +771,7 @@ struct PerformanceViewModelTests {
     @Test("차트가 담지 않은 날을 골라도 헤드라인은 연초 대비 그대로다")
     func selectingDateOutsideTheChartKeepsYearToDate() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         let outside = Self.date(year: 2023, month: 3, day: 14)
 
         viewModel.selectDate(outside)
@@ -786,7 +786,7 @@ struct PerformanceViewModelTests {
     @Test("월별 단위에서는 고른 날이 같은 달 점으로 스냅된다")
     func monthlyGranularitySnapsSelectionToItsMonth() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.selectGranularity(.monthly)
 
         viewModel.selectDate(Self.date(year: 2026, month: 3, day: 31))
@@ -798,7 +798,7 @@ struct PerformanceViewModelTests {
     @Test("기간·단위를 바꿔도 고른 날은 남는다")
     func changingPeriodOrGranularityKeepsSelection() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         let selected = PerformanceSampleData.date(at: 3)
         viewModel.selectDate(selected)
 
@@ -844,7 +844,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.trendPoints
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.selectGranularity(.monthly)
         await viewModel.loadCalendar()
 
@@ -863,7 +863,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.trendPoints
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         await viewModel.selectPeriod(.oneYear)
         await viewModel.loadCalendar()
 
@@ -878,7 +878,7 @@ struct PerformanceViewModelTests {
             return PerformanceSampleData.comparison
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         // 차트는 전 지수를, 캘린더는 빈 목록을 요청한다 — 빈 목록이면 지수 저장소를 돌지 않는다.
         #expect(await recorder.requests.first?.indices == BenchmarkIndex.allCases)
@@ -999,7 +999,7 @@ struct PerformanceViewModelTests {
     @Test("달을 옮기면 고른 날이 함께 풀린다")
     func movingMonthClearsTheSelectedDate() async {
         let viewModel = makeViewModel()
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
         viewModel.selectDate(PerformanceSampleData.date(at: 3))
 
         await viewModel.showPreviousMonth()
@@ -1090,7 +1090,7 @@ struct PerformanceViewModelTests {
             throw AppError.network("시세 서버 응답 없음")
         })
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         #expect(viewModel.calendarState.error != nil)
         #expect(viewModel.trendState.value != nil)
@@ -1116,7 +1116,7 @@ struct PerformanceViewModelTests {
     func firstLoadFillsCalendar() async {
         let viewModel = makeViewModel()
 
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         // 표본 8개 점 중 7월에 드는 것은 마지막 하나뿐이다.
         #expect(viewModel.calendarState.value?.map(\.date) == [PerformanceSampleData.date(at: 7)])
@@ -1129,7 +1129,7 @@ struct PerformanceViewModelTests {
             await recorder.record(ComparisonRequest(start: start, indices: indices))
             return PerformanceSampleData.comparison
         })
-        await viewModel.loadIfNeeded()
+        await viewModel.refresh()
 
         await viewModel.refresh()
 

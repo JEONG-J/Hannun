@@ -317,7 +317,7 @@ private struct PerformanceContentPreview: View {
                 .navigationTitle("투자 성과")
                 .navigationBarTitleDisplayMode(.inline)
         }
-        .task { await viewModel.loadIfNeeded() }
+        .task { await viewModel.refresh() }
     }
 }
 

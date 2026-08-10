@@ -223,7 +223,7 @@ private struct PerformanceAccessoryPreview: View {
 
             PerformanceAccessory(viewModel: viewModel)
         }
-        .task { await viewModel.loadIfNeeded() }
+        .task { await viewModel.refresh() }
     }
 }
 

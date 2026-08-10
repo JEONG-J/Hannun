@@ -225,7 +225,7 @@ enum PerformanceCalendarSampleData {
 }
 
 extension PerformanceViewModel {
-    /// 프리뷰용 인스턴스. 화면이 `.task` 로 `loadIfNeeded()` 를 부르면 표본이 채워진다.
+    /// 프리뷰용 인스턴스. 화면이 `.task` 로 `refresh()` 를 부르면 표본이 채워진다.
     @MainActor
     static var preview: PerformanceViewModel {
         let viewModel = PerformanceViewModel(

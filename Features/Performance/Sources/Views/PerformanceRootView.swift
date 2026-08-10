@@ -72,7 +72,7 @@ private struct PerformanceScreen: View {
         .sheet(isPresented: $viewModel.isPeriodRangePickerPresented) {
             PeriodRangeSheet(viewModel: self.viewModel)
         }
-        .task { await viewModel.loadIfNeeded() }
+        .task { await viewModel.refresh() }
     }
 }
 

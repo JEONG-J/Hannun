@@ -62,6 +62,9 @@ struct PortfolioCategoryCard: View {
 
     private func row(for valuation: HoldingValuation) -> some View {
         HoldingValuationRow(valuation: valuation, metric: metric, onMetricTap: onMetricTap)
+            // 행은 이름·금액 글자와 등락 버튼만 그린다 — 그 사이 여백은 길게 눌러도 반응하지
+            // 않아 "금액을 정확히 눌러야 메뉴가 뜬다" 가 된다. 카드 헤더와 같은 처리를 준다.
+            .contentShape(.rect)
             .contextMenu {
                 Button {
                     onEdit(valuation)

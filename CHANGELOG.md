@@ -6,6 +6,18 @@
 `MARKETING_VERSION`(`App/Config/Hannun.shared.xcconfig`)과 `v` 접두 태그가 같은 값을 가리킨다.
 빌드 번호(`CURRENT_PROJECT_VERSION`)는 Xcode Cloud 가 빌드마다 덮어쓰므로 여기 적지 않는다.
 
+## [1.2.0] — 2026-08-10
+
+### 추가
+
+- 런치 화면을 이어받아 로고를 2초 더 붙잡는 스플래시. 덮여 있는 동안 탭 화면이 첫 조회를
+  끝내므로 걷히는 순간 값이 들어찬 화면이 나온다.
+
+### 수정
+
+- 성과 탭에 들어서는 첫 프레임에 차트·캘린더 카드가 스피너만 돌리다 사라지던 깜빡임을
+  없앴다. 요약이 도착하기 전에는 카드를 그릴지 정하지 않는다.
+
 ## [1.1.0] — 2026-08-10
 
 ### 추가
@@ -30,5 +42,6 @@
 현금·국내/해외 주식·ETF·코인을 한 곳에서 추적하는 개인 자산관리 앱.
 순자산 · 포트폴리오 · 투자 성과 · 매매일지 네 개 탭으로 구성했다.
 
+[1.2.0]: https://github.com/JEONG-J/Hannun/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/JEONG-J/Hannun/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/JEONG-J/Hannun/releases/tag/v1.0.0

@@ -103,6 +103,61 @@ struct PerformanceViewModelTests {
         #expect(viewModel.isStale)
     }
 
+    // MARK: - 기록 없음
+
+    /// 요약은 로컬이라 즉시 끝나고 추이는 지수 네트워크 왕복을 태워 늦게 온다. 그 사이를
+    /// 감추지 않으면 빈 상태 아래에서 차트·캘린더 카드가 스피너만 돌리다 사라진다.
+    @Test("기록이 없으면 추이를 기다리는 동안에도 카드를 감춘다")
+    func noRecordsHidesCardsWhileTrendLoads() async {
+        let hasEnteredTrendRequest = RequestGate()
+        let trendGate = RequestGate()
+        let viewModel = makeViewModel(
+            ytd: { _ in nil },
+            trend: { _, _, _ in
+                await hasEnteredTrendRequest.signal()
+                await trendGate.wait()
+                return []
+            }
+        )
+
+        async let refresh: Void = viewModel.refresh()
+        await hasEnteredTrendRequest.wait()
+
+        #expect(viewModel.summaryState.value == .insufficientData)
+        #expect(viewModel.trendState.isLoading)
+        #expect(viewModel.hasNoRecords)
+
+        await trendGate.signal()
+        await refresh
+
+        #expect(viewModel.hasNoRecords)
+    }
+
+    /// 연초 기록만 없고 그 이전 기록은 있을 수 있다 — YTD 만 못 낼 뿐 차트는 멀쩡하다.
+    @Test("추이에 그릴 점이 있으면 요약이 비어도 카드를 남긴다")
+    func trendWithPointsKeepsCardsVisible() async {
+        let viewModel = makeViewModel(ytd: { _ in nil })
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.summaryState.value == .insufficientData)
+        #expect(viewModel.hasNoRecords == false)
+    }
+
+    /// 감추면 차트 카드 안의 실패 문구와 다시 시도 버튼까지 함께 사라진다.
+    @Test("추이 조회가 실패하면 카드를 감추지 않는다")
+    func trendFailureKeepsCardsVisible() async {
+        let viewModel = makeViewModel(
+            ytd: { _ in nil },
+            trend: { _, _, _ in throw AppError.network("시세 서버 응답 없음") }
+        )
+
+        await viewModel.loadIfNeeded()
+
+        #expect(viewModel.trendState.error != nil)
+        #expect(viewModel.hasNoRecords == false)
+    }
+
     // MARK: - 기간·단위
 
     @Test("기간을 바꾸면 그 구간으로 다시 조회한다")

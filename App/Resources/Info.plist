@@ -22,8 +22,18 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- LaunchBackground 는 HannunDesignSystem 의 backgroundPrimary 사본이다 — 런치 화면은
+	     main bundle 에셋만 읽어서 프레임워크 번들의 토큰을 못 쓴다. 한쪽만 바꾸면 배경이 튄다.
+	     LaunchLogo 는 확대·축소 없이 **원본 포인트 크기 그대로 화면 중앙**에 놓인다.
+	     즉 표시 크기는 1x 에셋의 픽셀 수와 같다 — 160/320/480px 을 넣어 160pt 로 잡았다.
+	     로고를 교체할 때 배율별 크기를 이 비율로 맞추지 않으면 그대로 커지거나 흐려진다. -->
 	<key>UILaunchScreen</key>
-	<dict/>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchLogo</string>
+	</dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

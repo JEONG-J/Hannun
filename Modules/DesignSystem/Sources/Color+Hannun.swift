@@ -14,6 +14,9 @@ public extension Color {
 
     // MARK: - 기본 팔레트
 
+    /// 런치 화면이 같은 값을 `App/Resources/Assets.xcassets/LaunchBackground` 에 **복제**해 둔다 —
+    /// 런치 화면은 main bundle 에셋만 참조할 수 있어 이 번들을 못 읽는다. 값을 바꾸면 거기도 바꾼다.
+    /// 안 맞추면 런치 화면에서 `RootTabView` 로 넘어가는 순간 배경이 튄다.
     static let backgroundPrimary = Color("backgroundPrimary", bundle: .module)
     static let surfacePrimary = Color("surfacePrimary", bundle: .module)
     static let surfaceSecondary = Color("surfaceSecondary", bundle: .module)

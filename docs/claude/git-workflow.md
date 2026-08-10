@@ -14,11 +14,11 @@ Git Flow + **연속 브랜치 파생** 지원
 
 ## 배포 브랜치 전략
 
-- **TestFlight 배포**: `testFlight/{번호}` 브랜치 생성 → `testFlight`으로 PR 머지
-- **Release 배포**: `release/{번호}` 브랜치 생성 → `release`로 PR 머지
-- 배포 브랜치는 `main`에서 분기하여 번호를 순차적으로 매김
-- 직접 푸시 금지, 반드시 PR을 통해 머지
-- `testFlight` / `release` 머지가 **Xcode Cloud 빌드를 트리거한다** (아래 참고)
+- **TestFlight 배포**: `testflight/{빌드번호}` 브랜치를 `main` 에서 분기해 푸시
+- **Release 배포**: `release/{버전}` 브랜치를 `main` 에서 분기해 푸시
+- **브랜치 이름은 전부 소문자다.** Xcode Cloud 시작 조건이 `testflight/` · `release/` **접두어 매칭**인데
+  git ref 는 대소문자를 구분한다 — `testFlight/7` 로 밀면 빌드가 그냥 안 돈다 (증상 없이 조용히 스킵된다)
+- 머지 대상이 되는 통합 배포 브랜치는 **없다**. 브랜치 푸시 자체가 **Xcode Cloud 빌드를 트리거한다** (아래 참고)
 
 ## 커밋 형식
 
@@ -44,7 +44,7 @@ Git Flow + **연속 브랜치 파생** 지원
 - 최소 1인 Approve 필수
 - main 직접 푸시 금지
 - Squash and Merge 사용
-- **배포 PR 예외**: `testFlight`, `release` 브랜치로의 PR은 **Merge Commit** 사용 (커밋 히스토리 동기화를 위해)
+- 배포 브랜치(`testflight/*`, `release/*`)는 PR 없이 `main` 에서 분기해 바로 푸시한다
 - **PR 제목·본문에 AI 작성 흔적 금지** — `🤖 Generated with [Claude Code](...)` 푸터, `Co-Authored-By` 크레딧 등
   attribution 문구를 절대 넣지 않는다
 
@@ -68,7 +68,7 @@ Git Flow + **연속 브랜치 파생** 지원
 
 | | GitHub Actions (`.github/workflows/ci.yml`) | Xcode Cloud |
 |---|---|---|
-| 트리거 | `main` 으로의 PR · `main` 푸시 | `testFlight` / `release` 브랜치 변경 |
+| 트리거 | `main` 으로의 PR · `main` 푸시 | `testflight/*` · `release/*` 브랜치 푸시 |
 | 하는 일 | generate → inspect → build-all → test-all | Archive → 업로드 |
 
 Xcode Cloud 워크플로에는 **Test 액션을 넣지 않는다.** 같은 테스트를 두 번 돌리면
@@ -86,7 +86,7 @@ mise 설치 → `make bootstrap` → `make generate` 로 워크스페이스를 �
 
 | | TestFlight | Release |
 |---|---|---|
-| 시작 조건 | `testFlight` 브랜치 변경 | `release` 브랜치 변경 |
+| 시작 조건 | `testflight/` 접두어 브랜치 | `release/` 접두어 브랜치 |
 | 액션 | Archive · 스킴 `Hannun` · Configuration `Release` | 동일 |
 | 배포 준비 | TestFlight (Internal Testing Only) | App Store Connect |
 | 후처리 | 내부 테스터 그룹 배포 | **없음** — 심사 제출은 사람이 누른다 |

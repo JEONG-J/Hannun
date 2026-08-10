@@ -155,14 +155,23 @@ final class PerformanceViewModel {
     ///
     /// 둘 다 확인하는 이유: 연초 기록만 없고 그 이전 기록은 있을 수 있다(기간을 1Y 로 두면
     /// 작년 구간이 그려진다). 그 경우 YTD 만 못 낼 뿐 차트는 멀쩡하므로 감추면 안 된다.
-    /// 추이가 아직 로딩 중일 때도 감추지 않는다 — 잠깐 사라졌다 나타나는 깜빡임이 생긴다.
+    ///
+    /// **추이를 기다리는 동안에도 감춘다.** 요약은 로컬 조회라 즉시 끝나고 추이는 지수
+    /// 네트워크 왕복을 태워 몇 초 늦게 온다 — 그 사이를 `false` 로 두면 "계산할 성과가 없어요"
+    /// 아래에 차트·캘린더 카드가 스피너만 돌리다 사라진다. 있던 카드가 사라지는 깜빡임은
+    /// 생기지 않는다: 갱신은 마지막 값을 남기므로(`retaining(_:after:markingStale:)`)
+    /// `.loading` 은 첫 조회에만 들어온다.
+    ///
+    /// 실패만 예외로 남긴다 — 감추면 차트 카드 안의 "추이를 불러오지 못했어요" 와 다시 시도
+    /// 버튼까지 함께 사라진다.
     var hasNoRecords: Bool {
-        guard
-            case .loaded(.insufficientData) = summaryState,
-            case let .loaded(trend) = trendState
-        else { return false }
+        guard case .loaded(.insufficientData) = summaryState else { return false }
 
-        return trend.portfolio.count < 2
+        switch trendState {
+        case .idle, .loading: return true
+        case let .loaded(trend): return trend.portfolio.count < 2
+        case .failed: return false
+        }
     }
 
     /// 스크럽 가이드 한 줄을 보여줄지. 한 번이라도 스크럽했거나, 추이가 아직 로딩·실패

@@ -19,6 +19,7 @@ public extension AssetCategory {
         case .overseasStock: .categoryForeign
         case .etf: .categoryEtf
         case .crypto: .categoryCrypto
+        case .loan: .categoryLoan
         }
     }
 
@@ -29,6 +30,7 @@ public extension AssetCategory {
         case .overseasStock: "globe.americas"
         case .etf: "square.stack.3d.up"
         case .crypto: "bitcoinsign.circle"
+        case .loan: "building.columns"
         }
     }
 }

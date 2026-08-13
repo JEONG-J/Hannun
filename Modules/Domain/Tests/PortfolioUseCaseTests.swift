@@ -74,6 +74,36 @@ struct SaveHoldingUseCaseTests {
         #expect(normalized.manualPrice == nil)
     }
 
+    /// 대출 잔액은 양수로 저장한다 — 음수 저장이면 이 검증과 `.decimalPad` 키보드가 같이 무너진다.
+    @Test("대출도 티커·평단가를 지우고 잔액은 양수로 남는다")
+    func normalizesLoanHolding() throws {
+        let normalized = try SaveHoldingUseCase.validated(
+            SampleRecords.holding(
+                category: .loan,
+                name: " 주택담보대출 ",
+                ticker: "LOAN",
+                quantity: 30_000_000,
+                averagePrice: 1,
+                manualPrice: 1
+            )
+        )
+
+        #expect(normalized.name == "주택담보대출")
+        #expect(normalized.ticker.isEmpty)
+        #expect(normalized.averagePrice == nil)
+        #expect(normalized.manualPrice == nil)
+        #expect(normalized.quantity == 30_000_000)
+    }
+
+    @Test("대출 잔액도 0 이하면 저장하지 않는다")
+    func rejectsNonPositiveLoanBalance() {
+        #expect(throws: AppError.validation("수량은 0보다 커야 해요.")) {
+            try SaveHoldingUseCase.validated(
+                SampleRecords.holding(category: .loan, name: "신용대출", quantity: 0)
+            )
+        }
+    }
+
     @Test("저장한 종목은 다시 조회된다")
     func persistsThroughRepository() async throws {
         let repository = InMemoryHoldingRepository()

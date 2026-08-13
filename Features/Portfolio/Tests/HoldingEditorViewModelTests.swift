@@ -90,10 +90,41 @@ struct HoldingEditorViewModelTests {
         viewModel.advance()
         viewModel.name = "생활비 통장"
 
-        #expect(viewModel.isCash)
+        #expect(viewModel.isBalanceOnly)
         #expect(viewModel.canProceed)
         #expect(viewModel.quantityFieldTitle == "잔액")
         #expect(viewModel.quantityUnit == "KRW")
+    }
+
+    /// 대출 잔액은 양수로 저장한다 — 화면은 `.decimalPad` 라 마이너스를 칠 방법이 없고,
+    /// 부호는 평가 시점에 `HoldingValuator` 가 붙인다.
+    @Test("대출은 현금과 같은 폼을 쓰고 잔액을 양수로 저장한다")
+    func loanReusesBalanceForm() async throws {
+        let repository = InMemoryHoldingRepository()
+        let viewModel = PortfolioTestFactory.holdingEditorViewModel(
+            repository: repository,
+            mode: .create
+        )
+
+        viewModel.selectCategory(.loan)
+        viewModel.advance()
+        viewModel.name = "주택담보대출"
+
+        #expect(viewModel.isBalanceOnly)
+        #expect(viewModel.canProceed)
+        #expect(viewModel.quantityFieldTitle == "잔액")
+        #expect(viewModel.quantityUnit == "KRW")
+
+        viewModel.advance()
+        viewModel.quantityText = "30,000,000"
+        #expect(viewModel.canProceed)
+
+        await viewModel.save()
+        let saved = try #require(await repository.fetchAll().first)
+
+        #expect(saved.quantity == 30_000_000)
+        #expect(saved.ticker.isEmpty)
+        #expect(saved.averagePrice == nil)
     }
 
     @Test("이전 단계로 되돌아갈 수 있다")

@@ -62,7 +62,9 @@ public struct AmountText: View {
     /// 색이 다른 조각을 `Text` 로 이어 붙이는 방식은 iOS 26 에서 폐기됐다. 런 단위로 색을 주는
     /// `AttributedString` 이 대체 경로다.
     private func attributed(from parts: AmountFormatter.Parts) -> AttributedString {
-        var result = subordinate(parts.sign + parts.symbol)
+        // 부호는 통화기호와 달리 값의 일부다 — 죽이면 부채 금액이 자산으로 읽힌다.
+        var result = dominant(parts.sign)
+        result.append(subordinate(parts.symbol))
         result.append(dominant(parts.integer))
         result.append(subordinate(parts.fraction))
         return result

@@ -94,7 +94,36 @@ struct FetchNetWorthUseCaseTests {
         #expect(netWorth.total == .krw(2_900_000))
     }
 
-    @Test("소계 목록은 보유가 없는 자산군까지 5종을 모두 담는다")
+    @Test("대출 잔액은 총자산에서 빠진다")
+    func subtractsLoanBalance() async throws {
+        let useCase = useCase(holdings: [
+            SampleRecords.holding(category: .cash, name: "현금", quantity: 5_000_000),
+            SampleRecords.holding(category: .loan, name: "주택담보대출", quantity: 3_000_000),
+        ])
+
+        let netWorth = try await useCase.execute(baseCurrency: .krw, exchangeRate: exchangeRate)
+
+        #expect(netWorth.subtotal(for: .loan) == .krw(-3_000_000))
+        #expect(netWorth.total == .krw(2_000_000))
+    }
+
+    @Test("통화를 환산해도 대출은 음수로 남는다")
+    func keepsLoanNegativeAfterConversion() async throws {
+        let useCase = useCase(holdings: [
+            SampleRecords.holding(
+                category: .loan,
+                name: "달러 대출",
+                currency: .usd,
+                quantity: 1_000
+            ),
+        ])
+
+        let netWorth = try await useCase.execute(baseCurrency: .krw, exchangeRate: exchangeRate)
+
+        #expect(netWorth.total == .krw(-1_300_000))
+    }
+
+    @Test("소계 목록은 보유가 없는 자산군까지 6종을 모두 담는다")
     func keepsEmptyCategories() async throws {
         let useCase = useCase(holdings: [
             SampleRecords.holding(category: .cash, name: "현금", quantity: 500_000),

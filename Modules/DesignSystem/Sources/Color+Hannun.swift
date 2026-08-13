@@ -53,6 +53,11 @@ public extension Color {
     static let categoryForeign = Color("categoryForeign", bundle: .module)
     static let categoryEtf = Color("categoryEtf", bundle: .module)
     static let categoryCrypto = Color("categoryCrypto", bundle: .module)
+    /// 부채. 도넛 섹터가 없어 범례 의무도 없다 — `CategoryDot`(소계 행·섹션 헤더·종목 폼·
+    /// 일지 종목 피커)과 `TagPill` 만 쓴다. 그래서 자산군 5색과 채도로 경합하지 않는
+    /// 저채도 브론즈다. 초록을 쓰지 않는 이유는 성장·플러스로 읽히기 때문이다 —
+    /// 순자산에서 빼는 유일한 분류에 붙일 색이 아니다.
+    static let categoryLoan = Color("categoryLoan", bundle: .module)
 }
 
 #if DEBUG
@@ -84,6 +89,7 @@ private struct ColorTokenPreview: View {
         ("categoryForeign", .categoryForeign),
         ("categoryEtf", .categoryEtf),
         ("categoryCrypto", .categoryCrypto),
+        ("categoryLoan", .categoryLoan),
     ]
 
     // MARK: - Body

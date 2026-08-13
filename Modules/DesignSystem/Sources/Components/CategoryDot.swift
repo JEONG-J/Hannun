@@ -48,6 +48,7 @@ private struct CategoryDotPreview: View {
         .overseasStock: "해외주식",
         .etf: "ETF",
         .crypto: "코인",
+        .loan: "대출",
     ]
 
     // MARK: - Body

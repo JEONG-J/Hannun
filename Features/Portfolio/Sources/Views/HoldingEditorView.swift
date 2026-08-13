@@ -104,13 +104,13 @@ struct HoldingEditorView: View {
 
     private var identityStep: some View {
         Section {
-            row(Constants.nameTitle) {
+            row(viewModel.category.nameFieldTitle) {
                 TextField(namePlaceholder, text: $viewModel.name)
                     .multilineTextAlignment(.trailing)
                     .focused($focusedField, equals: .name)
             }
 
-            if !viewModel.isCash {
+            if !viewModel.isBalanceOnly {
                 row(Constants.tickerTitle) {
                     TextField(Constants.tickerPlaceholder, text: $viewModel.ticker)
                         .multilineTextAlignment(.trailing)
@@ -142,7 +142,7 @@ struct HoldingEditorView: View {
                 field: .quantity
             )
 
-            if !viewModel.isCash {
+            if !viewModel.isBalanceOnly {
                 decimalRow(
                     Constants.averagePriceTitle,
                     unit: viewModel.currency.rawValue,
@@ -182,25 +182,32 @@ struct HoldingEditorView: View {
         }
     }
 
-    /// 검증 문구와 폴백 안내가 한 자리를 쓴다. 안내는 토글이 꺼져 있을 때만 — 켜면 바로 아래
-    /// 현재가 칸이 답을 대신한다.
+    /// 검증 문구와 안내가 한 자리를 쓴다.
     private var positionFooter: some View {
         VStack(alignment: .leading, spacing: .spacingXS) {
             validationFooter
 
-            if !viewModel.isCash && !viewModel.usesManualPrice {
-                // 앱키가 없으면 폴백이 "혹시" 가 아니라 늘 일어난다. 같은 자리에서 말을
-                // 바꿔 끼울 뿐 줄을 더 늘리지 않는다. 여기서 설정을 열면 시트 위에 시트라
-                // 갈 곳만 알린다 — 이 시트를 닫아야 순자산 탭의 톱니가 보인다.
-                Text(
-                    viewModel.isMarketKeyMissing
-                        ? Constants.missingKeyHint
-                        : Constants.manualPriceHint
-                )
-                .hannunFont(.caption)
-                .foregroundStyle(Color.textSecondary)
+            if let positionHint {
+                Text(positionHint)
+                    .hannunFont(.caption)
+                    .foregroundStyle(Color.textSecondary)
             }
         }
+    }
+
+    /// 대출은 부호 규약을 여기서 말한다 — `.decimalPad` 에 마이너스 키가 없어 규약을 모르면
+    /// 어디서 음수로 만드는지 물을 자리가 없다.
+    ///
+    /// 시세 폴백 안내는 토글이 꺼져 있을 때만 — 켜면 바로 아래 현재가 칸이 답을 대신한다.
+    /// 앱키가 없으면 폴백이 "혹시" 가 아니라 늘 일어나므로 같은 자리에서 말만 바꿔 끼운다.
+    /// 여기서 설정을 열면 시트 위에 시트라 갈 곳만 알린다 — 이 시트를 닫아야 톱니가 보인다.
+    private var positionHint: String? {
+        guard !viewModel.isBalanceOnly else {
+            return viewModel.category.isLiability ? Constants.liabilitySignHint : nil
+        }
+        guard !viewModel.usesManualPrice else { return nil }
+
+        return viewModel.isMarketKeyMissing ? Constants.missingKeyHint : Constants.manualPriceHint
     }
 
     @ToolbarContentBuilder
@@ -249,8 +256,13 @@ struct HoldingEditorView: View {
         viewModel.isLastStep ? Constants.saveTitle : Constants.nextTitle
     }
 
+    /// `default` 를 두지 않는다 — 일곱 번째 분류가 생기면 컴파일러가 여기를 다시 잡아야 한다.
     private var namePlaceholder: String {
-        viewModel.isCash ? Constants.cashNamePlaceholder : Constants.namePlaceholder
+        switch viewModel.category {
+        case .cash: Constants.cashNamePlaceholder
+        case .loan: Constants.loanNamePlaceholder
+        case .domesticStock, .overseasStock, .etf, .crypto: Constants.namePlaceholder
+        }
     }
 
     // MARK: - Function
@@ -334,7 +346,6 @@ fileprivate enum Constants {
     static let assetTypeTitle = "자산유형"
     static let identityTitle = "종목 정보"
     static let positionTitle = "보유 정보"
-    static let nameTitle = "종목명"
     /// 이 칸이 받는 값은 `KRW-BTC`·`005930`·`NAS:AAPL`·`AAPL` 넷이다. 국내 6자리를 "티커" 로만
     /// 부르면 무엇을 넣는 자리인지 읽히지 않아 국내·해외를 함께 적는다.
     static let tickerTitle = "티커·종목코드"
@@ -347,8 +358,10 @@ fileprivate enum Constants {
         시세 앱키가 없어 지금은 평단가를 현재가로 씁니다. \
         순자산 탭 오른쪽 위 설정에서 앱키를 넣으면 실시간 시세로 바뀝니다.
         """
+    static let liabilitySignHint = "남은 원금을 양수로 적으세요. 순자산에서는 자동으로 빼서 보여 줍니다."
     static let namePlaceholder = "삼성전자"
     static let cashNamePlaceholder = "원화 예수금"
+    static let loanNamePlaceholder = "신용대출"
     static let tickerPlaceholder = "005930"
     static let numberPlaceholder = "0"
     static let cancelTitle = "취소"

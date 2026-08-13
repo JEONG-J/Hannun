@@ -144,6 +144,8 @@ final class PortfolioListViewModel {
         guard selectedCategories.count == 1, let onlyCategory = selectedCategories.first else {
             return Constants.filteredSummaryTitle
         }
+        guard !onlyCategory.isLiability else { return Constants.liabilitySummaryTitle }
+
         return onlyCategory.title + Constants.summaryTitleSuffix
     }
 
@@ -370,9 +372,12 @@ final class PortfolioListViewModel {
 
 fileprivate enum Constants {
     static let featureName = "포트폴리오"
-    static let totalSummaryTitle = "총 평가금액"
+    /// 대출이 섞이면 이 금액은 자산의 합이 아니라 자산 − 부채다.
+    static let totalSummaryTitle = "순자산"
     static let searchSummaryTitle = "검색 결과 평가금액"
     static let filteredSummaryTitle = "선택 카테고리 평가금액"
     static let summaryTitleSuffix = " 평가금액"
+    /// 부채는 "평가" 하지 않는다 — 남은 원금이 곧 값이다.
+    static let liabilitySummaryTitle = "대출 잔액"
     static let deleteMessage = "보유 기록이 사라집니다. 되돌릴 수 없어요."
 }

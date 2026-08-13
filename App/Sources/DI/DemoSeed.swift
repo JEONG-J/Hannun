@@ -47,6 +47,7 @@ enum DemoSeed {
     }
 
     /// 상승 빨강·하락 파랑 규칙을 한 화면에서 확인하려고 손실 종목(비트코인)을 섞어 둔다.
+    /// 대출 한 건은 부채 행이 있는 화면(도넛에서 빠지고 소계 리스트 끝에 음수로 남는)을 위한 것이다.
     ///
     /// 국내주식만 두 종목인 이유는 카테고리 카드의 행 구조 때문이다 — 한 카드에 행이 둘은
     /// 있어야 행 사이 구분선과 카드 안 정렬이 화면에서 보인다.
@@ -112,6 +113,13 @@ enum DemoSeed {
                 manualPrice: 88_200_000,
                 createdAt: monthsAgo(5),
                 updatedAt: daysAgo(1)
+            ),
+            HoldingRecord(
+                category: .loan,
+                name: "신용대출",
+                quantity: 12_000_000,
+                createdAt: monthsAgo(4),
+                updatedAt: monthsAgo(4)
             ),
         ]
     }
@@ -333,17 +341,20 @@ private struct Valuation {
         weights = AssetCategory.allCases.compactMap { category in
             let subtotal = amounts.filter { $0.category == category }
                 .reduce(Decimal.zero) { $0 + $1.amount }
-            guard subtotal > 0, total > 0 else { return nil }
+            // 음수 소계(부채)를 빼면 스냅샷 소계 합이 총액과 어긋난다.
+            guard subtotal != 0, total > 0 else { return nil }
             return (category, subtotal / total)
         }
     }
 
     /// 평가액 계산은 앱과 같은 폴백 순서를 따른다 — 현재가 → 평단가.
-    /// 현금은 단가가 없고 수량 자체가 금액이라 단가를 1 로 둔다.
+    /// 현금·대출은 단가가 없고 수량 자체가 금액이라 단가를 1 로 둔다.
+    /// 부호도 앱과 같은 규약이다 — 잔액은 양수로 적고 평가할 때만 부채를 뒤집는다.
     private static func amount(of record: HoldingRecord) -> Decimal {
         let unitPrice = record.manualPrice ?? record.averagePrice ?? 1
         let inKRW = record.currency == .usd ? unitPrice * Constants.usdToKRWRate : unitPrice
-        return record.quantity * inKRW
+        let value = record.quantity * inKRW
+        return record.category.isLiability ? -value : value
     }
 }
 

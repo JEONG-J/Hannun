@@ -14,12 +14,13 @@ public struct HoldingValuation: Identifiable, Equatable, Sendable {
 
     public let holding: HoldingRecord
 
-    /// 1주(1개)당 현재가. 현금은 nil.
+    /// 1주(1개)당 현재가. 잔액만 다루는 현금·대출은 nil.
     public let currentPrice: Money?
 
+    /// 기준 통화 평가액. 부채는 음수다.
     public let marketValue: Money
 
-    /// 매입원가. 평단가가 없는 현금은 nil.
+    /// 매입원가. 평단가가 없는 현금·대출은 nil.
     public let costBasis: Money?
 
     /// 이 평가에 쓰인 가격이 언제 것인지 (NW-1 갱신 실패 배지의 근거).
@@ -70,8 +71,11 @@ struct HoldingValuator {
     // MARK: - Function
 
     func valuation(for holding: HoldingRecord) -> HoldingValuation {
-        guard holding.category != .cash else {
-            let balance = Money(amount: holding.quantity, currency: holding.currency)
+        guard !holding.category.isBalanceOnly else {
+            // 부채 잔액은 양수로 저장하고 평가 시점에만 뒤집는다 — 부호가 태어나는 유일한 자리다.
+            // 위쪽 계층은 전부 `marketValue` 를 합산할 뿐이라 부호가 저절로 전파된다.
+            let signed = holding.category.isLiability ? -holding.quantity : holding.quantity
+            let balance = Money(amount: signed, currency: holding.currency)
             return HoldingValuation(
                 holding: holding,
                 currentPrice: nil,

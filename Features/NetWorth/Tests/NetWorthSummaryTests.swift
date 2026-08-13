@@ -15,6 +15,14 @@ import Testing
 @Suite("순자산 요약")
 struct NetWorthSummaryTests {
 
+    // MARK: - Property
+
+    private let withLoan: [CategoryBreakdown] = [
+        CategoryBreakdown(category: .cash, amount: .krw(4_000_000), weight: 0.4),
+        CategoryBreakdown(category: .etf, amount: .krw(6_000_000), weight: 0.6),
+        CategoryBreakdown(category: .loan, amount: .krw(-3_000_000), weight: 0),
+    ]
+
     // MARK: - Function
 
     private func summary(_ breakdown: [CategoryBreakdown]) -> NetWorthSummary {
@@ -70,5 +78,44 @@ struct NetWorthSummaryTests {
         ]).converted(to: .usd, using: ExchangeRate(krwPerUSD: 1_380))
 
         #expect(converted.fundedBreakdown.map(\.category) == [.etf, .cash])
+    }
+
+    @Test("대출은 도넛 배열에서 빠진다")
+    func excludesLiabilityFromDonut() {
+        #expect(summary(withLoan).fundedBreakdown.map(\.category) == [.etf, .cash])
+    }
+
+    /// 리스트가 히어로 총액의 검산이 되어야 한다 — 합이 다르면 화면이 스스로 거짓말을 한다.
+    @Test("소계 행의 금액 합은 총액과 같다")
+    func subtotalRowsSumToTotal() {
+        let result = summary(withLoan)
+        let sum = result.subtotalRows.reduce(Decimal.zero) { $0 + $1.amount.amount }
+
+        #expect(sum == result.total.amount)
+    }
+
+    @Test("대출 행은 항상 마지막에 온다")
+    func placesLiabilityLast() {
+        #expect(summary(withLoan).subtotalRows.map(\.category) == [.etf, .cash, .loan])
+    }
+
+    @Test("전액 상환한 대출은 리스트에도 나오지 않는다")
+    func dropsSettledLoan() {
+        let result = summary([
+            CategoryBreakdown(category: .cash, amount: .krw(4_000_000), weight: 1),
+            CategoryBreakdown(category: .loan, amount: .krw(0), weight: 0),
+        ]).subtotalRows
+
+        #expect(result.map(\.category) == [.cash])
+    }
+
+    @Test("통화를 바꿔도 소계 합과 총액이 같다")
+    func keepsSumAfterCurrencyConversion() {
+        let converted = summary(withLoan)
+            .converted(to: .usd, using: ExchangeRate(krwPerUSD: 1_000))
+        let sum = converted.subtotalRows.reduce(Decimal.zero) { $0 + $1.amount.amount }
+
+        #expect(converted.subtotalRows.map(\.category) == [.etf, .cash, .loan])
+        #expect(sum == converted.total.amount)
     }
 }

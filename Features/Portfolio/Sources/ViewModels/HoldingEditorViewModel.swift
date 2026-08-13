@@ -56,7 +56,8 @@ final class HoldingEditorViewModel {
 
     var isEditing: Bool { editingHolding != nil }
 
-    var isCash: Bool { category == .cash }
+    /// 티커·평단가 칸을 통째로 접는 기준. 현금과 대출이 잔액 한 칸으로 끝난다.
+    var isBalanceOnly: Bool { category.isBalanceOnly }
 
     var title: String {
         guard !isEditing else { return Constants.editTitle }
@@ -73,9 +74,9 @@ final class HoldingEditorViewModel {
         case .assetType:
             true
         case .identity:
-            !trimmedName.isEmpty && (isCash || !trimmedTicker.isEmpty)
+            !trimmedName.isEmpty && (isBalanceOnly || !trimmedTicker.isEmpty)
         case .position:
-            quantity != nil && (isCash || averagePrice != nil)
+            quantity != nil && (isBalanceOnly || averagePrice != nil)
         }
     }
 
@@ -85,13 +86,13 @@ final class HoldingEditorViewModel {
 
     var validationMessage: String? { submission.error?.userMessage }
 
-    /// 편집 중인 종목의 평가 기준 통화. 현금은 이 통화로 잔액을 그대로 읽는다.
+    /// 편집 중인 종목의 평가 기준 통화. 현금·대출은 이 통화로 잔액을 그대로 읽는다.
     var quantityFieldTitle: String {
         category.quantityFieldTitle
     }
 
     var quantityUnit: String? {
-        isCash ? currency.rawValue : category.quantityUnit
+        isBalanceOnly ? currency.rawValue : category.quantityUnit
     }
 
     private var trimmedName: String {
@@ -187,10 +188,10 @@ final class HoldingEditorViewModel {
             id: editingHolding?.id ?? UUID(),
             category: category,
             name: trimmedName,
-            ticker: isCash ? "" : trimmedTicker,
+            ticker: isBalanceOnly ? "" : trimmedTicker,
             currency: currency,
             quantity: quantity,
-            averagePrice: isCash ? nil : DecimalInput.value(from: averagePriceText),
+            averagePrice: isBalanceOnly ? nil : DecimalInput.value(from: averagePriceText),
             manualPrice: usesManualPrice ? DecimalInput.value(from: manualPriceText) : nil,
             createdAt: editingHolding?.createdAt ?? Date(),
             updatedAt: Date()

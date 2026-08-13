@@ -54,7 +54,32 @@ struct TotalAssetBlock: View {
 }
 
 fileprivate enum Constants {
-    static let accessibilityLabel = "총자산"
+    /// 대출이 들어오면 이 숫자는 자산의 합이 아니라 자산 − 부채다.
+    static let accessibilityLabel = "순자산"
     static let valueSeparator = ", "
     static let changePrefix = "전일 대비 "
 }
+
+#if DEBUG
+@MainActor
+private func negativeTotalPreview() -> some View {
+    TotalAssetBlock(
+        total: .krw(-8_420_000),
+        change: NetWorthChange(amount: .krw(-320_000), ratio: -0.039)
+    )
+    .padding(.spacingL)
+    .background(Color.backgroundPrimary)
+}
+
+/// 대출이 자산을 넘긴 계정. 마이너스 글리프가 통화기호처럼 죽지 않고 숫자와 같은 무게로
+/// 보여야 한다 — 색 말고는 부채라는 단서가 이 부호뿐이다.
+#Preview("순자산 · 음수") {
+    negativeTotalPreview()
+}
+
+/// 34pt 숫자가 AX5 에서 몇 배가 된다. 부호가 잘리거나 pill 이 밖으로 밀리면 회귀다.
+#Preview("순자산 · 음수 · AX5") {
+    negativeTotalPreview()
+        .dynamicTypeSize(.accessibility5)
+}
+#endif

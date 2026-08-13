@@ -44,8 +44,9 @@ public struct SaveHoldingUseCase: SaveHoldingUseCaseProtocol {
             throw AppError.validation("수량은 0보다 커야 해요.")
         }
 
-        guard normalized.category != .cash else {
-            // 현금은 평단가·티커 개념이 없다. 잘못 들어온 값을 여기서 떨어뜨린다.
+        guard !normalized.category.isBalanceOnly else {
+            // 현금·대출은 평단가·티커 개념이 없다. 잘못 들어온 값을 여기서 떨어뜨린다.
+            // 대출 잔액도 양수로 받는다 — 부호는 평가 시점에만 붙는다.
             normalized.averagePrice = nil
             normalized.manualPrice = nil
             normalized.ticker = ""

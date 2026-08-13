@@ -138,7 +138,7 @@ struct NetWorthScreen: View {
                 }
 
             AllocationCard(
-                breakdown: summary.fundedBreakdown,
+                rows: summary.subtotalRows,
                 selection: $viewModel.selectedCategory
             ) { category in
                 appRouter?.navigate(to: .portfolio(category: category))

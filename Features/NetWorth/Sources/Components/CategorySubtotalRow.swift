@@ -37,8 +37,12 @@ struct CategorySubtotalRow: View {
             VStack(alignment: .leading, spacing: .spacingXS) {
                 headline
 
-                weightBar
-                    .padding(.leading, Constants.barLeadingInset)
+                // 부채는 비중을 갖지 않는다. 게이지는 weight 0 에서도 최소 조각을 그리므로
+                // 통째로 걷어내지 않으면 "아주 조금 있는 자산" 처럼 읽힌다.
+                if !isLiability {
+                    weightBar
+                        .padding(.leading, Constants.barLeadingInset)
+                }
             }
             .padding(.vertical, .spacingS)
             .padding(.horizontal, .spacingS)
@@ -60,6 +64,8 @@ struct CategorySubtotalRow: View {
 
     // MARK: - Function
 
+    private var isLiability: Bool { breakdown.category.isLiability }
+
     private var headline: some View {
         HStack(spacing: .spacingS) {
             CategoryDot(breakdown.category)
@@ -72,8 +78,10 @@ struct CategorySubtotalRow: View {
 
             AmountText(breakdown.amount, size: .sub)
 
-            Text(weightText)
-                .hannunFont(.caption, tabularFigures: true)
+            // 부채도 이 슬롯을 비우지 않는다 — 비우면 금액이 퍼센트 폭만큼 밀려
+            // 우측 정렬된 금액 열에서 이 줄만 어긋난다.
+            Text(isLiability ? Constants.liabilityCaption : weightText)
+                .hannunFont(.caption, tabularFigures: !isLiability)
                 .foregroundStyle(Color.textSecondary)
 
             Image(systemName: Constants.disclosureSymbolName)
@@ -111,7 +119,14 @@ struct CategorySubtotalRow: View {
     /// `AmountText` 는 금액을 부호·기호·정수부·소수부로 쪼개 그려서 그대로 읽히면 토막난다.
     /// 같은 규칙으로 만든 한 문장을 값으로 얹어 대신 읽게 한다.
     private var accessibilityValue: String {
-        AmountFormatter.text(for: breakdown.amount)
+        let amount = AmountFormatter.text(for: breakdown.amount)
+        // 한국어 VoiceOver 가 마이너스를 안 읽는 경우가 있다. 그러면 부채 금액이 자산으로
+        // 들리므로 부호 말고 말로도 한 번 더 붙인다.
+        guard !isLiability else {
+            return amount + Constants.accessibilityValueSeparator + Constants.liabilityCaption
+        }
+
+        return amount
             + Constants.accessibilityValueSeparator
             + Constants.weightPrefix
             + weightText
@@ -126,7 +141,9 @@ fileprivate enum Constants {
     /// dot(8pt) + `spacingS` 만큼 들여써서 막대가 이름 왼쪽 끝에서 시작한다.
     static let barLeadingInset: CGFloat = 16
     static let minimumBarFraction: CGFloat = 0.02
-    static let accessibilityHint = "포트폴리오 탭에서 이 자산군만 봅니다"
+    static let accessibilityHint = "포트폴리오 탭에서 이 분류만 봅니다"
     static let accessibilityValueSeparator = ", "
     static let weightPrefix = "비중 "
+    /// 퍼센트 자리를 대신 채운다. "34%"(≈24pt) 와 폭이 비슷해 금액 열이 그대로 선다.
+    static let liabilityCaption = "부채"
 }

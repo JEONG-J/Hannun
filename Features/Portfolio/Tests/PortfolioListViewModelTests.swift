@@ -259,7 +259,7 @@ struct PortfolioListViewModelTests {
         viewModel.search("   ")
 
         #expect(viewModel.isSearching == false)
-        #expect(viewModel.summaryTitle == "총 평가금액")
+        #expect(viewModel.summaryTitle == "순자산")
         #expect(viewModel.sections.map(\.category) == [.cash, .domesticStock, .overseasStock])
     }
 
@@ -322,7 +322,7 @@ struct PortfolioListViewModelTests {
 
         await viewModel.load()
 
-        #expect(viewModel.summaryTitle == "총 평가금액")
+        #expect(viewModel.summaryTitle == "순자산")
         #expect(viewModel.summaryAmount == .krw(3_180_000))
         #expect(viewModel.summaryProfit == .krw(445_000))
     }
@@ -400,7 +400,7 @@ struct PortfolioListViewModelTests {
         #expect(viewModel.selectedCategories.isEmpty)
         #expect(viewModel.selectedCategoryList.isEmpty)
         #expect(viewModel.isCategoryFiltered == false)
-        #expect(viewModel.summaryTitle == "총 평가금액")
+        #expect(viewModel.summaryTitle == "순자산")
         #expect(viewModel.summaryAmount == .krw(3_180_000))
     }
 
@@ -420,6 +420,20 @@ struct PortfolioListViewModelTests {
 
         #expect(viewModel.summaryTitle == "선택 카테고리 평가금액")
         #expect(viewModel.summaryAmount == .krw(1_800_000))
+    }
+
+    /// 부채는 "평가" 하지 않는다 — 남은 원금이 곧 값이다.
+    @Test("대출만 고르면 요약 제목이 대출 잔액이 된다")
+    func namesLoanSummaryAsBalance() async {
+        let viewModel = PortfolioTestFactory.listViewModel(
+            repository: InMemoryHoldingRepository(records),
+            prices: prices
+        )
+
+        await viewModel.load()
+        viewModel.toggleCategory(.loan)
+
+        #expect(viewModel.summaryTitle == "대출 잔액")
     }
 
     @Test("지표는 수익률 → 수익금 → 현재가 순으로 돈다")

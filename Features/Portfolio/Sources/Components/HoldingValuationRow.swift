@@ -12,7 +12,7 @@ import SwiftUI
 
 /// 평가 결과 1건을 `HoldingRow` 에 맞춰 문자열로 옮긴다.
 ///
-/// 현금은 `subline` 과 `change` 를 비운다 — 평단가·수익률이 없는 자산이라 자리를 비워야
+/// 현금·대출은 `subline` 과 `change` 를 비운다 — 평단가·수익률이 없는 분류라 자리를 비워야
 /// "값이 0" 이 아니라 "해당 없음" 으로 읽힌다 (PF-1).
 struct HoldingValuationRow: View {
 
@@ -40,7 +40,8 @@ struct HoldingValuationRow: View {
     /// 스펙이 정한 서브라인은 "수량 · 평단가" 고정이다. 지표 순환은 pill 안에서만 일어난다 —
     /// 탭할 때마다 좌우 두 곳이 같이 바뀌면 어느 쪽이 바뀐 건지 읽히지 않는다.
     private var subline: String? {
-        guard holding.category != .cash else { return nil }
+        // 잔액만 있는 분류는 서브라인을 비운다 — 안 비우면 잔액이 수량 자리에 원본 숫자로 찍힌다.
+        guard !holding.category.isBalanceOnly else { return nil }
 
         let quantity = AmountFormatter.quantity(
             holding.quantity,
@@ -112,6 +113,15 @@ private struct HoldingValuationRowPreview: View {
         priceFreshness: .notApplicable
     )
 
+    /// 잔액은 양수로 들고 평가액만 음수다. 서브라인·pill 이 비고 금액에 마이너스가 붙는다.
+    private let loan = HoldingValuation(
+        holding: HoldingRecord(category: .loan, name: "신용대출", quantity: 12_000_000),
+        currentPrice: nil,
+        marketValue: .krw(-12_000_000),
+        costBasis: nil,
+        priceFreshness: .notApplicable
+    )
+
     // MARK: - Body
 
     var body: some View {
@@ -123,6 +133,11 @@ private struct HoldingValuationRowPreview: View {
                 .padding(.horizontal, .spacingL)
 
             HoldingValuationRow(valuation: cash, metric: metric) {}
+
+            Divider()
+                .padding(.horizontal, .spacingL)
+
+            HoldingValuationRow(valuation: loan, metric: metric) {}
         }
         .padding(.vertical, .spacingS)
         .background(Color.surfacePrimary, in: .hannunContainer())

@@ -32,21 +32,29 @@ struct NetWorthSummary: Equatable, Sendable {
 
     var isEmpty: Bool { holdingCount == 0 }
 
-    /// 금액이 0 인 카테고리는 도넛에도 리스트에도 넣지 않는다 —
-    /// 0% 섹터는 그릴 수 없고 0원 행은 읽을 정보가 없다.
+    /// 금액이 0 인 카테고리와 부채는 넣지 않는다 — 0% 섹터도 음수 섹터도 그릴 수 없다.
     ///
     /// 금액 내림차순이라 도넛 12시에 가장 큰 자산군이 오고 리스트도 큰 것부터 읽힌다
     /// (시안 §6.1). 금액이 같으면 `AssetCategory` 선언 순서로 고정한다 — 새로고침할 때마다
     /// 섹터가 자리를 바꾸면 안 된다.
     var fundedBreakdown: [CategoryBreakdown] {
         breakdown
-            .filter { $0.amount.amount > 0 }
+            .filter { !$0.category.isLiability && $0.amount.amount > 0 }
             .sorted { lhs, rhs in
                 guard lhs.amount.amount == rhs.amount.amount else {
                     return lhs.amount.amount > rhs.amount.amount
                 }
                 return categoryOrder(lhs.category) < categoryOrder(rhs.category)
             }
+    }
+
+    /// 소계 리스트에 그릴 행. 자산군 뒤에 부채를 붙인다.
+    ///
+    /// **이 배열의 금액 합은 항상 `total` 과 같다** — 화면이 스스로 검산 가능해야 한다.
+    /// `fundedBreakdown` 이 떨어뜨리는 나머지는 0원 카테고리뿐이라 합에 기여하지 않는다.
+    var subtotalRows: [CategoryBreakdown] {
+        fundedBreakdown
+            + breakdown.filter { $0.category.isLiability && $0.amount.amount != 0 }
     }
 
     // MARK: - Function

@@ -8,7 +8,7 @@
 import Foundation
 import HannunCore
 
-/// 기준 통화로 환산한 총자산과 그 근거가 된 종목별 평가.
+/// 기준 통화로 환산한 순자산과 그 근거가 된 종목별 평가. 부채 평가액이 음수라 총액에서 빠진다.
 public struct NetWorth: Equatable, Sendable {
     // MARK: - Property
 
@@ -29,7 +29,7 @@ public struct NetWorth: Equatable, Sendable {
         return Money(amount: amount, currency: total.currency)
     }
 
-    /// 스냅샷에 그대로 실을 수 있는 카테고리 소계. 카테고리 5종을 모두 포함한다.
+    /// 스냅샷에 그대로 실을 수 있는 카테고리 소계. 카테고리 6종을 모두 포함하며 부채는 음수다.
     public var categorySubtotals: [CategorySubtotal] {
         AssetCategory.allCases.map {
             CategorySubtotal(category: $0, amount: subtotal(for: $0).amount)
